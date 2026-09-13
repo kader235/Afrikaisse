@@ -1,0 +1,90 @@
+import type { LocationType, Role } from '@afrikaisse/core';
+import type { Language } from './i18n.tsx';
+
+export const ROLE_LABELS: Record<Language, Record<Role, string>> = {
+  fr: {
+    OWNER: 'Propriétaire',
+    ADMIN: 'Administrateur',
+    MANAGER: 'Gérant',
+    CASHIER: 'Caissier',
+    WAITER: 'Serveur',
+    KITCHEN: 'Cuisine',
+    BAR: 'Bar',
+    STOCK_MANAGER: 'Magasinier',
+  },
+  en: {
+    OWNER: 'Owner',
+    ADMIN: 'Administrator',
+    MANAGER: 'Manager',
+    CASHIER: 'Cashier',
+    WAITER: 'Waiter',
+    KITCHEN: 'Kitchen',
+    BAR: 'Bar',
+    STOCK_MANAGER: 'Stock manager',
+  },
+  ar: {
+    OWNER: 'المالك',
+    ADMIN: 'مدير النظام',
+    MANAGER: 'المدير',
+    CASHIER: 'أمين الصندوق',
+    WAITER: 'النادل',
+    KITCHEN: 'المطبخ',
+    BAR: 'البار',
+    STOCK_MANAGER: 'أمين المخزن',
+  },
+};
+
+export const LOCATION_TYPE_LABELS: Record<LocationType, string> = {
+  RESTAURANT: 'Restaurant',
+  HOTEL: 'Hôtel',
+  CAFE: 'Café',
+  BAR: 'Bar',
+  LOUNGE: 'Lounge',
+  FAST_FOOD: 'Fast-food',
+  BAKERY: 'Boulangerie',
+  PASTRY: 'Pâtisserie',
+  FOOD_COURT: 'Food court',
+};
+
+/** Pays proposés à l'inscription : fuseau et devise préremplis, modifiables. */
+export const COUNTRIES = [
+  { code: 'TD', name: 'Tchad', timezone: 'Africa/Ndjamena', currency: 'XAF' },
+  { code: 'CM', name: 'Cameroun', timezone: 'Africa/Douala', currency: 'XAF' },
+  { code: 'CF', name: 'Centrafrique', timezone: 'Africa/Bangui', currency: 'XAF' },
+  { code: 'CG', name: 'Congo', timezone: 'Africa/Brazzaville', currency: 'XAF' },
+  { code: 'GA', name: 'Gabon', timezone: 'Africa/Libreville', currency: 'XAF' },
+  { code: 'GQ', name: 'Guinée équatoriale', timezone: 'Africa/Malabo', currency: 'XAF' },
+  { code: 'SN', name: 'Sénégal', timezone: 'Africa/Dakar', currency: 'XOF' },
+  { code: 'CI', name: "Côte d'Ivoire", timezone: 'Africa/Abidjan', currency: 'XOF' },
+  { code: 'BJ', name: 'Bénin', timezone: 'Africa/Porto-Novo', currency: 'XOF' },
+  { code: 'BF', name: 'Burkina Faso', timezone: 'Africa/Ouagadougou', currency: 'XOF' },
+  { code: 'ML', name: 'Mali', timezone: 'Africa/Bamako', currency: 'XOF' },
+  { code: 'NE', name: 'Niger', timezone: 'Africa/Niamey', currency: 'XOF' },
+  { code: 'TG', name: 'Togo', timezone: 'Africa/Lome', currency: 'XOF' },
+  { code: 'GN', name: 'Guinée', timezone: 'Africa/Conakry', currency: 'GNF' },
+  { code: 'CD', name: 'RD Congo', timezone: 'Africa/Kinshasa', currency: 'CDF' },
+  { code: 'RW', name: 'Rwanda', timezone: 'Africa/Kigali', currency: 'RWF' },
+  { code: 'NG', name: 'Nigeria', timezone: 'Africa/Lagos', currency: 'NGN' },
+  { code: 'GH', name: 'Ghana', timezone: 'Africa/Accra', currency: 'GHS' },
+  { code: 'MA', name: 'Maroc', timezone: 'Africa/Casablanca', currency: 'MAD' },
+  { code: 'FR', name: 'France', timezone: 'Europe/Paris', currency: 'EUR' },
+] as const;
+
+export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  'tenant.registered': 'Organisation créée',
+  'tenant.renamed': 'Organisation renommée',
+  'auth.login': 'Connexion',
+  'auth.switch_tenant': "Changement d'organisation",
+  'auth.refresh_reuse': 'Session révoquée (jeton réutilisé)',
+  'auth.password_changed': 'Mot de passe changé',
+  'auth.password_change_failed': 'Échec de changement de mot de passe',
+  'team.member_added': 'Membre ajouté',
+  'team.member_updated': 'Membre modifié',
+  'team.password_reset': 'Mot de passe redéfini',
+  'platform.tenant_suspended': 'Organisation suspendue par AfriKaisse',
+  'platform.tenant_reactivated': 'Organisation réactivée par AfriKaisse',
+};
+
+export function formatDateTime(ms: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ms));
+}

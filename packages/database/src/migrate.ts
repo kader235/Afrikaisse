@@ -1,0 +1,26 @@
+import { Migrator, type Migration } from 'kysely';
+import type { AppDatabase } from './dialects.ts';
+import { columnKit } from './columns.ts';
+import { foundation } from './migrations/0001_foundation.ts';
+
+/**
+ * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
+ * livrée en un seul fichier sur o2switch et dans l'installateur Windows.
+ * Ne jamais modifier une migration publiée : en ajouter une nouvelle.
+ */
+function migrations(app: AppDatabase): Record<string, Migration> {
+  const c = columnKit(app.kind);
+  return {
+    '0001_foundation': foundation(c),
+  };
+}
+
+export async function migrateToLatest(app: AppDatabase): Promise<string[]> {
+  const migrator = new Migrator({
+    db: app.db,
+    provider: { getMigrations: async () => migrations(app) },
+  });
+  const { error, results } = await migrator.migrateToLatest();
+  if (error) throw error;
+  return (results ?? []).filter((r) => r.status === 'Success').map((r) => r.migrationName);
+}

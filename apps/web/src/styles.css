@@ -1,0 +1,726 @@
+/*
+ * AfriKaisse — style « logiciel de gestion ».
+ * Fenêtres, barres d'outils, tables à sélection, fenêtres de saisie, barre d'état.
+ * Sobre et dense : c'est un outil de travail, pas une page vitrine.
+ * Propriétés logiques en longhand (RTL arabe + WebView Chrome 83) ; pas de gap sur flexbox.
+ */
+:root {
+  --bg: #e7eaee;
+  --window: #ffffff;
+  --band: #f2f4f7;
+  --border: #c5cbd3;
+  --border-strong: #9ea7b2;
+  --line: #e1e5ea;
+  --text: #1c232b;
+  --text-soft: #46515d;
+  --muted: #6b7581;
+  --accent: #1f5fa8;
+  --accent-hover: #174e8c;
+  --appbar: #1d4d82;
+  --appbar-2: #173f6b;
+  --appbar-text: #ffffff;
+  --grid-head: #e9edf2;
+  --zebra: #f7f9fb;
+  --hover: #edf3fa;
+  --select: #cfe2f6;
+  --select-border: #6fa3dc;
+  --input: #ffffff;
+  --input-border: #a9b2bd;
+  --input-disabled: #f1f3f5;
+  --focus: #2f7ad6;
+  --ok: #1d7a3b;
+  --ok-bg: #e5f3e9;
+  --warn: #875a00;
+  --warn-bg: #fff3d4;
+  --danger: #b3261e;
+  --danger-bg: #fbeae8;
+  --shadow: 0 10px 30px rgba(16, 28, 44, 0.28);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #1b1e22;
+  --window: #24282d;
+  --band: #2b3036;
+  --border: #3b424a;
+  --border-strong: #56606b;
+  --line: #333a41;
+  --text: #e3e7ec;
+  --text-soft: #c2c9d1;
+  --muted: #909aa5;
+  --accent: #4a8fe0;
+  --accent-hover: #6aa4ea;
+  --appbar: #16283d;
+  --appbar-2: #112030;
+  --grid-head: #2e343b;
+  --zebra: #282d33;
+  --hover: #2f3843;
+  --select: #1f4368;
+  --select-border: #4a8fe0;
+  --input: #1d2126;
+  --input-border: #4b545e;
+  --input-disabled: #2a2f35;
+  --focus: #6aa4ea;
+  --ok: #6cc98a;
+  --ok-bg: #1d3325;
+  --warn: #e3b55c;
+  --warn-bg: #3a3019;
+  --danger: #f08279;
+  --danger-bg: #3d2320;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 'Segoe UI', Tahoma, system-ui, -apple-system, Roboto, 'Noto Sans', 'Noto Sans Arabic', sans-serif;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* --- Icônes ------------------------------------------------------------ */
+.ico {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- Boutons ----------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--window);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn .ico {
+  margin-inline-end: 6px;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: var(--select-border);
+}
+
+.btn:active:not(:disabled) {
+  background: var(--select);
+}
+
+.btn:disabled {
+  color: var(--muted);
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn + .btn {
+  margin-inline-start: 6px;
+}
+
+/* --- Champs ------------------------------------------------------------ */
+input,
+select {
+  height: 30px;
+  width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--input-border);
+  border-radius: 2px;
+  background: var(--input);
+  color: var(--text);
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+
+input:disabled,
+input[readonly] {
+  background: var(--input-disabled);
+  color: var(--text-soft);
+}
+
+.form {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.form > label {
+  color: var(--text-soft);
+}
+
+.form .hint {
+  grid-column: 2;
+  margin-top: -4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.form .full {
+  grid-column: 1 / -1;
+}
+
+fieldset.group {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 14px 14px;
+  margin: 0;
+}
+
+fieldset.group + fieldset.group {
+  margin-top: 12px;
+}
+
+fieldset.group legend {
+  padding: 0 6px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .form .hint {
+    grid-column: 1;
+    margin-top: 0;
+  }
+
+  .form > label {
+    margin-top: 6px;
+  }
+}
+
+/* --- Messages ---------------------------------------------------------- */
+.msg {
+  border: 1px solid;
+  border-radius: 3px;
+  padding: 7px 10px;
+}
+
+.msg + * {
+  margin-top: 10px;
+}
+
+.msg-error {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--text);
+}
+
+.msg-error strong {
+  color: var(--danger);
+}
+
+.msg-ok {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+
+.msg-warn {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+}
+
+.msg ul {
+  margin: 4px 0 0;
+  padding-inline-start: 18px;
+}
+
+/* --- Coque ------------------------------------------------------------- */
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.appbar {
+  background: var(--appbar);
+  color: var(--appbar-text);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  height: 42px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--appbar-2);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.brand svg {
+  width: 24px;
+  height: 24px;
+  margin-inline-end: 8px;
+}
+
+.appbar .org {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  color: #d5e2f1;
+}
+
+.appbar .org select {
+  width: auto;
+  max-width: 280px;
+  height: 26px;
+  background: var(--appbar-2);
+  color: #fff;
+  border-color: #3d6593;
+}
+
+.appbar .org .sep {
+  margin: 0 10px;
+  opacity: 0.5;
+}
+
+.appbar .user {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.appbar .user span {
+  margin-inline-end: 12px;
+  color: #d5e2f1;
+}
+
+.appbar .btn {
+  height: 26px;
+  background: transparent;
+  color: #fff;
+  border-color: #56799f;
+}
+
+.appbar .btn:hover:not(:disabled) {
+  background: var(--appbar-2);
+  border-color: #8fb0d3;
+}
+
+.menubar {
+  background: var(--band);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.menubar button {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.menubar button .ico {
+  margin-inline-end: 7px;
+}
+
+.menubar button:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.menubar button[aria-current='page'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.workspace {
+  overflow: auto;
+  padding: 14px;
+}
+
+.statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 26px;
+  background: var(--band);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.statusbar > * {
+  padding: 3px 10px;
+  border-inline-end: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.statusbar .push {
+  margin-inline-start: auto;
+  border-inline-end: 0;
+}
+
+.statusbar select {
+  height: 20px;
+  width: auto;
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+.statusbar select + select {
+  margin-inline-start: 6px;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-inline-end: 6px;
+  background: var(--muted);
+}
+
+.dot-ok {
+  background: var(--ok);
+}
+
+.dot-off {
+  background: var(--danger);
+}
+
+/* --- Fenêtres ---------------------------------------------------------- */
+.window {
+  background: var(--window);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.window + .window {
+  margin-top: 14px;
+}
+
+.window-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--band);
+}
+
+.window-title h1,
+.window-title h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.window-title .count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.toolbar {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.toolbar .sep {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  margin: 0 8px;
+  vertical-align: middle;
+  background: var(--border);
+}
+
+.window-body {
+  padding: 14px;
+}
+
+.window-body > .msg {
+  margin-bottom: 12px;
+}
+
+/* --- Tables ------------------------------------------------------------ */
+.grid-wrap {
+  overflow-x: auto;
+}
+
+table.grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.grid th {
+  position: sticky;
+  top: 0;
+  background: var(--grid-head);
+  border-bottom: 1px solid var(--border);
+  border-inline-end: 1px solid var(--line);
+  padding: 0 10px;
+  height: 30px;
+  text-align: start;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+table.grid td {
+  padding: 0 10px;
+  height: 32px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+table.grid tbody tr:nth-child(even) td {
+  background: var(--zebra);
+}
+
+table.grid tbody tr.selectable {
+  cursor: default;
+}
+
+table.grid tbody tr.selectable:hover td {
+  background: var(--hover);
+}
+
+table.grid tbody tr[aria-selected='true'] td {
+  background: var(--select);
+  border-bottom-color: var(--select-border);
+}
+
+table.grid td.empty {
+  color: var(--muted);
+  height: 44px;
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+}
+
+.state-ok {
+  color: var(--ok);
+}
+
+.state-off {
+  color: var(--danger);
+}
+
+.tag {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--muted);
+  vertical-align: 1px;
+}
+
+/* --- Fenêtres de saisie ------------------------------------------------ */
+.overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: rgba(20, 30, 42, 0.38);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 560px;
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--window);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  box-shadow: var(--shadow);
+}
+
+.dialog-wide {
+  max-width: 680px;
+}
+
+.dialog-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 4px 0 12px;
+  background: var(--appbar);
+  color: #fff;
+  font-weight: 600;
+}
+
+.dialog-title button {
+  width: 30px;
+  height: 26px;
+  background: none;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.dialog-title button:hover {
+  background: #c42b1c;
+}
+
+.dialog-body {
+  overflow: auto;
+  padding: 16px;
+}
+
+.dialog-foot {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--band);
+  text-align: end;
+}
+
+/* --- Accès (connexion, inscription) ------------------------------------ */
+.login-screen {
+  /* vh et non % : l'écran est enveloppé dans un <form> sans hauteur. */
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.login-center {
+  display: grid;
+  place-items: center;
+  padding: 24px 12px;
+}
+
+.login-screen .dialog {
+  box-shadow: 0 2px 10px rgba(16, 28, 44, 0.14);
+}
+
+.login-head {
+  display: flex;
+  align-items: center;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.login-head svg {
+  width: 42px;
+  height: 42px;
+  margin-inline-end: 12px;
+}
+
+.login-head strong {
+  display: block;
+  font-size: 18px;
+}
+
+.login-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-screen .statusbar .push {
+  margin-inline-start: auto;
+}
+
+.choice-list button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  height: 36px;
+}
+
+.choice-list button + button {
+  margin: 6px 0 0;
+}
