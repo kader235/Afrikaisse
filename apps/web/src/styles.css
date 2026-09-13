@@ -828,11 +828,6 @@ table.grid {
     display: inline-block;
     padding: 10px 0;
   }
-
-  .subtabs button {
-    height: 48px;
-    padding: 0 20px;
-  }
 }
 
 @media (pointer: coarse) and (min-width: 601px) {
@@ -1059,4 +1054,22 @@ dl.facts dd {
   margin: 0;
   width: 20px;
   height: 20px;
+}
+
+/* Tactile, en DERNIER : à spécificité égale, la règle écrite plus bas gagne.
+   Toute nouvelle commande tactile définie plus haut doit être agrandie ici. */
+@media (pointer: coarse) {
+  .subtabs button {
+    height: 48px;
+    padding: 0 20px;
+  }
+
+  .check {
+    min-height: 44px;
+  }
+
+  .check input {
+    width: 22px;
+    height: 22px;
+  }
 }
