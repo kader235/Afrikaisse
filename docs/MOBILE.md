@@ -8,6 +8,22 @@
 > Tablette de référence : Android 10", 1280×800, **Android 11 et WebView jamais mise à jour
 > possibles**. À tester sur une vraie tablette et sur un émulateur API 30.
 
+## Application tablette (phase 2 bis)
+
+`apps/tablet` est l'enveloppe Android. Elle **embarque les écrans de `apps/web`** : la tablette démarre
+même sans Internet, et chaque écran corrigé côté web l'est aussi sur la tablette.
+
+| Sujet | Mise en œuvre |
+|---|---|
+| Premier lancement | Écran **Connexion au serveur** : *AfriKaisse Cloud* ou *Serveur local du restaurant* (adresse du PC, ex. `192.168.1.20:7300`). **Tester la connexion** appelle `/api/health` ; **Utiliser ce serveur** n'est actif qu'après une réponse valide. Changeable depuis la barre d'état des écrans d'accès. |
+| Appels à l'API | HTTP natif (**CapacitorHttp**) : ni CORS ni « contenu mixte » entre l'enveloppe (`https://localhost`) et un serveur local en HTTP, et aucune dépendance à la version de la WebView. Délai maximal de 15 s par appel : un serveur éteint mène à l'écran « Serveur injoignable », jamais à une attente sans fin. |
+| Session | Jeton d'accès en mémoire ; jeton de renouvellement dans le **Keystore Android** (`@aparajita/capacitor-secure-storage`), jamais dans le stockage de la WebView. Changer de serveur efface le jeton. |
+| HTTP en clair | Autorisé dans le manifeste (le serveur local n'a pas de certificat), mais **refusé par l'application** vers toute adresse hors réseau local : `normalizeServerUrl` (`packages/core/src/network.ts`, testé) n'accepte `http://` que pour une IPv4 privée, `localhost` ou un nom en `.local`. |
+| Identité | Icône et écran de lancement AfriKaisse (aplats bleus, ticket blanc), barres système bleu foncé. Régénérer : `python apps/tablet/android/dessiner-identite.py`. |
+| Identifiant Android | `com.afrikaisse.tablette` — **définitif une fois publié** sur le Play Store : à confirmer avant publication. |
+
+Construire l'APK de test : voir DEPLOYMENT.md §5.
+
 ## Choix : Capacitor (ADR-006)
 
 Justification et comparaison avec React Native et Flutter : ARCHITECTURE.md §4. En résumé :

@@ -20,6 +20,23 @@ Adresse e-mail et mot de passe. Après 5 erreurs de suite, la connexion est bloq
 Si vous travaillez pour plusieurs organisations, AfriKaisse vous demande laquelle ouvrir. Vous
 pouvez changer à tout moment depuis le sélecteur sous le nom de l'organisation.
 
+## La tablette
+
+1. Installer l'application **AfriKaisse** sur la tablette Android et l'ouvrir.
+2. **Connexion au serveur** :
+   - *AfriKaisse Cloud* si le restaurant travaille par Internet ;
+   - *Serveur local du restaurant* si un PC AfriKaisse est installé : saisir l'adresse affichée sur
+     ce PC (par exemple `192.168.1.20:7300`). La tablette doit être sur le **même Wi-Fi**.
+3. **Tester la connexion**, puis **Utiliser ce serveur** : le bouton ne s'active qu'une fois le
+   serveur trouvé.
+4. Se connecter avec son e-mail et son mot de passe. La tablette reste connectée même après
+   redémarrage ; **Se déconnecter** efface la session de la tablette.
+
+Pour changer de serveur : se déconnecter, puis **Changer** en bas de l'écran de connexion.
+
+Une adresse Internet en `http://` est refusée : hors du Wi-Fi du restaurant, la connexion doit être
+chiffrée (`https://`).
+
 ## Les établissements
 
 Menu **Établissements** (propriétaire, administrateur).

@@ -8,6 +8,8 @@ import {
   findLayoutIssues,
   isUuid,
   isValidTimezone,
+  isLocalNetworkHost,
+  normalizeServerUrl,
   parseHlc,
   registerSchema,
   roleCan,
@@ -97,6 +99,26 @@ describe('Géométrie du plan de salle', () => {
   it('refuse un fuseau horaire inconnu', () => {
     expect(isValidTimezone('Africa/Ndjamena')).toBe(true);
     expect(isValidTimezone('Mars/Olympus')).toBe(false);
+  });
+});
+
+describe('Adresse du serveur (tablette)', () => {
+  it('accepte le serveur local en HTTP et le Cloud en HTTPS, en complétant le schéma', () => {
+    expect(normalizeServerUrl(' 192.168.1.20:3000 ')).toEqual({ ok: true, url: 'http://192.168.1.20:3000' });
+    expect(normalizeServerUrl('10.0.2.2:3000')).toEqual({ ok: true, url: 'http://10.0.2.2:3000' });
+    expect(normalizeServerUrl('caisse.local:7300')).toEqual({ ok: true, url: 'http://caisse.local:7300' });
+    expect(normalizeServerUrl('app.afrikaisse.com')).toEqual({ ok: true, url: 'https://app.afrikaisse.com' });
+    expect(normalizeServerUrl('https://app.afrikaisse.com/api/')).toEqual({ ok: true, url: 'https://app.afrikaisse.com' });
+  });
+
+  it('refuse HTTP vers Internet et les adresses invalides', () => {
+    expect(normalizeServerUrl('http://app.afrikaisse.com').ok).toBe(false);
+    expect(normalizeServerUrl('http://172.32.0.1').ok).toBe(false);
+    expect(normalizeServerUrl('ftp://192.168.1.2').ok).toBe(false);
+    expect(normalizeServerUrl('http://user:pass@192.168.1.2').ok).toBe(false);
+    expect(normalizeServerUrl('').ok).toBe(false);
+    expect(isLocalNetworkHost('172.20.4.1')).toBe(true);
+    expect(isLocalNetworkHost('8.8.8.8')).toBe(false);
   });
 });
 

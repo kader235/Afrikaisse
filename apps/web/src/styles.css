@@ -1056,6 +1056,47 @@ dl.facts dd {
   height: 20px;
 }
 
+/* --- Choix exclusifs (serveur de la tablette) ---------------------------- */
+.choices {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.choice + .choice {
+  border-top: 1px solid var(--line);
+}
+
+.choice input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  margin-inline-end: 12px;
+  flex: none;
+}
+
+.choice span {
+  display: flex;
+  flex-direction: column;
+}
+
+.choice small {
+  color: var(--muted);
+}
+
+/* Tablette (mode tactile imposé) : WebView Chrome 83 ignore :focus-visible et laisse un
+   contour orange sur chaque bouton touché. Au doigt, ce contour n'apporte rien. */
+.touch-forced button:focus {
+  outline: none;
+}
+
 /* Tactile, en DERNIER : à spécificité égale, la règle écrite plus bas gagne.
    Toute nouvelle commande tactile définie plus haut doit être agrandie ici. */
 @media (pointer: coarse) {

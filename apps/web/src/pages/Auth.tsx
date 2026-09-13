@@ -6,7 +6,13 @@ import { COUNTRIES, LOCATION_TYPE_LABELS } from '../labels.ts';
 import { APP_VERSION, BrandMark, ErrorMessage, Preferences } from '../ui.tsx';
 
 /** Écran d'accès : une fenêtre centrée, une barre d'état. */
-export function AccessScreen({ title, wide, children, footer }: { title: string; wide?: boolean; children: ReactNode; footer: ReactNode }) {
+/** Sur la tablette : le serveur utilisé, et de quoi en changer depuis n'importe quel écran d'accès. */
+export interface ServerSwitch {
+  label: string;
+  onChange: () => void;
+}
+
+export function AccessScreen({ title, wide, children, footer, server }: { title: string; wide?: boolean; children: ReactNode; footer: ReactNode; server?: ServerSwitch }) {
   const { t } = useI18n();
   return (
     <div className="login-screen">
@@ -33,6 +39,14 @@ export function AccessScreen({ title, wide, children, footer }: { title: string;
         <span>
           {t('status.version')} {APP_VERSION}
         </span>
+        {server && (
+          <span>
+            {t('server.label')} : {server.label}{' '}
+            <button type="button" className="link" onClick={server.onChange}>
+              {t('server.change')}
+            </button>
+          </span>
+        )}
         <span className="push">
           <Preferences />
         </span>
@@ -41,7 +55,7 @@ export function AccessScreen({ title, wide, children, footer }: { title: string;
   );
 }
 
-export function LoginPage({ onSession, onRegister }: { onSession: (s: SessionResponse) => void; onRegister: () => void }) {
+export function LoginPage({ onSession, onRegister, server }: { onSession: (s: SessionResponse) => void; onRegister: () => void; server?: ServerSwitch }) {
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,6 +78,7 @@ export function LoginPage({ onSession, onRegister }: { onSession: (s: SessionRes
   return (
     <form onSubmit={submit}>
       <AccessScreen
+        server={server}
         title={t('auth.login.title')}
         footer={
           <div className="login-foot">
@@ -88,7 +103,7 @@ export function LoginPage({ onSession, onRegister }: { onSession: (s: SessionRes
   );
 }
 
-export function RegisterPage({ onSession, onLogin }: { onSession: (s: SessionResponse) => void; onLogin: () => void }) {
+export function RegisterPage({ onSession, onLogin, server }: { onSession: (s: SessionResponse) => void; onLogin: () => void; server?: ServerSwitch }) {
   const { t } = useI18n();
   const [form, setForm] = useState({
     organizationName: '',
@@ -127,6 +142,7 @@ export function RegisterPage({ onSession, onLogin }: { onSession: (s: SessionRes
     <form onSubmit={submit}>
       <AccessScreen
         wide
+        server={server}
         title={t('auth.register.title')}
         footer={
           <div className="login-foot">

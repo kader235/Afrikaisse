@@ -172,6 +172,19 @@ const fr = {
   'floor.unsaved': 'Modifications non enregistrées',
   'floor.archiveTableConfirm': 'La table disparaîtra du plan. Son libellé pourra être réutilisé.',
   'floor.archiveZoneConfirm': 'La zone disparaîtra du plan. Elle doit être vide.',
+  'server.title': 'Connexion au serveur',
+  'server.intro': 'Choisissez le serveur auquel cette tablette se connecte.',
+  'server.cloud': 'AfriKaisse Cloud',
+  'server.local': 'Serveur local du restaurant',
+  'server.localHint': 'Le PC du restaurant, sur le même Wi-Fi que la tablette.',
+  'server.address': 'Adresse',
+  'server.test': 'Tester la connexion',
+  'server.use': 'Utiliser ce serveur',
+  'server.connected': 'Connecté :',
+  'server.change': 'Changer',
+  'server.label': 'Serveur',
+  'server.unreachableLocal': "Aucun serveur AfriKaisse ne répond à cette adresse. Vérifiez que la tablette est sur le Wi-Fi du restaurant et que le PC est allumé.",
+  'server.unreachableCloud': 'Le Cloud AfriKaisse ne répond pas. Vérifiez la connexion Internet de la tablette.',
 };
 export type MessageKey = keyof typeof fr;
 type Dictionary = Partial<Record<MessageKey, string>>;

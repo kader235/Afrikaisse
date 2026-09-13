@@ -49,6 +49,28 @@ npm run verify        # types + tests + bundle API + build web
 | Profil local | Établissement en mode serveur local, impossible de le repasser en Cloud |
 | Migration | `0002_floor` appliquée sur une base de la phase 1 déjà remplie (base de démonstration de l'interface) |
 
+## Vérification de l'application tablette (phase 2 bis)
+
+Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas
+des tablettes jamais mises à jour), affichage forcé en tablette paysage (`wm size 1280x800`,
+`wm density 160`), API de démonstration sur le poste joint par `http://10.0.2.2:3000`.
+Gestes par **vrais touchers** (`adb shell input tap/text`), lectures par le protocole de débogage de
+la WebView.
+
+| Vérifié | Résultat |
+|---|---|
+| Démarrage sur WebView 83 | Écrans affichés, pas de page blanche ; mode natif détecté |
+| Connexion au serveur local | Test `/api/health` par HTTP natif, choix enregistré, écran de connexion avec « Serveur : 10.0.2.2:3000 » |
+| HTTP vers Internet | `http://example.com` refusé avant tout appel (HTTPS exigé hors réseau local) |
+| Cloud injoignable | Message clair après le délai, choix précédent inchangé |
+| Connexion et plan de salle | Compte de démonstration connecté, plan avec ses 5 tables |
+| Session | Conservée après arrêt complet de l'application (jeton relu dans le Keystore) |
+| Tactile | **Défaut trouvé et corrigé** : la WebView 83 ne déclarait pas `pointer: coarse`, les commandes restaient à 30 px. Mode tactile imposé dans l'application : boutons 44 px, onglets 52 px, onglets de zone 48 px, tables 78 px, sans débordement |
+| Barres système | Bande sous la barre d'état et barres au bleu AfriKaisse (plus de bande blanche) |
+
+Règle de pilotage à retenir : le clavier virtuel remonte les fenêtres. Fermer le clavier et relire les
+positions avant chaque toucher, sinon le geste tombe sur une touche du clavier.
+
 ## Scénario du §76 — plan
 
 | Étape | Phase qui la rend testable |

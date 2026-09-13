@@ -13,8 +13,9 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 |---|---|---|
 | Architecture | Analyse, incohérences, contraintes o2switch, stack, schéma, flux, dépôt | ✅ `docs/` |
 | 1 | Authentification, multi-tenant, RBAC, audit, back-office, invariants hors ligne | ✅ |
-| 2 | Établissements (mode Cloud / serveur local), zones, tables, plan de salle au doigt | ✅ 57 tests sur SQLite **et** PostgreSQL |
-| 2 bis | Application tablette Android (Capacitor) | À venir |
+| 2 | Établissements (mode Cloud / serveur local), zones, tables, plan de salle au doigt | ✅ |
+| 2 bis | Application tablette Android : Cloud ou serveur local, session dans le Keystore, mode tactile imposé | ✅ vérifiée sur WebView Chrome 83 ; 59 tests sur SQLite **et** PostgreSQL |
+| 3 | Menu, produits, catégories, modificateurs, QR des tables | À venir |
 
 ## Démarrer
 

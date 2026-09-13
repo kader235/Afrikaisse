@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AfriKaisse</string>
+    <string name="title_activity_main">AfriKaisse</string>
+    <string name="package_name">com.afrikaisse.tablette</string>
+    <string name="custom_url_scheme">com.afrikaisse.tablette</string>
+</resources>

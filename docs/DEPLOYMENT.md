@@ -88,6 +88,24 @@ o2switch. Script livré avec la phase 18. Tester la restauration au moins une fo
 
 Voir LOCAL.md. Installateur Inno Setup en phases 11 et 16.
 
+## 5. Application tablette Android
+
+Prérequis sur le poste de build : SDK Android (`%LOCALAPPDATA%\Android\Sdk`), **JDK 21**
+(Capacitor 8 ; le JDK d'Android Studio convient et le script le trouve seul), Python + Pillow pour
+régénérer les icônes.
+
+```bash
+node apps/tablet/scripts/apk.mjs
+```
+
+Le script construit le web, copie les écrans dans le projet Android (`cap sync`), lance Gradle et
+dépose `apps/tablet/dist/AfriKaisse-tablette-debug.apk`. `VITE_AFK_CLOUD_URL` change l'adresse
+du Cloud proposée par défaut.
+
+C'est un APK **de test** (signé avec la clé de débogage). La version distribuée aux restaurants
+exigera une clé de signature de publication, conservée hors du dépôt : à créer au moment de la
+diffusion.
+
 ## Limites d'un mutualisé
 
 Suffisant pour les premiers dizaines de restaurants. L'architecture n'a **aucune dépendance propre à

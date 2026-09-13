@@ -8,10 +8,14 @@ import { AccountPage, AuditPage, OrganizationPage, PlatformPage } from './pages/
 import { TeamPage } from './pages/Team.tsx';
 import { FloorPage } from './pages/Floor.tsx';
 import { LocationsPage } from './pages/Locations.tsx';
+import { ServerPage } from './pages/Server.tsx';
+import { isNativeApp, readServer, saveServer } from './platform.ts';
+import type { ServerSwitch } from './pages/Auth.tsx';
 import { APP_VERSION, Brand, ErrorMessage, Icon, Preferences, usePreferences, type IconName } from './ui.tsx';
 
 type State =
   | { kind: 'loading' }
+  | { kind: 'server' }
   | { kind: 'offline' }
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
@@ -23,6 +27,11 @@ export function App() {
   const [state, setState] = useState<State>({ kind: 'loading' });
 
   const boot = () => {
+    // Tablette sans serveur choisi : on ne peut rien appeler avant de savoir où.
+    if (isNativeApp() && !readServer()) {
+      setState({ kind: 'server' });
+      return;
+    }
     setState({ kind: 'loading' });
     refreshSession().then(
       (s) => setState(s ? { kind: 'session', me: s.me } : { kind: 'anonymous', screen: 'login' }),
@@ -44,26 +53,44 @@ export function App() {
     }
   };
 
+  const server: ServerSwitch | undefined = isNativeApp()
+    ? { label: (readServer()?.url ?? '').replace(/^https?:\/\//, ''), onChange: () => setState({ kind: 'server' }) }
+    : undefined;
+
   switch (state.kind) {
     case 'loading':
       return null;
+    case 'server':
+      return (
+        <ServerPage
+          current={readServer()}
+          onSaved={(choice) => {
+            const changed = readServer()?.url !== choice.url;
+            saveServer(choice);
+            // Un jeton émis par un autre serveur n'y vaut rien : on repart de zéro.
+            if (changed) setSession(null);
+            boot();
+          }}
+        />
+      );
     case 'offline':
-      return <Offline onRetry={boot} />;
+      return <Offline onRetry={boot} server={server} />;
     case 'anonymous':
       return state.screen === 'login' ? (
-        <LoginPage onSession={onSession} onRegister={() => setState({ kind: 'anonymous', screen: 'register' })} />
+        <LoginPage server={server} onSession={onSession} onRegister={() => setState({ kind: 'anonymous', screen: 'register' })} />
       ) : (
-        <RegisterPage onSession={onSession} onLogin={() => setState({ kind: 'anonymous', screen: 'login' })} />
+        <RegisterPage server={server} onSession={onSession} onLogin={() => setState({ kind: 'anonymous', screen: 'login' })} />
       );
     case 'session':
       return <Shell me={state.me} onMe={(me) => setState({ kind: 'session', me })} onSession={onSession} onLogout={logout} />;
   }
 }
 
-function Offline({ onRetry }: { onRetry: () => void }) {
+function Offline({ onRetry, server }: { onRetry: () => void; server?: ServerSwitch }) {
   const { t } = useI18n();
   return (
     <AccessScreen
+      server={server}
       title={t('offline.title')}
       footer={
         <button className="btn btn-primary" onClick={onRetry}>
