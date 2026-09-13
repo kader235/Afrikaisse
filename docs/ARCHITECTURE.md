@@ -246,7 +246,8 @@ L'ordre du §83 est conservé. Les ajustements :
 | Phase | Ajout ou précision |
 |---|---|
 | 1 | ✅ Livrée : architecture, auth, multi-tenant, RBAC, audit, **invariants hors ligne** (I-2) |
-| 2 | Établissements (CRUD, mode CLOUD/HYBRID), zones, tables, plan de salle |
+| 2 | Établissements (CRUD, mode CLOUD/HYBRID), zones, tables, plan de salle (édition au doigt sur tablette) |
+| **2 bis** | **Application tablette Android** (ADR-011) : coque Capacitor, APK, connexion au Cloud ou au serveur local, écrans existants au doigt, test sur tablette réelle et sur émulateur à WebView ancienne (Chrome 83) |
 | 5 | Journée d'exploitation, numérotation par autorité opérationnelle, historique de statut |
 | 6 | **Sessions de caisse** (fond, écart, rapport X/Z), annulations comme événements |
 | 11 | Service Windows, appairage par QR, choix de port dynamique (déjà amorcé) |
@@ -267,3 +268,4 @@ L'ordre du §83 est conservé. Les ajustements :
 | 008 | Rôles fixes, matrice de permissions dans le code (versionnée, testée, identique hors ligne) |
 | 009 | Le Cloud n'appelle jamais le réseau du restaurant |
 | 010 | Temps réel sans WebSocket : SSE / polling ; temps réel critique sur le LAN |
+| 011 | **Tablette d'abord** (demande GLOBALTECH, 13/09/2026). L'appareil de référence de toutes les interfaces du personnel est la **tablette Android 10"**, au doigt, en paysage (1280×800) **et** en portrait (800×1280). Cibles tactiles ≥ 44 px, champs ≥ 16 px (pas de zoom au clavier), aucune action accessible seulement par survol, clic droit ou double-clic, vérification aux deux orientations à chaque phase. L'**application tablette** (Capacitor + appairage au serveur local) est avancée en **phase 2 bis**, avant le POS. POS, écran serveur et KDS sont conçus pour la tablette d'abord, le PC ensuite. |

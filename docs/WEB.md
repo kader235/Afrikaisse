@@ -25,6 +25,20 @@ d'organisation, l'organisation, l'équipe, le journal d'audit, le compte et le b
 - **Compatibilité** : build `es2019`, CSS `chrome80`. Pas de `gap` sur flexbox (absent de Chrome 83 :
   on utilise la grille), pas de `:where`, pas de `dvh`.
 
+## Tablette d'abord (ADR-011)
+
+L'appareil de référence du personnel est la **tablette Android 10"** (1280×800 paysage, 800×1280
+portrait), utilisée au doigt. Le PC vient ensuite.
+
+| Règle | Mise en œuvre (`styles.css`, section « Tablette d'abord ») |
+|---|---|
+| Cibles tactiles ≥ 44 px | `@media (pointer: coarse)` : boutons et champs de 44 px, onglets de 52 px, lignes de table de 52 px |
+| Pas de zoom au focus | Champs en 16 px sur écran tactile |
+| Aucun geste caché | Sélection d'une ligne au toucher, puis bouton de la barre d'outils. Le double-clic n'est qu'un raccourci souris. Pas de survol ni de clic droit obligatoire. |
+| Réactivité | `touch-action: manipulation` (pas de délai de 300 ms), pas de surlignage gris au toucher, texte non sélectionnable dans les barres et les tables |
+| Portrait | Sous 900 px : établissement masqué dans la barre d'application, nom d'utilisateur tronqué, marges réduites |
+| Vérification | Chaque écran est contrôlé en 1280×800 **et** 800×1280 avant livraison |
+
 ## Identité visuelle — style « logiciel de gestion »
 
 Direction validée par GLOBALTECH (13/09/2026) : **l'esprit WebDev/WinDev, modernisé et soigné**,

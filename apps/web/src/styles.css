@@ -724,3 +724,137 @@ table.grid td.empty {
 .choice-list button + button {
   margin: 6px 0 0;
 }
+
+/* --- Tablette d'abord (ADR-011) -----------------------------------------
+ * Appareil de référence : tablette Android 10" (1280×800 paysage, 800×1280
+ * portrait), au doigt. Aucune action ne dépend du survol ni du double-clic :
+ * sélection d'une ligne au toucher, puis bouton de la barre d'outils. */
+.btn,
+.menubar button,
+.dialog-title button,
+table.grid tr.selectable {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toolbar,
+.menubar,
+.statusbar,
+table.grid {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (pointer: coarse) {
+  body {
+    font-size: 15px;
+  }
+
+  .btn {
+    height: 44px;
+    padding: 0 16px;
+  }
+
+  /* 16 px minimum : sinon Android et iOS zooment au focus du champ. */
+  input,
+  select {
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .ico {
+    width: 18px;
+    height: 18px;
+  }
+
+  .appbar {
+    height: 54px;
+  }
+
+  .appbar .btn,
+  .appbar .org select {
+    height: 40px;
+  }
+
+  .menubar button {
+    height: 52px;
+    padding: 0 20px;
+  }
+
+  .toolbar {
+    padding: 8px;
+  }
+
+  .btn + .btn {
+    margin-inline-start: 8px;
+  }
+
+  table.grid th {
+    height: 40px;
+  }
+
+  table.grid td {
+    height: 52px;
+  }
+
+  .dialog-title {
+    height: 50px;
+  }
+
+  .dialog-title button {
+    width: 50px;
+    height: 46px;
+    font-size: 18px;
+  }
+
+  .dialog-foot {
+    padding: 12px;
+  }
+
+  .statusbar {
+    min-height: 44px;
+  }
+
+  .statusbar select {
+    height: 36px;
+    font-size: 15px;
+  }
+
+  .choice-list button {
+    height: 54px;
+  }
+
+  .link {
+    display: inline-block;
+    padding: 10px 0;
+  }
+}
+
+@media (pointer: coarse) and (min-width: 601px) {
+  .form {
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: 10px 14px;
+  }
+}
+
+/* Tablette en portrait : on garde l'essentiel dans la barre d'application. */
+@media (max-width: 900px) {
+  .appbar {
+    gap: 10px;
+  }
+
+  .appbar .org .sep,
+  .appbar .org .sep + span {
+    display: none;
+  }
+
+  .appbar .user span {
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .workspace {
+    padding: 10px;
+  }
+}

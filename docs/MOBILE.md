@@ -1,4 +1,12 @@
-# AfriKaisse — Application mobile (phase 15)
+# AfriKaisse — Application tablette et mobile
+
+> **Priorité : la tablette** (ADR-011, 13/09/2026). La coque Android pour tablette est avancée en
+> **phase 2 bis**, juste après les établissements et les tables, avant le POS. Le téléphone
+> (serveur, manager) suit avec le même projet. La phase 15 ne garde que les compléments : push
+> fermé, Bluetooth, iOS.
+>
+> Tablette de référence : Android 10", 1280×800, **Android 11 et WebView jamais mise à jour
+> possibles**. À tester sur une vraie tablette et sur un émulateur API 30.
 
 ## Choix : Capacitor (ADR-006)
 
