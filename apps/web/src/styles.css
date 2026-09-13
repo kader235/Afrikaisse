@@ -828,6 +828,11 @@ table.grid {
     display: inline-block;
     padding: 10px 0;
   }
+
+  .subtabs button {
+    height: 48px;
+    padding: 0 20px;
+  }
 }
 
 @media (pointer: coarse) and (min-width: 601px) {
@@ -857,4 +862,201 @@ table.grid {
   .workspace {
     padding: 10px;
   }
+}
+
+/* --- Barre d'outils : sélecteurs et cases à cocher ----------------------- */
+.toolbar select {
+  width: auto;
+  max-width: 240px;
+  margin-inline-end: 8px;
+  vertical-align: middle;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 6px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  margin-inline-end: 6px;
+}
+
+/* --- Plan de salle ------------------------------------------------------ */
+.subtabs {
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.subtabs button {
+  height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+.subtabs button[aria-current='page'] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.subtabs button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.floor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+}
+
+.floor-plan {
+  min-width: 0;
+  padding: 12px;
+}
+
+.floor-plan > .msg {
+  margin-bottom: 10px;
+}
+
+.floor-side {
+  padding: 12px;
+  border-inline-start: 1px solid var(--line);
+  background: var(--band);
+}
+
+.floor-side > * + * {
+  margin-top: 12px;
+}
+
+@media (max-width: 1000px) {
+  .floor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .floor-side {
+    border-inline-start: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+.plan-wrap {
+  width: 100%;
+  overflow: auto;
+}
+
+/* Un plan est physique : il ne se retourne pas en arabe. */
+.plan {
+  position: relative;
+  direction: ltr;
+  background-color: var(--window);
+  border: 1px solid var(--border-strong);
+}
+
+.plan.editing {
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px), linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+}
+
+.plan-table {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--band);
+  color: var(--text);
+  font-family: inherit;
+  line-height: 1.15;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.plan-table.shape-round {
+  border-radius: 50%;
+}
+
+.plan-table span {
+  font-size: 0.8em;
+  color: var(--muted);
+}
+
+.plan-table[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--select);
+  box-shadow: 0 0 0 2px var(--select-border);
+}
+
+.plan-table.conflict {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.plan.editing .plan-table {
+  cursor: move;
+  touch-action: none;
+}
+
+.empty-state {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--text-soft);
+}
+
+.empty-state .btn {
+  margin-top: 14px;
+}
+
+dl.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 0;
+}
+
+dl.facts dt {
+  color: var(--muted);
+}
+
+dl.facts dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.nudge {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-auto-rows: 52px;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.nudge .btn,
+.nudge .btn + .btn {
+  margin: 0;
+  height: 52px;
+  padding: 0;
+  justify-content: center;
+}
+
+.nudge .btn .ico {
+  margin: 0;
+  width: 20px;
+  height: 20px;
 }

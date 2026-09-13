@@ -33,6 +33,18 @@ export function uniqueEmail(label: string) {
 
 export const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
 
+/** Client HTTP authentifié : `as(t, token).post('/api/…', corps)`. */
+export function as(t: TestApp, token: string) {
+  const send = (method: 'GET' | 'POST' | 'PATCH' | 'PUT', url: string, payload?: unknown) =>
+    t.app.inject({ method, url, headers: bearer(token), ...(payload !== undefined && { payload: payload as object }) });
+  return {
+    get: (url: string) => send('GET', url),
+    post: (url: string, payload: unknown = {}) => send('POST', url, payload),
+    patch: (url: string, payload: unknown) => send('PATCH', url, payload),
+    put: (url: string, payload: unknown) => send('PUT', url, payload),
+  };
+}
+
 export async function registerOrg(t: TestApp, label: string) {
   const email = uniqueEmail(`owner-${label}`);
   const res = await t.app.inject({

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import type { AuditEntry, Me, PlatformTenant } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
-import { AUDIT_ACTION_LABELS, LOCATION_TYPE_LABELS, formatDateTime } from '../labels.ts';
+import { AUDIT_ACTION_LABELS, formatDateTime } from '../labels.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
 
 interface TenantDetails {
@@ -56,40 +56,8 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
           <input readOnly value={tenant ? (tenant.status === 'ACTIVE' ? t('platform.active') : t('platform.suspended')) : ''} />
           <label>{t('org.createdAt')}</label>
           <input readOnly value={tenant ? formatDateTime(tenant.createdAt, locale) : ''} />
-        </div>
-      </Window>
-
-      <Window title={t('org.locations')} count={tenant ? String(tenant.locations.length) : undefined} bodyless>
-        <div className="grid-wrap">
-          <table className="grid">
-            <thead>
-              <tr>
-                <th>{t('team.name')}</th>
-                <th>{t('auth.locationType')}</th>
-                <th>{t('auth.country')}</th>
-                <th>{t('auth.currency')}</th>
-                <th>{t('org.timezone')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!tenant && (
-                <tr>
-                  <td className="empty" colSpan={5}>
-                    {t('common.loading')}
-                  </td>
-                </tr>
-              )}
-              {tenant?.locations.map((l) => (
-                <tr key={l.id}>
-                  <td>{l.name}</td>
-                  <td>{LOCATION_TYPE_LABELS[l.type]}</td>
-                  <td>{l.country}</td>
-                  <td>{l.currency}</td>
-                  <td>{l.timezone}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <label>{t('org.locations')}</label>
+          <input readOnly value={tenant ? String(tenant.locations.length) : ''} />
         </div>
       </Window>
 

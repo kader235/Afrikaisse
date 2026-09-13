@@ -19,6 +19,7 @@ import type { AppConfig } from './config.ts';
 import type { AppContext } from './context.ts';
 import { initNode } from './lib/node.ts';
 import { authRoutes } from './routes/auth.ts';
+import { floorRoutes } from './routes/floor.ts';
 import { teamRoutes } from './routes/team.ts';
 import { platformRoutes, tenantRoutes } from './routes/tenant.ts';
 
@@ -123,6 +124,7 @@ export async function buildApp(opts: BuildOptions) {
   await app.register(authRoutes(ctx), { prefix: '/api/auth' });
   await app.register(teamRoutes(ctx), { prefix: '/api/team' });
   await app.register(tenantRoutes(ctx), { prefix: '/api' });
+  await app.register(floorRoutes(ctx), { prefix: '/api' });
   if (config.profile === 'cloud') {
     await app.register(platformRoutes(ctx), { prefix: '/api/platform' });
   }

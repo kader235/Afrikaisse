@@ -34,6 +34,21 @@ npm run verify        # types + tests + bundle API + build web
 | Profil local | Configuration unique, pas de back-office, événements en attente d'envoi |
 | OpenAPI | Routes publiées |
 
+## Couverture de la phase 2 (20 tests de plus, 57 au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Géométrie (cœur) | Chevauchement et sortie de plan (deux tables qui se touchent ne se chevauchent pas) ; place libre avec allée puis sans allée ; plan plein ; fuseau horaire inconnu |
+| Établissements | Premier établissement en mode Cloud ; création avec adresse vide → null ; fuseau invalide refusé ; PATCH sans écraser les champs absents ; audit |
+| Archivage | Dernier établissement protégé ; établissement avec des membres qui n'ont que lui protégé ; liste avec et sans archivés ; réactivation |
+| Portée | Un administrateur rattaché à un établissement ne voit et ne modifie que le sien (404 ailleurs, 403 à la création) |
+| Tables | Placement automatique de 7 tables sans chevauchement ; table rectangulaire 4 × 2 ; libellé unique sans tenir compte de la casse ni des espaces ; emplacement occupé ou hors plan refusé ; 7 événements de synchronisation |
+| Disposition | Plan invalide refusé en bloc (rien ne bouge) avec les libellés en conflit ; plan valide enregistré, pivot compris ; audit |
+| Zones | Réduction refusée si une table sortirait (libellés renvoyés) ; archivage d'une zone non vide refusé ; libellé d'une table archivée réutilisable ; déplacement vers une autre zone avec une place trouvée |
+| Droits | Serveur : lecture seule ; cuisine : pas d'accès au plan ; autre organisation : 404 partout |
+| Profil local | Établissement en mode serveur local, impossible de le repasser en Cloud |
+| Migration | `0002_floor` appliquée sur une base de la phase 1 déjà remplie (base de démonstration de l'interface) |
+
 ## Scénario du §76 — plan
 
 | Étape | Phase qui la rend testable |

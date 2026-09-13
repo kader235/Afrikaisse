@@ -36,6 +36,16 @@ const ICONS = {
   user: 'M8 7.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2.5 14.5c.4-3 2.6-4.5 5.5-4.5s5.1 1.5 5.5 4.5',
   server: 'M2.5 2.5h11v4.5h-11zM2.5 9h11v4.5h-11zM5 4.75h.01M5 11.25h.01',
   logout: 'M6 2.5H3v11h3M10 5l3 3-3 3M13 8H6',
+  store: 'M2 6l1.5-4h9L14 6M2 6h12M2.5 6v8h11V6M6.5 14v-4h3v4',
+  layout: 'M2 2h12v12H2zM2 6.5h12M6.5 6.5V14',
+  archive: 'M2 3h12v3H2zM3 6v7.5h10V6M6.5 9h3',
+  move: 'M8 1.5v13M1.5 8h13M6 3.5l2-2 2 2M6 12.5l2 2 2-2M3.5 6l-2 2 2 2M12.5 6l2 2-2 2',
+  rotate: 'M13 8a5 5 0 1 1-1.5-3.55M13 2.5v3h-3',
+  save: 'M3 2h8l2 2v10H3zM5 2v4h5V2M5 14V9.5h6V14',
+  up: 'M8 13V3M4 7l4-4 4 4',
+  down: 'M8 3v10M4 9l4 4 4-4',
+  left: 'M13 8H3M7 4L3 8l4 4',
+  right: 'M3 8h10M9 4l4 4-4 4',
 } as const;
 export type IconName = keyof typeof ICONS;
 
@@ -50,21 +60,33 @@ export function Icon({ name }: { name: IconName }) {
 export function ErrorMessage({ error }: { error: unknown }) {
   if (!error) return null;
   const message = error instanceof ApiError ? error.message : 'Une erreur inattendue est survenue.';
-  const details = error instanceof ApiError && Array.isArray(error.details) ? (error.details as { path: string; message: string }[]) : [];
+  const lines = error instanceof ApiError ? detailLines(error.details) : [];
   return (
     <div className="msg msg-error" role="alert">
       <strong>Erreur :</strong> {message}
-      {details.length > 0 && (
+      {lines.length > 0 && (
         <ul>
-          {details.map((d) => (
-            <li key={d.path + d.message}>
-              {d.path.replace(/^\//, '') || 'formulaire'} : {d.message}
-            </li>
+          {lines.map((line) => (
+            <li key={line}>{line}</li>
           ))}
         </ul>
       )}
     </div>
   );
+}
+
+/** Détails lisibles : champs invalides, tables en conflit sur le plan… */
+function detailLines(details: unknown): string[] {
+  if (Array.isArray(details)) {
+    return (details as { path: string; message: string }[]).map((d) => `${d.path.replace(/^\//, '') || 'formulaire'} : ${d.message}`);
+  }
+  if (!details || typeof details !== 'object') return [];
+  const d = details as { tables?: string[]; overlaps?: [string, string][]; outOfBounds?: string[] };
+  return [
+    ...(d.tables?.length ? [`Tables concernées : ${d.tables.join(', ')}`] : []),
+    ...(d.overlaps ?? []).map(([a, b]) => `${a} et ${b} se chevauchent`),
+    ...(d.outOfBounds ?? []).map((label) => `${label} sort du plan`),
+  ];
 }
 
 export function OkMessage({ children }: { children: ReactNode }) {

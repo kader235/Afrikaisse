@@ -65,6 +65,29 @@ Les interfaces s'appuient sur `permissions`. Le serveur revérifie toujours.
 | GET | `/api/platform/tenants` | SUPER_ADMIN | Organisations clientes (**404** pour les autres) |
 | POST | `/api/platform/tenants/{id}/suspend` · `/reactivate` | SUPER_ADMIN | Suspension effective immédiatement |
 
+## Routes de la phase 2 — établissements et plan de salle
+
+Un membre rattaché à un seul établissement ne voit que celui-là (les autres répondent 404).
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations?includeArchived=` | `location.read` | Établissements visibles |
+| POST | `/api/locations` | `location.manage` | Créer (refusé à un membre rattaché à un établissement) |
+| PATCH | `/api/locations/{id}` | `location.manage` | Modifier, dont le mode `CLOUD`/`HYBRID` (un serveur local ne repasse jamais en Cloud) |
+| POST | `/api/locations/{id}/archive` · `/restore` | `location.manage` | Jamais le dernier actif ; jamais s'il reste des membres rattachés à lui seul |
+| GET | `/api/locations/{id}/floor` | `tables.read` | Zones et tables actives |
+| POST | `/api/locations/{id}/zones` | `tables.manage` | Créer une zone (plan de 24 × 16 cases par défaut) |
+| PATCH | `/api/zones/{id}` | `tables.manage` | Renommer, réordonner, redimensionner (réduction refusée si des tables sortiraient : `details.tables`) |
+| POST | `/api/zones/{id}/archive` | `tables.manage` | Seulement une zone vide |
+| PUT | `/api/zones/{id}/layout` | `tables.manage` | Disposition **tout ou rien** ; conflit → 409 avec `details.overlaps` et `details.outOfBounds` (libellés) |
+| POST | `/api/zones/{id}/tables` | `tables.manage` | Ajouter ; sans `x`/`y`, placée à la première place libre avec une allée |
+| PATCH | `/api/tables/{id}` | `tables.manage` | Libellé, places, forme, changement de zone (place libre trouvée) |
+| POST | `/api/tables/{id}/archive` | `tables.manage` | Archiver (le libellé redevient disponible) |
+
+Le plan est une **grille de cases entières** : `x`, `y` (coin haut-gauche), `w`, `h`. Deux tables qui
+se touchent ne se chevauchent pas. Les règles (`findLayoutIssues`, `findFreeSpot`) sont dans
+`packages/core/src/floor.ts`, partagées par le serveur et la tablette.
+
 ## Temps réel (phases 5-8)
 
 - **Serveur local** : `GET /api/stream` en **SSE** (KDS, serveurs, POS), avec reprise par
@@ -74,7 +97,7 @@ Les interfaces s'appuient sur `permissions`. Le serveur revérifie toujours.
 
 ## Groupes de routes à venir
 
-`/api/locations` · `/api/zones` · `/api/tables` · `/api/menu` · `/api/categories` · `/api/products` ·
+`/api/menu` · `/api/categories` · `/api/products` ·
 `/api/modifiers` · `/api/qr/{token}` (public) · `/api/orders` · `/api/kitchen` · `/api/stations` ·
 `/api/payments` · `/api/cash-sessions` · `/api/inventory` · `/api/reports` · `/api/sync` ·
 `/api/devices` · `/api/stream`.

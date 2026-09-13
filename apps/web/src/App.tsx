@@ -6,6 +6,8 @@ import { ROLE_LABELS } from './labels.ts';
 import { AccessScreen, LoginPage, RegisterPage } from './pages/Auth.tsx';
 import { AccountPage, AuditPage, OrganizationPage, PlatformPage } from './pages/Other.tsx';
 import { TeamPage } from './pages/Team.tsx';
+import { FloorPage } from './pages/Floor.tsx';
+import { LocationsPage } from './pages/Locations.tsx';
 import { APP_VERSION, Brand, ErrorMessage, Icon, Preferences, usePreferences, type IconName } from './ui.tsx';
 
 type State =
@@ -14,7 +16,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'organization' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'organization' | 'locations' | 'floor' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -109,13 +111,16 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
 
   const sections: { id: Section; label: string; icon: IconName; visible: boolean }[] = [
     { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
+    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read') },
+    { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
     { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read') },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read') },
     { id: 'account', label: t('nav.account'), icon: 'user', visible: true },
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin },
   ];
   const visible = sections.filter((s) => s.visible);
-  const [section, setSection] = useState<Section>(visible[0]!.id);
+  // Le personnel de salle ouvre directement le plan ; la direction, l'organisation.
+  const [section, setSection] = useState<Section>(() => (can('tables.read') && !can('tenant.update') ? 'floor' : visible[0]!.id));
   const current = visible.some((s) => s.id === section) ? section : visible[0]!.id;
 
   async function switchTo(tenantId: string) {
@@ -205,6 +210,8 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
       <main className="workspace">
         {!!error && <ErrorMessage error={error} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
+        {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
+        {current === 'floor' && <FloorPage me={me} />}
         {current === 'team' && <TeamPage me={me} />}
         {current === 'audit' && <AuditPage />}
         {current === 'account' && <AccountPage me={me} />}

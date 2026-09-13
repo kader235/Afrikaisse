@@ -1,4 +1,4 @@
-import type { LocationType, Role } from '@afrikaisse/core';
+import type { LocationType, OperatingMode, Role, TableShape } from '@afrikaisse/core';
 import type { Language } from './i18n.tsx';
 
 export const ROLE_LABELS: Record<Language, Record<Role, string>> = {
@@ -83,7 +83,39 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'team.password_reset': 'Mot de passe redéfini',
   'platform.tenant_suspended': 'Organisation suspendue par AfriKaisse',
   'platform.tenant_reactivated': 'Organisation réactivée par AfriKaisse',
+  'location.created': 'Établissement créé',
+  'location.updated': 'Établissement modifié',
+  'location.mode_changed': "Mode d'exploitation changé",
+  'location.archived': 'Établissement archivé',
+  'location.restored': 'Établissement réactivé',
+  'floor.zone_created': 'Zone créée',
+  'floor.zone_updated': 'Zone modifiée',
+  'floor.zone_archived': 'Zone archivée',
+  'floor.table_created': 'Table ajoutée',
+  'floor.table_updated': 'Table modifiée',
+  'floor.table_archived': 'Table archivée',
+  'floor.layout_saved': 'Plan de salle enregistré',
 };
+
+export const OPERATING_MODE_LABELS: Record<OperatingMode, string> = {
+  CLOUD: 'Cloud (sans serveur local)',
+  HYBRID: 'Serveur local (continue sans Internet)',
+};
+
+export const SHAPE_LABELS: Record<TableShape, string> = {
+  SQUARE: 'Carrée',
+  ROUND: 'Ronde',
+  RECT: 'Rectangulaire',
+};
+
+export const TIMEZONES: string[] = [...new Set(COUNTRIES.map((c) => c.timezone as string))];
+
+/** 00:00 à 12:00 par demi-heure : heure de bascule de la journée d'exploitation. */
+export const CUTOFF_OPTIONS = Array.from({ length: 25 }, (_, i) => i * 30);
+
+export function formatMinutes(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+}
 
 export function formatDateTime(ms: number, locale: string): string {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(ms));

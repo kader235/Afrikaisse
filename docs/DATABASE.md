@@ -54,6 +54,19 @@ Adaptations du §56, justifiées dans ARCHITECTURE.md :
   ligne). Si des rôles personnalisés sont demandés, ajouter `custom_roles` ;
 - `restaurant_users` → `memberships`.
 
+## Tables livrées en phase 2 (migration `0002_floor`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `locations` (+) | Ajouts | **operating_mode** `CLOUD/HYBRID` (autorité opérationnelle, ADR-004), address, phone |
+| `zones` | Zone d'un établissement (salle, terrasse, VIP) | location_id, name, sort, **plan_width**, **plan_height** (en cases), status |
+| `dining_tables` | Table du plan (« tables » du cahier des charges, renommée pour ne pas se confondre avec les tables SQL) | location_id, zone_id, label, **label_key** (minuscules), capacity, shape `SQUARE/ROUND/RECT`, **x, y, w, h** (cases), status |
+
+- Unicité du libellé par établissement **parmi les tables actives** : index unique partiel
+  `(location_id, label_key) WHERE status = 'ACTIVE'`, identique en PostgreSQL et SQLite.
+- Rien n'est supprimé : zones et tables s'archivent. Les commandes (phase 5) pourront toujours
+  pointer vers une table archivée.
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.
@@ -63,10 +76,10 @@ Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` 
 - `settings` (location_id, key, value) — réglages par établissement (confirmation des commandes QR, pourboires…)
 - `device_pairings` (location_id, code, expires_at, device_id) — appairage des tablettes par QR
 
-### Salle — phase 2
-- `zones` (location_id, name, sort)
-- `tables` (location_id, zone_id, label, capacity, shape, x, y, width, height, rotation, status)
-- `qr_codes` (table_id, token unique, revoked_at) — jeton non devinable ; régénérable si une photo circule
+### Salle — phase 2 (livrée) et QR — phase 3
+- `zones` (location_id, name, sort, plan_width, plan_height, status) — livrée
+- `dining_tables` (location_id, zone_id, label, label_key, capacity, shape, x, y, w, h, status) — livrée ; pivoter = échanger w et h
+- `qr_codes` (table_id, token unique, revoked_at) — phase 3 : jeton non devinable, régénérable si une photo circule
 
 ### Menu — phase 3
 - `menu_categories` (location_id, name, sort, is_active, available_from/to)

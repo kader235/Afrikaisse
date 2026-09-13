@@ -2,6 +2,7 @@ import { Migrator, type Migration } from 'kysely';
 import type { AppDatabase } from './dialects.ts';
 import { columnKit } from './columns.ts';
 import { foundation } from './migrations/0001_foundation.ts';
+import { floor } from './migrations/0002_floor.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -12,6 +13,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
   const c = columnKit(app.kind);
   return {
     '0001_foundation': foundation(c),
+    '0002_floor': floor(c),
   };
 }
 

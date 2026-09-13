@@ -20,6 +20,37 @@ Adresse e-mail et mot de passe. Après 5 erreurs de suite, la connexion est bloq
 Si vous travaillez pour plusieurs organisations, AfriKaisse vous demande laquelle ouvrir. Vous
 pouvez changer à tout moment depuis le sélecteur sous le nom de l'organisation.
 
+## Les établissements
+
+Menu **Établissements** (propriétaire, administrateur).
+
+- **Nouvel établissement** : nom, type, pays (préremplit fuseau et devise), adresse, téléphone.
+- **Début de journée** : les ventes faites avant cette heure comptent pour la veille. À régler à la
+  fin du service de nuit (05:00 par défaut).
+- **Mode d'exploitation** :
+  - *Cloud* : tout passe par Internet, sans PC sur place ;
+  - *Serveur local* : le PC du restaurant fait tourner AfriKaisse, qui continue sans Internet.
+- **Archiver** : l'établissement disparaît des écrans de travail, son historique est gardé, et on peut
+  le **réactiver**. Impossible pour le dernier établissement actif, ou si des membres ne travaillent
+  que là (réaffectez-les d'abord depuis **Équipe**).
+
+## Le plan de salle
+
+Menu **Plan de salle**. Pensé pour la tablette : tout se fait au doigt.
+
+1. **Nouvelle zone** : Salle, Terrasse, VIP… avec la taille du plan en cases (24 × 16 par défaut ;
+   une table de 2 à 4 personnes occupe 2 × 2 cases).
+2. **Nouvelle table** : libellé (T1, T2… proposé automatiquement), nombre de places, forme. La table
+   se place seule sur la première place libre.
+3. **Disposer** : faites glisser les tables au doigt, ou touchez-en une et poussez-la case par case
+   avec les flèches. **Pivoter** tourne une table rectangulaire. Une table en rouge chevauche une autre
+   table ou sort du plan : **Enregistrer le plan** reste grisé tant qu'il en reste. **Annuler** remet
+   le plan comme avant.
+4. Toucher une table affiche sa fiche (places, forme, position). **Modifier la table** permet aussi
+   de la changer de zone.
+
+Les serveurs et caissiers consultent le plan sans pouvoir le modifier.
+
 ## L'équipe
 
 Menu **Équipe** (propriétaire, administrateur, gérant).

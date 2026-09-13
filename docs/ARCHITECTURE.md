@@ -246,7 +246,7 @@ L'ordre du §83 est conservé. Les ajustements :
 | Phase | Ajout ou précision |
 |---|---|
 | 1 | ✅ Livrée : architecture, auth, multi-tenant, RBAC, audit, **invariants hors ligne** (I-2) |
-| 2 | Établissements (CRUD, mode CLOUD/HYBRID), zones, tables, plan de salle (édition au doigt sur tablette) |
+| 2 | ✅ Livrée : établissements (mode CLOUD/HYBRID, début de journée, archivage protégé), zones, tables, plan de salle en grille de cases, édition au doigt, disposition tout-ou-rien |
 | **2 bis** | **Application tablette Android** (ADR-011) : coque Capacitor, APK, connexion au Cloud ou au serveur local, écrans existants au doigt, test sur tablette réelle et sur émulateur à WebView ancienne (Chrome 83) |
 | 5 | Journée d'exploitation, numérotation par autorité opérationnelle, historique de statut |
 | 6 | **Sessions de caisse** (fond, écart, rapport X/Z), annulations comme événements |

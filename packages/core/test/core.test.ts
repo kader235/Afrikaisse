@@ -4,7 +4,10 @@ import {
   PERMISSIONS,
   ROLE_PERMISSIONS,
   canManageRole,
+  findFreeSpot,
+  findLayoutIssues,
   isUuid,
+  isValidTimezone,
   parseHlc,
   registerSchema,
   roleCan,
@@ -70,6 +73,30 @@ describe('RBAC', () => {
     expect(canManageRole('MANAGER', 'ADMIN')).toBe(false);
     expect(canManageRole('MANAGER', 'CASHIER')).toBe(true);
     expect(canManageRole('CASHIER', 'WAITER')).toBe(false);
+  });
+});
+
+describe('Géométrie du plan de salle', () => {
+  it('détecte chevauchements et sorties de plan (des tables qui se touchent ne se chevauchent pas)', () => {
+    const items = [
+      { id: 'a', x: 0, y: 0, w: 2, h: 2 },
+      { id: 'b', x: 2, y: 0, w: 2, h: 2 },
+      { id: 'c', x: 1, y: 1, w: 2, h: 2 },
+      { id: 'd', x: 9, y: 0, w: 2, h: 2 },
+    ];
+    expect(findLayoutIssues(items, 10, 10)).toEqual({ outOfBounds: ['d'], overlaps: [['a', 'c'], ['b', 'c']] });
+  });
+
+  it('trouve une place libre en laissant une allée, puis sans allée quand il le faut', () => {
+    expect(findFreeSpot([], 2, 2, 10, 10)).toEqual({ x: 0, y: 0 });
+    expect(findFreeSpot([{ x: 0, y: 0, w: 2, h: 2 }], 2, 2, 10, 10)).toEqual({ x: 3, y: 0 });
+    expect(findFreeSpot([{ x: 0, y: 0, w: 2, h: 2 }], 2, 2, 4, 2)).toEqual({ x: 2, y: 0 });
+    expect(findFreeSpot([{ x: 0, y: 0, w: 4, h: 2 }], 2, 2, 4, 2)).toBeNull();
+  });
+
+  it('refuse un fuseau horaire inconnu', () => {
+    expect(isValidTimezone('Africa/Ndjamena')).toBe(true);
+    expect(isValidTimezone('Mars/Olympus')).toBe(false);
   });
 });
 

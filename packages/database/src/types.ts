@@ -1,5 +1,5 @@
 import type { Generated } from 'kysely';
-import type { CurrencyCode, LocationType, Role } from '@afrikaisse/core';
+import type { CurrencyCode, LocationType, OperatingMode, Role, TableShape } from '@afrikaisse/core';
 
 /**
  * Conventions de colonnes, identiques en PostgreSQL (Cloud) et SQLite (local) :
@@ -33,6 +33,46 @@ export interface LocationsTable {
   country: string;
   /** Minutes après minuit où bascule la journée d'exploitation (ex. 300 = 05:00). */
   business_day_cutoff_min: number;
+  /** CLOUD : le Cloud est l'autorité opérationnelle ; HYBRID : le serveur local (ADR-004). */
+  operating_mode: OperatingMode;
+  address: string | null;
+  phone: string | null;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface ZonesTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  sort: number;
+  /** Taille du plan en cases. */
+  plan_width: number;
+  plan_height: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+/** « tables » dans le cahier des charges : renommée pour ne pas se confondre avec les tables SQL. */
+export interface DiningTablesTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  zone_id: string;
+  label: string;
+  /** Libellé normalisé (minuscules) : « T1 » et « t1 » sont la même table. */
+  label_key: string;
+  capacity: number;
+  shape: TableShape;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
   status: 'ACTIVE' | 'ARCHIVED';
   created_at: number;
   updated_at: number;
@@ -150,6 +190,8 @@ export interface SyncEventsTable {
 export interface Database {
   tenants: TenantsTable;
   locations: LocationsTable;
+  zones: ZonesTable;
+  dining_tables: DiningTablesTable;
   users: UsersTable;
   memberships: MembershipsTable;
   auth_sessions: AuthSessionsTable;

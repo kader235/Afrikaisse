@@ -55,6 +55,10 @@ export async function register(ctx: AppContext, input: RegisterInput, meta: Requ
         timezone: input.timezone,
         country: input.country,
         business_day_cutoff_min: 300,
+        // Un serveur local exploite toujours son établissement lui-même.
+        operating_mode: ctx.config.profile === 'local' ? 'HYBRID' : 'CLOUD',
+        address: null,
+        phone: null,
         status: 'ACTIVE',
         ...stamp,
       } as const;

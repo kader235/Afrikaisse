@@ -12,8 +12,9 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | Phase | Contenu | État |
 |---|---|---|
 | Architecture | Analyse, incohérences, contraintes o2switch, stack, schéma, flux, dépôt | ✅ `docs/` |
-| 1 | Authentification, multi-tenant, RBAC, audit, back-office, invariants hors ligne | ✅ 37 tests sur SQLite **et** PostgreSQL |
-| 2 | Établissements, zones, tables, plan de salle | À venir |
+| 1 | Authentification, multi-tenant, RBAC, audit, back-office, invariants hors ligne | ✅ |
+| 2 | Établissements (mode Cloud / serveur local), zones, tables, plan de salle au doigt | ✅ 57 tests sur SQLite **et** PostgreSQL |
+| 2 bis | Application tablette Android (Capacitor) | À venir |
 
 ## Démarrer
 
