@@ -148,6 +148,34 @@ La phase 8 est un écran : elle réutilise les routes des phases 4 à 7. Elle aj
 - « Servie » → T2 repasse en occupée ;
 - T3 libre → « Nouvelle commande » en plein écran « Table T3 », sans encaissement pour ce parcours → envoyée ; T3 devient occupée.
 
+## Phases 11 et 14 (148 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Application web servie par l'API | Page, script d'`assets/` (cache définitif), SVG, menu client `/m/<jeton>` ; écran rechargé → `index.html` ; fichier absent → 404 ; trois tentatives de sortie du dossier (`..%2f`, `%2e%2e`, octet nul) → 404 ; `/api/inconnue` reste une erreur JSON |
+| Santé | Profil local : adresses du réseau ; Cloud : ni adresses ni pages |
+| Rapport de ventes | Sur deux journées : comptoir en espèces, table avec remise de 10 % en mobile money, commande annulée, commande QR en attente, commande du lendemain par carte → chiffre d'affaires 12 800, 3 commandes, ticket moyen 4 266, encaissé 12 800, remises 200, 5 articles, 1 annulée à 1 000 ; détail par jour, mode, origine, service, produits ; journée seule |
+| Droits et période | Début après fin, plus de 366 jours, date mal formée → 400 ; serveur et caissier → 403 ; gérant → rapport vide avec la journée ; autre organisation → 404 |
+
+**Essai du paquet Windows**, sans rien installer : la charge est lancée par son lanceur, avec un
+dossier de données d'essai, sur le poste de développement.
+
+Sur ce poste, 7300, 8300, 9300 et 18300 refusent l'écoute IPv4, et 3000 est occupé par une autre API. L'essai a fait apparaître deux défauts, corrigés :
+1. Windows laissait le serveur écouter 0.0.0.0:3000 alors qu'un autre programme tenait 127.0.0.1:3000 : le lanceur parlait à l'autre programme. Désormais, un port qui répond déjà est sauté, et le lanceur exige le **profil local et l'identifiant du nœud** écrits dans `port.txt`.
+2. Aucun candidat libre sur ce poste : dernier recours, un port attribué par Windows, **retenu** pour les démarrages suivants.
+
+Résultat :
+- port 40535 retenu ;
+- santé « local » avec l'adresse 192.168.100.2:40535 ;
+- application, écran `/caisse`, sonde `afk-ping.svg` et menu client servis ;
+- inscription du restaurant ; seconde inscription refusée (« déjà configuré ») ;
+- relance : « fonctionne déjà » ;
+- arrêt : serveur injoignable ;
+- redémarrage sur le même port.
+
+Installateur `AfriKaisse-Setup-0.1.0.exe` compilé (Inno Setup 6). L'installation réelle
+(administrateur, pare-feu) reste à faire par Kader sur un poste.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

@@ -12,6 +12,7 @@ import { MenuPage } from './pages/Menu.tsx';
 import { OrdersPage } from './pages/Orders.tsx';
 import { PosPage } from './pages/Pos.tsx';
 import { KitchenPage } from './pages/Kitchen.tsx';
+import { ReportsPage } from './pages/Reports.tsx';
 import { useActivityFeed } from './activity.ts';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
@@ -25,7 +26,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'orders' | 'pos' | 'kitchen' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'orders' | 'pos' | 'kitchen' | 'reports' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -112,6 +113,7 @@ interface Health {
   profile: 'cloud' | 'local';
   database: 'postgres' | 'sqlite';
   version: string;
+  lanUrls?: string[];
 }
 
 /** Barre d'état : uniquement des informations réelles, rafraîchies toutes les 30 s. */
@@ -149,6 +151,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'orders', label: t('nav.orders'), icon: 'journal', visible: can('orders.read'), badge: waiting },
     { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect') },
     { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use') },
+    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read') },
     { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
     { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read') },
     { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
@@ -261,6 +264,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'pos' && <PosPage me={me} />}
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
+        {current === 'reports' && <ReportsPage />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
         {current === 'floor' && <FloorPage me={me} feed={feed} />}
@@ -281,6 +285,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
             {health.profile === 'cloud' ? t('status.cloud') : t('status.local')} · {health.database === 'postgres' ? 'PostgreSQL' : 'SQLite'}
           </span>
         )}
+        {health?.profile === 'local' && !!health.lanUrls?.length && <span>Adresse pour les tablettes : {health.lanUrls.map((u) => u.replace(/^http:\/\//, '')).join(' · ')}</span>}
         {me.tenant && <span>{me.tenant.name}</span>}
         <span>
           {t('status.version')} {health?.version ?? APP_VERSION}

@@ -23,11 +23,17 @@
 
 ## Installateur
 
-- `C:\Program Files\AfriKaisse` (programme) et `C:\ProgramData\AfriKaisse` (données, ACL restreintes).
-- Service installé et démarré ; pare-feu ouvert sur le **profil privé** uniquement.
-- Premier lancement : code d'appairage Cloud, ou configuration hors ligne.
+**Livré en phase 11** : `node infrastructure/windows/build.mjs` → `AfriKaisse-Setup-<version>.exe`.
+Détail dans LOCAL.md, « Installation chez le client ».
+
+- `C:\Program Files\AfriKaisse` (programme) et `C:\ProgramData\AfriKaisse` (données).
+- Démarrage du serveur à l'ouverture de session. Pare-feu par programme, limité au sous-réseau local.
+- Premier lancement : configuration hors ligne (« Créer mon restaurant »). L'appairage Cloud viendra avec la synchronisation.
 - Une seule icône « AfriKaisse », aucun script visible.
-- Désinstallation : **les données sont conservées** sauf demande explicite.
+- Désinstallation : **les données sont conservées**.
+
+Restent pour la phase 16 : service Windows, console Electron (zone de notification, état du système,
+appairage par QR), signature du code pour éviter l'avertissement SmartScreen.
 
 ## Pièges connus (Scolaar, PHARMINA)
 

@@ -224,6 +224,33 @@ Menu **Cuisine** : cuisiniers et barmen arrivent directement dessus.
 - Les commandes QR n'arrivent en cuisine qu'une fois **confirmées** par la salle.
 - **Plein écran** masque tout le reste sur une tablette murale.
 
+## Le tableau de bord
+
+Menu **Tableau de bord** (propriétaire, administrateur, gérant).
+- **Période** : Aujourd'hui, Hier, 7 jours, 30 jours, Ce mois, ou deux dates au choix. Les dates sont
+  des **journées d'exploitation** : une vente à 2 h du matin compte pour la veille.
+- **Indicateurs** : chiffre d'affaires, encaissé, commandes, ticket moyen, articles vendus, remises,
+  annulées.
+- **Ventes par jour**, **heures de service** (les heures de pointe), **modes de paiement** avec leur
+  part, **origine** (QR, caisse, serveur) et **type de service**, **produits les plus vendus**.
+- **Exporter (CSV)** depuis un ordinateur : le fichier s'ouvre directement dans Excel.
+
+Le chiffre d'affaires compte les commandes confirmées, payées ou non ; « Encaissé » compte l'argent
+réellement reçu. L'écart entre les deux, ce sont les additions encore ouvertes.
+
+## Installer AfriKaisse sur le PC du restaurant (sans Internet)
+
+1. Lancer **AfriKaisse-Setup.exe** sur le PC du comptoir (Windows 10 ou 11, 64 bits). Si Windows
+   affiche « Windows a protégé votre PC » : **Informations complémentaires**, puis **Exécuter quand même**.
+2. Laisser cochés **Démarrer le serveur AfriKaisse à l'ouverture de session** et l'icône sur le Bureau.
+3. À la fin, AfriKaisse s'ouvre dans le navigateur : **Créer mon restaurant**.
+4. En bas de l'écran, **Adresse pour les tablettes** (par exemple `192.168.1.20:7300`) : la saisir dans
+   l'application tablette, écran « Connexion au serveur », option « Serveur local du restaurant ».
+5. Conseil : demander au fournisseur d'accès de **réserver l'adresse IP** du PC sur la box, pour que
+   l'adresse des tablettes ne change jamais.
+
+Les données restent sur le PC (`C:\ProgramData\AfriKaisse`), même si l'on désinstalle le logiciel.
+
 ## L'équipe
 
 Menu **Équipe** (propriétaire, administrateur, gérant).

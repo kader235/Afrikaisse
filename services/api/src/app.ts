@@ -18,12 +18,14 @@ import type { AppDatabase } from '@afrikaisse/database';
 import type { AppConfig } from './config.ts';
 import type { AppContext } from './context.ts';
 import { initNode } from './lib/node.ts';
+import { lanUrls, registerWebApp } from './lib/web.ts';
 import { authRoutes } from './routes/auth.ts';
 import { floorRoutes } from './routes/floor.ts';
 import { menuRoutes, publicRoutes } from './routes/menu.ts';
 import { orderRoutes, publicOrderRoutes } from './routes/orders.ts';
 import { posRoutes } from './routes/pos.ts';
 import { kitchenRoutes } from './routes/kitchen.ts';
+import { reportRoutes } from './routes/reports.ts';
 import { teamRoutes } from './routes/team.ts';
 import { platformRoutes, tenantRoutes } from './routes/tenant.ts';
 
@@ -113,13 +115,18 @@ export async function buildApp(opts: BuildOptions) {
             database: z.enum(['postgres', 'sqlite']),
             version: z.string(),
             time: z.number(),
+            /** Serveur local : adresses à saisir sur les tablettes et téléphones du restaurant. */
+            lanUrls: z.array(z.string()).optional(),
           }),
         },
       },
     },
     async () => {
       await sql`select 1`.execute(ctx.db);
-      return { status: 'ok' as const, profile: config.profile, nodeId: ctx.nodeId, database: ctx.dbKind, version: API_VERSION, time: ctx.now() };
+      const base = { status: 'ok' as const, profile: config.profile, nodeId: ctx.nodeId, database: ctx.dbKind, version: API_VERSION, time: ctx.now() };
+      if (config.profile !== 'local') return base;
+      const address = app.server.address();
+      return { ...base, lanUrls: lanUrls(address && typeof address === 'object' ? address.port : config.port) };
     },
   );
 
@@ -135,9 +142,11 @@ export async function buildApp(opts: BuildOptions) {
   await app.register(publicOrderRoutes(ctx), { prefix: '/api' });
   await app.register(posRoutes(ctx), { prefix: '/api' });
   await app.register(kitchenRoutes(ctx), { prefix: '/api' });
+  await app.register(reportRoutes(ctx), { prefix: '/api' });
   if (config.profile === 'cloud') {
     await app.register(platformRoutes(ctx), { prefix: '/api/platform' });
   }
+  if (config.webDir) registerWebApp(app, config.webDir);
 
   return { app, ctx };
 }

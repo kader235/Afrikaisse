@@ -185,6 +185,14 @@ son poste (`items[].stationId`) et son avancement (`items[].kdsStatus` : `QUEUED
 `READY`), visibles dans le flux d'activité. Tout nouvel établissement reçoit les postes « Cuisine »
 et « Bar ». Annoncer une commande « prête » depuis l'écran Commandes marque tous ses articles prêts.
 
+## Routes des phases 11 et 14 — serveur local et rapports
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/health` | — | En profil `local`, ajoute `lanUrls` : adresses à saisir sur les tablettes (`http://192.168.1.20:7300`) |
+| GET | `/*` (hors `/api`) | — | Serveur local lancé avec `AFK_WEB_DIR` : application web (`assets/` en cache définitif, pages sans cache), `/m/{jeton}` → menu client, toute autre adresse sans extension → `index.html` ; jamais de fichier hors du dossier |
+| GET | `/api/locations/{id}/reports/sales?from=AAAA-MM-JJ&to=AAAA-MM-JJ` | `reports.read` | Ventes par **journée d'exploitation** (366 jours au plus) : `totals` (chiffre d'affaires, encaissé, commandes, ticket moyen, articles, remises, annulées), `byDay` (tous les jours de la période), `byMethod`, `byHour` (fuseau de l'établissement), `bySource`, `byServiceType`, `topProducts` (15). Chiffre d'affaires = commandes confirmées non annulées ; les commandes QR encore en attente n'y entrent pas |
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

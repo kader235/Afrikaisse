@@ -15,6 +15,8 @@ const envSchema = z.object({
   AFK_TRUST_PROXY: flag.optional(),
   AFK_AUTO_MIGRATE: flag.optional(),
   AFK_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  AFK_WEB_DIR: z.string().min(1).optional(),
+  AFK_PORT_FILE: z.string().min(1).optional(),
 });
 
 export type Profile = 'cloud' | 'local';
@@ -34,6 +36,10 @@ export interface AppConfig {
   trustProxy: boolean;
   autoMigrate: boolean;
   logLevel: string;
+  /** Dossier de l'application web construite, servie par l'API (serveur local). */
+  webDir: string | undefined;
+  /** Fichier où écrire le port réellement retenu (lu par le lanceur Windows). */
+  portFile: string | undefined;
   accessTokenTtlSec: number;
   sessionTtlSec: number;
   loginMaxFailures: number;
@@ -56,6 +62,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     trustProxy: e.AFK_TRUST_PROXY ?? cloud,
     autoMigrate: e.AFK_AUTO_MIGRATE ?? true,
     logLevel: e.AFK_LOG_LEVEL,
+    webDir: e.AFK_WEB_DIR,
+    portFile: e.AFK_PORT_FILE,
     accessTokenTtlSec: 15 * 60,
     sessionTtlSec: 30 * 24 * 3600,
     loginMaxFailures: 5,

@@ -42,16 +42,47 @@ cd services/api
 AFK_PROFILE=local AFK_DB=sqlite:.data/local.sqlite npm run dev
 ```
 
-## Installation chez le client (phases 11 et 16)
+## Installation chez le client (livrée en phase 11)
 
-- **Service Windows « AfriKaisse Local »** : Node 24 embarqué + `server.cjs`. Il démarre sans session
-  ouverte et redémarre après une panne.
-- **Données** dans `C:\ProgramData\AfriKaisse` (ACL : service + administrateurs). **Programme** dans
-  `C:\Program Files\AfriKaisse` (non modifiable sans droits d'administrateur). C'est la vraie
-  protection contre les virus, pas un dossier caché (leçon Scolaar).
-- **Console Electron** : POS du poste principal, état du système (§68), appairage, sauvegardes.
-- **Pare-feu** : règle entrante limitée au **profil réseau privé** et au port retenu.
-- **Installateur Inno Setup** : un seul fichier, une seule icône, aucun script visible.
+**Construire** (poste de développement, Inno Setup 6 installé) :
+
+```bash
+node infrastructure/windows/build.mjs
+```
+
+Produit `infrastructure/windows/sortie/AfriKaisse-Setup-<version>.exe`. La charge
+(`infrastructure/windows/charge/`) contient :
+
+| Élément | Rôle |
+|---|---|
+| `runtime/node/node.exe` | Node 24 embarqué (`node:sqlite`), variable `AFK_NODE_EXE` |
+| `app/server.cjs`, `app/cli.cjs` | Serveur et outil d'administration, un fichier chacun |
+| `app/web/` | Application web, **servie par le serveur lui-même** (`AFK_WEB_DIR`) : ni IIS ni Apache |
+| `lanceur/demarrer.cjs` | Démarre le serveur caché, attend le port réellement retenu (`AFK_PORT_FILE`), ouvre l'application ; rouvre simplement le navigateur si AfriKaisse tourne déjà |
+| `lanceur/arreter.cjs` | Arrêt par PID mémorisé (mise à jour, désinstallation) |
+| `AfriKaisse.vbs`, `Arreter AfriKaisse.vbs` | Lancement sans fenêtre noire |
+| `scripts/pare-feu.ps1` | Règle entrante par **programme** (le port peut varier), **sous-réseau local uniquement**, tous profils (le Wi-Fi d'un restaurant est souvent classé « Public ») |
+
+**Ce que fait l'installateur** (administrateur, Windows 10 1809 ou plus récent, 64 bits) :
+- programme dans `C:\Program Files\AfriKaisse`, données dans `C:\ProgramData\AfriKaisse` (base
+  `afrikaisse.sqlite`, `journaux/serveur.log`) ; les données sont **conservées** à la désinstallation ;
+- une icône « AfriKaisse » (menu Démarrer et Bureau) ;
+- démarrage du serveur à l'ouverture de session (case cochée, sans navigateur) ;
+- ouverture du pare-feu pendant l'installation ;
+- arrêt d'AfriKaisse avant une mise à jour, jamais de dossier à moitié remplacé.
+
+**Premier lancement** :
+1. un écran de démarrage s'ouvre **immédiatement** et bascule seul sur l'application dès que le serveur répond ;
+2. **Créer mon restaurant** : le serveur local n'accepte qu'un seul restaurant ;
+3. la barre d'état affiche l'**adresse pour les tablettes** (ex. `192.168.1.20:7300`), à saisir dans l'application tablette, écran « Connexion au serveur ».
+
+Le lanceur n'alerte que si le serveur s'est réellement arrêté, jamais pour une lenteur. Au premier
+lancement, il patiente jusqu'à 3 minutes.
+
+Écarts assumés avec la cible initiale, à reprendre en phase 16 :
+- démarrage à l'ouverture de session plutôt qu'un service Windows : un service exige un exécutable
+  qui dialogue avec le gestionnaire de services, ce que Node ne fait pas seul ;
+- pas encore de console Electron : l'application s'ouvre dans le navigateur, sur `http://localhost`.
 
 ## Découverte des appareils (§52)
 

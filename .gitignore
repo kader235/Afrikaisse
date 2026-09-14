@@ -9,3 +9,7 @@ dist/
 !.env.example
 coverage/
 *.log
+
+# Construction Windows (infrastructure/windows/build.mjs)
+infrastructure/windows/charge/
+infrastructure/windows/sortie/

@@ -20,7 +20,9 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | 6 | Caisse tablette : vente au doigt, sur place/à emporter, remises motivées, encaissement espèces/mobile money/carte, addition partagée, reçu 80 mm, transfert et regroupement de tables, sessions de caisse (fond, entrées/sorties, rapport X, clôture Z avec écart) | ✅ 128 tests ; essai complet dans le navigateur |
 | 7 | Postes de préparation (Cuisine, Bar, Grill…), écran cuisine sombre à trois colonnes avec minuteurs et signal, avancement par poste, commande prête quand tous les postes ont fini | ✅ 138 tests ; essai cuisine ↔ bar dans le navigateur |
 | 8 | Plan de salle vivant pour les serveurs (libre, occupée, prête, appel/addition/QR, réglée), fiche de service, commande à table en plein écran ; scénario complet du cahier des charges (QR → cuisine → service → paiement → table libérée → Z) | ✅ 140 tests |
-| 9 | Impression tickets cuisine et reçus (ESC/POS), agent d'impression | À venir |
+| 11 | **Serveur du restaurant installable** : `AfriKaisse-Setup.exe` (Node embarqué, application servie par le serveur, lanceur sans fenêtre, écran de démarrage, port résistant et vérifié, pare-feu limité au réseau local, démarrage avec Windows, données conservées) | ✅ paquet essayé sur le poste ; installateur compilé |
+| 14 | Tableau de bord : chiffre d'affaires, encaissé, ticket moyen, jours, heures de pointe, modes de paiement, produits, export CSV | ✅ 148 tests |
+| 9 | Impression tickets cuisine et reçus (ESC/POS), agent d'impression | À venir (tickets 80 mm par le navigateur déjà disponibles) |
 
 ## Démarrer
 

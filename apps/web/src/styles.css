@@ -1894,6 +1894,135 @@ input[aria-invalid='true'] {
   }
 }
 
+/* --- Tableau de bord ------------------------------------------------------- */
+.report-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.report-date input {
+  width: auto;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--border-strong);
+  background: var(--window);
+}
+
+.kpi span {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.kpi strong {
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-main {
+  border-inline-start-color: var(--accent);
+}
+
+.kpi-main strong {
+  color: var(--accent);
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .report-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.bars {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  height: 170px;
+  padding-top: 6px;
+}
+
+.bar-col {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.bar {
+  min-height: 2px;
+  background: var(--accent);
+}
+
+.bar-alt {
+  background: var(--ok);
+}
+
+.bar-col span {
+  height: 16px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.report-single {
+  padding: 24px 0;
+  font-size: 15px;
+}
+
+.report-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.grid.compact td,
+.grid.compact th {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.share-cell {
+  white-space: nowrap;
+}
+
+.share {
+  display: inline-block;
+  width: 60px;
+  height: 8px;
+  margin-inline-end: 6px;
+  background: var(--band);
+  vertical-align: 0;
+}
+
+.share i {
+  display: block;
+  height: 8px;
+  background: var(--accent);
+}
+
 /* --- Plan de salle en service ---------------------------------------------- */
 .plan-table.live-occupied {
   border-color: var(--accent);
