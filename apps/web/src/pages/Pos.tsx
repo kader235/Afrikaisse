@@ -82,7 +82,7 @@ function toPricing(menu: AdminMenu, p: Product): PricingProduct {
 export function checkTitle(c: Check): string {
   if (c.kind === 'session') return `Table ${c.tableLabel}`;
   const o = c.orders[0]!;
-  const base = c.tableLabel ? `Table ${c.tableLabel} · n°${o.number}` : `${SERVICE_TYPE_LABELS[c.serviceType]} n°${o.number}`;
+  const base = c.tableLabel ? `Table ${c.tableLabel} · n°${o.number}` : `${c.serviceType === 'TAKEAWAY' ? 'À emporter' : 'Comptoir'} n°${o.number}`;
   return c.customerName ? `${base} · ${c.customerName}` : base;
 }
 

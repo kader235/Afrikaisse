@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { SERVICE_TYPE_LABELS, STATION_KIND_LABELS, ticketState, type KitchenAction, type Me, type Order, type OrderItem, type Station } from '@afrikaisse/core';
+import { ticketState, type KitchenAction, type Me, type Order, type OrderItem, type Station } from '@afrikaisse/core';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { beep } from '../sound.ts';
-import { ErrorMessage, Icon } from '../ui.tsx';
+import { orderPlace } from '../labels.ts';
+import { FloatMessage, Icon } from '../ui.tsx';
 
 /**
  * Écran cuisine (KDS), sombre et lisible à 2 m : trois colonnes, minuteur par ticket,
@@ -28,7 +29,9 @@ function readStored(): string {
   }
 }
 
-const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+// Au-delà d’une heure : « 1 h 05 » (un « 65:12 » ne se lit pas à 2 m).
+const clock = (seconds: number) =>
+  seconds >= 3600 ? `${Math.floor(seconds / 3600)} h ${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}` : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const locationId = me.locations[0]?.id ?? null;
@@ -122,15 +125,18 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
     <section className="kds">
       <div className="kds-bar">
         <strong className="kds-title">Écran cuisine</strong>
-        <select aria-label="Poste" value={station?.id ?? ''} onChange={(e) => setStationId(e.target.value)}>
-          <option value="">Tous mes postes</option>
-          {allowed.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name === STATION_KIND_LABELS[s.kind] ? s.name : `${s.name} · ${STATION_KIND_LABELS[s.kind]}`}
-            </option>
-          ))}
-        </select>
-        <span className="kds-counts">{COLUMNS.map(([id, label]) => `${label} ${tickets.filter((t) => t.state === id).length}`).join(' · ')}</span>
+        {allowed.length > 1 && (
+          <span className="kds-stations" role="group" aria-label="Poste">
+            <button className="btn" aria-pressed={!station} onClick={() => setStationId('')}>
+              Tous
+            </button>
+            {allowed.map((s) => (
+              <button key={s.id} className="btn" aria-pressed={station?.id === s.id} onClick={() => setStationId(s.id)}>
+                {s.name}
+              </button>
+            ))}
+          </span>
+        )}
         {!feed.online && <span className="kds-offline">Liaison interrompue — nouvelle tentative…</span>}
         <span className="kds-spacer" />
         <button className="btn" onClick={feed.refresh}>
@@ -143,11 +149,6 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
           </button>
         )}
       </div>
-      {!!error && (
-        <div className="kds-error">
-          <ErrorMessage error={error} />
-        </div>
-      )}
       <div className="kds-board">
         {COLUMNS.map(([column, label]) => {
           const list = tickets.filter((t) => t.state === column);
@@ -168,10 +169,7 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
                     <header>
                       <span className="kds-label">Commande</span>
                       <strong className="kds-num">n°{order.number}</strong>
-                      <span>
-                        {order.tableLabel ? `Table ${order.tableLabel}` : SERVICE_TYPE_LABELS[order.serviceType]}
-                        {order.customerName && ` · ${order.customerName}`}
-                      </span>
+                      <span>{orderPlace(order)}</span>
                       <span className="kds-timer">{clock(age)}</span>
                     </header>
                     <ul>
@@ -216,6 +214,7 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
           );
         })}
       </div>
+      <FloatMessage error={error} notice={null} onClose={() => setError(null)} />
     </section>
   );
 }

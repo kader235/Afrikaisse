@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { moneyToInput, parseMoney, type CurrencyCode } from '@afrikaisse/core';
 import { ApiError, UserFacingError } from './api.ts';
 import { LANGUAGES, useI18n, type Language } from './i18n.tsx';
@@ -294,5 +295,26 @@ export function Preferences() {
         <option value="dark">{t('theme.dark')}</option>
       </select>
     </span>
+  );
+}
+
+/** Message flottant en bas de l’écran : rien ne s’insère au-dessus d’une zone manipulée au doigt. Une réussite s’efface seule. */
+export function FloatMessage({ error, notice, onClose }: { error: unknown; notice: string | null; onClose: () => void }) {
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (!notice || error) return;
+    const id = setTimeout(() => close.current(), 4000);
+    return () => clearTimeout(id);
+  }, [notice, error]);
+  if (!error && !notice) return null;
+  return createPortal(
+    <div className="float-msg" role="status">
+      {error ? <ErrorMessage error={error} /> : <OkMessage>{notice}</OkMessage>}
+      <button type="button" className="float-msg-close" aria-label="Fermer" onClick={() => close.current()}>
+        <Icon name="close" />
+      </button>
+    </div>,
+    document.body,
   );
 }

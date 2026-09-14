@@ -145,6 +145,12 @@ export const ORDER_SOURCE_LABELS: Record<'QR' | 'POS' | 'WAITER', string> = {
   WAITER: 'Serveur',
 };
 
+/** Où va la commande : « Table T3 », « À emporter · Awa », « Comptoir » (sur place sans table). */
+export function orderPlace(o: { tableLabel: string | null; serviceType: string; customerName: string | null }): string {
+  const base = o.tableLabel ? `Table ${o.tableLabel}` : o.serviceType === 'TAKEAWAY' ? 'À emporter' : 'Comptoir';
+  return o.customerName ? `${base} · ${o.customerName}` : base;
+}
+
 /** « à l'instant », « il y a 4 min », « il y a 1 h 05 ». */
 export function sinceText(ms: number, now = Date.now()): string {
   const minutes = Math.max(0, Math.floor((now - ms) / 60_000));

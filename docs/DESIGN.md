@@ -130,6 +130,18 @@ Au doigt, la base passe à 16 px.
   client », billets proposés jusqu'à 50 000, monnaie à rendre. Pas de clavier du système sur tablette ; au PC les
   chiffres, retour arrière et Entrée marchent au clavier.
 
+## Commandes et cuisine
+
+- **Commandes** : un cadre pleine hauteur, quatre colonnes (À traiter, En cuisine, Prêtes à servir, Servies · à
+  encaisser), chacune défile. Appels des tables et tables à libérer sont des cartes de la colonne « À traiter »
+  (compteur rouge) : jamais de bandeau inséré au-dessus des cartes. En portrait (≤ 1000 px), une colonne à la fois par
+  onglets à compteur ; l'onglet d'office est ce qui demande une action. Au doigt, pas de titre de page.
+- **Lieu d'une commande** partout identique (`orderPlace`) : « Table T3 », « À emporter · nom », « Comptoir ».
+- **Messages** des écrans de service (commandes, cuisine) : message flottant en bas (`FloatMessage`), une réussite
+  s'efface en 4 s.
+- **Cuisine** : reste sombre ; postes en boutons (Tous, Cuisine, Bar…), colonnes pleine hauteur, minuteur « m:ss »
+  puis « 1 h 05 » au-delà d'une heure.
+
 ## Écrire
 
 Libellés courts qui disent ce qui se passe : « Nouvelle commande », « Encaisser », « Fermer la caisse ». Pas de texte

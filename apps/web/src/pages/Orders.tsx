@@ -13,13 +13,16 @@ import {
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
-import { ORDER_SOURCE_LABELS, sinceText } from '../labels.ts';
-import { Dialog, ErrorMessage, Icon, OkMessage } from '../ui.tsx';
+import { ORDER_SOURCE_LABELS, orderPlace, sinceText } from '../labels.ts';
+import { Dialog, FloatMessage, Icon } from '../ui.tsx';
 
 /**
- * Commandes en cours, pour la tablette de salle ou de caisse.
- * Les commandes QR à confirmer passent devant ; les appels des tables sont toujours visibles.
+ * Commandes en cours, pour la tablette de salle ou de caisse : une colonne par étape du service.
+ * Les appels des tables et les tables à libérer sont DANS la colonne « À traiter » : rien n'apparaît
+ * au-dessus des cartes pendant qu'on les touche. En portrait, une colonne à la fois, choisie par onglet.
  */
+
+type ColumnId = 'todo' | 'kitchen' | 'ready' | 'served';
 
 const ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
   CONFIRMED: 'Confirmer',
@@ -44,6 +47,7 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [cancel, setCancel] = useState<Order | null>(null);
+  const [tab, setTab] = useState<ColumnId | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [, setNow] = useState(Date.now());
@@ -55,13 +59,21 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   }, []);
 
   const byAge = (list: Order[]) => list.slice().sort((a, b) => a.createdAt - b.createdAt);
-  // Une colonne par étape du service, de gauche à droite.
-  const columns: { id: string; title: string; tone: 'wait' | 'cook' | 'ready' | 'served'; orders: Order[]; empty: string }[] = [
-    { id: 'pending', title: t('orders.pending'), tone: 'wait', orders: byAge(feed.orders.filter((o) => o.status === 'PENDING')), empty: 'Aucune commande à confirmer.' },
-    { id: 'kitchen', title: 'En cuisine', tone: 'cook', orders: byAge(feed.orders.filter((o) => o.status === 'CONFIRMED' || o.status === 'PREPARING')), empty: 'Rien en préparation.' },
-    { id: 'ready', title: t('orders.ready'), tone: 'ready', orders: byAge(feed.orders.filter((o) => o.status === 'READY')), empty: 'Rien à servir.' },
-    { id: 'served', title: 'Servies · à encaisser', tone: 'served', orders: byAge(feed.orders.filter((o) => o.status === 'SERVED')), empty: 'Rien à encaisser.' },
+  const requests = feed.requests.slice().sort((a, b) => a.createdAt - b.createdAt);
+  // Tables dont toutes les commandes vues sont terminées : proposer de les libérer.
+  const freeable = can('orders.create')
+    ? [...new Map(feed.closed.filter((o) => o.sessionId && o.status === 'COMPLETED').map((o) => [o.sessionId!, o])).values()].filter((o) => !feed.orders.some((a) => a.sessionId === o.sessionId))
+    : [];
+
+  const columns: { id: ColumnId; title: string; orders: Order[]; empty: string }[] = [
+    { id: 'todo', title: 'À traiter', orders: byAge(feed.orders.filter((o) => o.status === 'PENDING')), empty: 'Rien à traiter.' },
+    { id: 'kitchen', title: 'En cuisine', orders: byAge(feed.orders.filter((o) => o.status === 'CONFIRMED' || o.status === 'PREPARING')), empty: 'Rien en préparation.' },
+    { id: 'ready', title: 'Prêtes à servir', orders: byAge(feed.orders.filter((o) => o.status === 'READY')), empty: 'Rien à servir.' },
+    { id: 'served', title: 'Servies · à encaisser', orders: byAge(feed.orders.filter((o) => o.status === 'SERVED')), empty: 'Rien à encaisser.' },
   ];
+  const countOf = (id: ColumnId) => columns.find((c) => c.id === id)!.orders.length + (id === 'todo' ? requests.length + freeable.length : 0);
+  // Onglet d'office : ce qui demande une action d'abord.
+  const active = tab ?? (['todo', 'ready', 'kitchen', 'served'] as const).find((id) => countOf(id) > 0) ?? 'todo';
   const selected = feed.orders.find((o) => o.id === selectedId) ?? feed.closed.find((o) => o.id === selectedId) ?? null;
 
   // « Terminer » n'apparaît qu'une fois la commande encaissée (sinon le serveur refuserait).
@@ -81,11 +93,6 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
     }
   }
 
-  // Tables dont toutes les commandes vues sont terminées : proposer de les libérer.
-  const freeable = [...new Map(feed.closed.filter((o) => o.sessionId && o.status === 'COMPLETED').map((o) => [o.sessionId!, o])).values()].filter(
-    (o) => !feed.orders.some((a) => a.sessionId === o.sessionId),
-  );
-
   async function freeTable(order: Order) {
     setError(null);
     try {
@@ -98,127 +105,127 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   }
 
   const primaryAction = (order: Order) => allowed(order).find((to) => to !== 'CANCELLED');
-  const where = (order: Order) => (order.tableLabel ? `${t('qr.colTable')} ${order.tableLabel}` : order.serviceType === 'TAKEAWAY' ? 'À emporter' : 'Comptoir');
 
   return (
-    <>
-      <div className="page-head">
-        <div>
+    <section className="page page-orders">
+      <header className="page-head">
+        <div className="page-title">
           <h1>{t('orders.title')}</h1>
-          <p className="muted">{feed.online ? `${feed.orders.length} ${t('orders.inProgress')}` : t('status.offline')}</p>
+          <p className="page-meta">{feed.online ? `${feed.orders.length} ${t('orders.inProgress')}` : t('status.offline')}</p>
         </div>
-        <button className="btn" onClick={feed.refresh}>
-          <Icon name="refresh" />
-          {t('common.refresh')}
-        </button>
-      </div>
+        <div className="page-actions">
+          <button className="btn" onClick={feed.refresh}>
+            <Icon name="refresh" />
+            {t('common.refresh')}
+          </button>
+        </div>
+      </header>
 
       {!feed.online && <div className="msg msg-warn">{t('orders.offline')}</div>}
-      <ErrorMessage error={error} />
-      {notice && !error && <OkMessage>{notice}</OkMessage>}
 
-      {(feed.requests.length > 0 || (freeable.length > 0 && can('orders.create'))) && (
-        <div className="alerts-strip">
-          {feed.requests
-            .slice()
-            .sort((a, b) => a.createdAt - b.createdAt)
-            .map((r) => (
-              <div className="alert-card" key={r.id}>
-                <span className="alert-dot" aria-hidden="true" />
-                <div className="alert-text">
-                  <strong>
-                    {t('qr.colTable')} {r.tableLabel}
-                  </strong>
-                  <span>
-                    {SERVICE_REQUEST_LABELS[r.kind]} · {sinceText(r.createdAt)}
-                  </span>
-                </div>
-                {can('orders.create') && (
-                  <button
-                    className="btn"
-                    onClick={async () => {
-                      try {
-                        feed.applyRequest(await api('POST', `/requests/${r.id}/resolve`));
-                      } catch (err) {
-                        setError(err);
-                      }
-                    }}
-                  >
-                    {t('orders.handled')}
-                  </button>
-                )}
-              </div>
-            ))}
-          {can('orders.create') &&
-            freeable.map((o) => (
-              <div className="alert-card alert-card-ok" key={o.sessionId}>
-                <span className="alert-dot" aria-hidden="true" />
-                <div className="alert-text">
-                  <strong>
-                    {t('qr.colTable')} {o.tableLabel}
-                  </strong>
-                  <span>{t('orders.freeTables')}</span>
-                </div>
-                <button className="btn" onClick={() => freeTable(o)}>
-                  {t('orders.freeTable')}
-                </button>
-              </div>
-            ))}
+      <div className="page-card orders-card">
+        <div className="subtabs orders-tabs" role="tablist">
+          {columns.map((c) => (
+            <button key={c.id} role="tab" aria-current={active === c.id ? 'page' : undefined} onClick={() => setTab(c.id)}>
+              {c.title}
+              <span className={c.id === 'todo' && countOf(c.id) > 0 ? 'count-pill count-alert' : 'count-pill'}>{countOf(c.id)}</span>
+            </button>
+          ))}
         </div>
-      )}
 
-      <div className="board">
-        {columns.map((col) => (
-          <section key={col.id} className={`board-col board-${col.tone}`} aria-label={col.title}>
-            <header className="board-head">
-              <span className="board-dot" aria-hidden="true" />
-              <h2>{col.title}</h2>
-              <span className="count-pill">{col.orders.length}</span>
-            </header>
-            <div className="board-list">
-              {!feed.loaded && <p className="board-empty">{t('common.loading')}</p>}
-              {feed.loaded && col.orders.length === 0 && <p className="board-empty">{col.empty}</p>}
-              {col.orders.map((o) => {
-                const next = primaryAction(o);
-                const minutes = Math.floor((Date.now() - o.createdAt) / 60_000);
-                const late = (o.status === 'PENDING' && minutes >= 5) || ((o.status === 'CONFIRMED' || o.status === 'PREPARING') && minutes >= 20);
-                return (
-                  <article key={o.id} className="order-card">
-                    <button className="order-card-body" onClick={() => setSelectedId(o.id)}>
-                      <span className="order-card-top">
-                        <span className="order-card-no">{o.number}</span>
-                        <span className="order-card-where">{where(o)}</span>
-                        <span className={late ? 'order-card-time late' : 'order-card-time'}>{sinceText(o.createdAt)}</span>
-                      </span>
-                      <span className="order-card-origin">
-                        {ORDER_SOURCE_LABELS[o.source]} · {formatMoney(o.total, o.currency)}
-                      </span>
-                      <span className="order-card-items">
-                        {o.items.slice(0, 4).map((i) => (
-                          <span key={i.id}>
-                            {i.quantity} × {i.name}
-                            {i.variantName && ` (${i.variantName})`}
-                          </span>
-                        ))}
-                        {o.items.length > 4 && <span className="muted">+ {o.items.length - 4} autre(s)</span>}
-                      </span>
-                    </button>
-                    {next && (
-                      <button className={`btn order-card-action action-${col.tone}`} onClick={() => move(o, next)}>
-                        {ACTION_LABELS[next]}
+        <div className="board">
+          {columns.map((col) => (
+            <section key={col.id} className={active === col.id ? `board-col board-${col.id} is-active` : `board-col board-${col.id}`} aria-label={col.title}>
+              <header className="board-head">
+                <h2>{col.title}</h2>
+                <span className={col.id === 'todo' && countOf(col.id) > 0 ? 'count-pill count-alert' : 'count-pill'}>{countOf(col.id)}</span>
+              </header>
+              <div className="board-list">
+                {col.id === 'todo' &&
+                  requests.map((r) => (
+                    <div className="alert-card" key={r.id}>
+                      <div className="alert-text">
+                        <strong>
+                          {t('qr.colTable')} {r.tableLabel}
+                        </strong>
+                        <span>
+                          {SERVICE_REQUEST_LABELS[r.kind]} · {sinceText(r.createdAt)}
+                        </span>
+                      </div>
+                      {can('orders.create') && (
+                        <button
+                          className="btn"
+                          onClick={async () => {
+                            try {
+                              feed.applyRequest(await api('POST', `/requests/${r.id}/resolve`));
+                            } catch (err) {
+                              setError(err);
+                            }
+                          }}
+                        >
+                          {t('orders.handled')}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                {col.id === 'todo' &&
+                  freeable.map((o) => (
+                    <div className="alert-card alert-card-ok" key={o.sessionId}>
+                      <div className="alert-text">
+                        <strong>
+                          {t('qr.colTable')} {o.tableLabel}
+                        </strong>
+                        <span>{t('orders.freeTables')}</span>
+                      </div>
+                      <button className="btn" onClick={() => freeTable(o)}>
+                        {t('orders.freeTable')}
                       </button>
-                    )}
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        ))}
+                    </div>
+                  ))}
+                {!feed.loaded && <p className="board-empty">{t('common.loading')}</p>}
+                {feed.loaded && countOf(col.id) === 0 && <p className="board-empty">{col.empty}</p>}
+                {col.orders.map((o) => {
+                  const next = primaryAction(o);
+                  const minutes = Math.floor((Date.now() - o.createdAt) / 60_000);
+                  const late = (o.status === 'PENDING' && minutes >= 5) || ((o.status === 'CONFIRMED' || o.status === 'PREPARING') && minutes >= 20);
+                  return (
+                    <article key={o.id} className="order-card">
+                      <button className="order-card-body" onClick={() => setSelectedId(o.id)}>
+                        <span className="order-card-top">
+                          <span className="order-card-no">n°{o.number}</span>
+                          <span className="order-card-where">{orderPlace(o)}</span>
+                          <span className={late ? 'order-card-time late' : 'order-card-time'}>{sinceText(o.createdAt)}</span>
+                        </span>
+                        <span className="order-card-origin">
+                          {ORDER_SOURCE_LABELS[o.source]} · {formatMoney(o.total, o.currency)}
+                        </span>
+                        <span className="order-card-items">
+                          {o.items.slice(0, 4).map((i) => (
+                            <span key={i.id}>
+                              {i.quantity} × {i.name}
+                              {i.variantName && ` (${i.variantName})`}
+                            </span>
+                          ))}
+                          {o.items.length > 4 && <span className="muted">+ {o.items.length - 4} autre(s)</span>}
+                        </span>
+                      </button>
+                      {next && (
+                        <button className="btn order-card-action" onClick={() => move(o, next)}>
+                          {ACTION_LABELS[next]}
+                        </button>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
 
       {selected && (
         <Dialog
-          title={`${t('orders.order')} n°${selected.number} · ${where(selected)}`}
+          title={`${t('orders.order')} n°${selected.number} · ${orderPlace(selected)}`}
           onClose={() => setSelectedId(null)}
           footer={
             <button className="btn" onClick={() => setSelectedId(null)}>
@@ -295,7 +302,16 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
           }}
         />
       )}
-    </>
+
+      <FloatMessage
+        error={error}
+        notice={notice}
+        onClose={() => {
+          setError(null);
+          setNotice(null);
+        }}
+      />
+    </section>
   );
 }
 
