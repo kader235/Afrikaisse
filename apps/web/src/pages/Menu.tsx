@@ -19,6 +19,7 @@ import { compressImage } from '../images.ts';
 import { mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
 import { QrTab } from './Qr.tsx';
+import { CatalogueImport } from './CatalogueImport.tsx';
 import { StationsTab } from './Stations.tsx';
 import { PrintersTab } from './Printers.tsx';
 
@@ -38,6 +39,8 @@ export function MenuPage({ me }: { me: Me }) {
   const [tab, setTab] = useState<Tab>('products');
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const country = locations?.find((l) => l.id === locationId)?.country ?? 'TD';
 
   useEffect(() => {
     api<LocationDetails[]>('GET', '/locations').then((list) => {
@@ -88,17 +91,39 @@ export function MenuPage({ me }: { me: Me }) {
       count={menu ? `${menu.products.length} ${t('menu.productsCount')}` : undefined}
       bodyless
       toolbar={
-        locations && locations.length > 1 ? (
-          <select aria-label={t('team.location')} value={locationId ?? ''} onChange={(e) => setLocationId(e.target.value)}>
-            {locations.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
+        (locations && locations.length > 1) || (menu && can('menu.manage')) ? (
+          <>
+            {locations && locations.length > 1 && (
+              <select aria-label={t('team.location')} value={locationId ?? ''} onChange={(e) => setLocationId(e.target.value)} style={{ width: 'auto', marginInlineEnd: 8 }}>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            {menu && can('menu.manage') && (
+              <button className="btn btn-primary" onClick={() => setImporting(true)}>
+                <Icon name="add" />
+                Importer des plats
+              </button>
+            )}
+          </>
         ) : undefined
       }
     >
+      {menu && can('menu.manage') && menu.products.length === 0 && (
+        <div className="import-hero">
+          <div>
+            <h2>Votre menu est vide</h2>
+            <p className="muted">Importez en un geste les plats courants de votre pays, avec photo et prix indicatif, puis ajustez-les à votre carte.</p>
+          </div>
+          <button className="btn btn-primary" onClick={() => setImporting(true)}>
+            <Icon name="add" />
+            Importer des plats
+          </button>
+        </div>
+      )}
       <div className="subtabs" role="tablist">
         {tabs.map(([id, label]) => (
           <button key={id} role="tab" aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>
@@ -118,6 +143,22 @@ export function MenuPage({ me }: { me: Me }) {
       {menu && tab === 'stations' && <StationsTab menu={menu} canManage={can('menu.manage')} onChanged={() => locationId && load(locationId)} />}
       {menu && locationId && tab === 'printers' && <PrintersTab locationId={locationId} stations={menu.stations} />}
       {locationId && tab === 'qr' && <QrTab locationId={locationId} canManage={can('tables.manage')} />}
+      {importing && menu && (
+        <CatalogueImport
+          menu={menu}
+          country={country}
+          onClose={() => setImporting(false)}
+          onDone={(imported, failed) => {
+            setImporting(false);
+            setTab('products');
+            if (locationId) void load(locationId);
+            setError(null);
+            setNotice(
+              `${imported} plat${imported > 1 ? 's' : ''} importé${imported > 1 ? 's' : ''}. Les prix sont indicatifs : vérifiez-les dans la liste.${failed.length ? ` Non importés : ${failed.join(', ')}.` : ''}`,
+            );
+          }}
+        />
+      )}
     </Window>
   );
 }

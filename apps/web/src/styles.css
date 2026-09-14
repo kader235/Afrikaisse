@@ -3815,3 +3815,302 @@ fieldset.group > legend {
 fieldset.group > legend + * {
   clear: both;
 }
+
+/* --- Import de plats (refonte 2026) --- */
+.import-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 18px 0;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, var(--accent-soft), var(--gold-soft));
+  border-radius: 16px;
+}
+
+.import-hero h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.import-hero p {
+  max-width: 62ch;
+  margin-top: 4px;
+}
+
+.import-hero .btn {
+  flex: none;
+  margin-inline-start: 16px;
+}
+
+.dialog-xl {
+  max-width: 1060px;
+  height: 100%;
+  max-height: 880px;
+}
+
+.catalogue-head {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.catalogue-head label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -4px 10px;
+}
+
+.chip-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  margin: 4px;
+  padding: 0 14px;
+  font-weight: 600;
+  color: var(--text-soft);
+  cursor: pointer;
+  background: var(--window);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  touch-action: manipulation;
+}
+
+.chip-tab .count-pill {
+  margin-inline-start: 8px;
+}
+
+.chip-tab[aria-current='true'] {
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.chip-tab[aria-current='true'] .count-pill {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.catalogue-bar {
+  margin-bottom: 12px;
+}
+
+.dish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.dish-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  font: inherit;
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+  background: var(--window);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  touch-action: manipulation;
+}
+
+.dish-card[aria-pressed='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.dish-card:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.dish-photo {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: 124px;
+  object-fit: cover;
+  background: var(--band);
+}
+
+.dish-initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent-soft), var(--gold-soft));
+}
+
+.dish-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+}
+
+.dish-card[aria-pressed='true'] .dish-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.dish-card[aria-pressed='true'] .dish-check::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  width: 7px;
+  height: 12px;
+  border: solid #ffffff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.dish-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 10px 12px 12px;
+}
+
+.dish-body strong {
+  font-size: 14px;
+}
+
+.dish-desc {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-soft);
+}
+
+.dish-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.dish-price {
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.dish-present {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.dish-credit {
+  margin-top: 6px;
+  overflow: hidden;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.catalogue-foot {
+  display: flex;
+  align-items: center;
+  text-align: start;
+}
+
+.catalogue-count {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+.catalogue-foot .btn {
+  margin-inline-start: 8px;
+}
+
+.catalogue-meter {
+  flex: 1;
+  inline-size: auto;
+  margin-inline-start: 12px;
+}
+
+@media (max-width: 700px) {
+  .catalogue-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .import-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .import-hero .btn {
+    margin: 12px 0 0;
+  }
+}
+
+/* --- Crédits des photos (refonte 2026) --- */
+.sheet-credits {
+  justify-self: start;
+  font-size: 12px;
+}
+
+.credits-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credits-list li {
+  display: flex;
+  align-items: center;
+}
+
+.credits-list img {
+  flex: none;
+  width: 64px;
+  height: 48px;
+  margin-inline-end: 12px;
+  object-fit: cover;
+  background: var(--band);
+  border-radius: 8px;
+}
+
+.credits-list div {
+  min-width: 0;
+}
+
+.credits-list strong,
+.credits-list span {
+  display: block;
+}
+
+.credits-list span {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.credits-list .credits-source {
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-all;
+}

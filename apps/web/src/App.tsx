@@ -1,4 +1,5 @@
 import { LogoAfrikaisse } from './logo.tsx';
+import { PhotoCredits } from './pages/PhotoCredits.tsx';
 import { useEffect, useState } from 'react';
 import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse } from '@afrikaisse/core';
 import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
@@ -335,11 +336,12 @@ function MoreSheet({
   onClose: () => void;
 }) {
   const { t, lang } = useI18n();
+  const [credits, setCredits] = useState(false);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !credits && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, credits]);
   return (
     <div className="sheet-overlay" role="presentation" onClick={onClose}>
       <aside className="sheet" role="dialog" aria-modal="true" aria-label="Plus" onClick={(e) => e.stopPropagation()}>
@@ -402,11 +404,15 @@ function MoreSheet({
           <span>
             GLOBALTECH BUSINESS TD · {t('status.version')} {health?.version ?? APP_VERSION}
           </span>
+          <button type="button" className="link sheet-credits" onClick={() => setCredits(true)}>
+            Crédits des photos
+          </button>
         </div>
         <button className="btn sheet-logout" onClick={onLogout}>
           <Icon name="logout" />
           {t('common.logout')}
         </button>
+        {credits && <PhotoCredits onClose={() => setCredits(false)} />}
       </aside>
     </div>
   );

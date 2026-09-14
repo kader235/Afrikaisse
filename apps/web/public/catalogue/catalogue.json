@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "baseCurrency": "XAF",
+  "groups": [
+    { "id": "tchad", "label": "Plats du Tchad" },
+    { "id": "afrique-centrale", "label": "Afrique centrale" },
+    { "id": "monde", "label": "Cuisine du monde et fast-food" },
+    { "id": "boissons", "label": "Boissons" }
+  ],
+  "dishes": [
+    { "id": "daraba", "name": "Daraba", "description": "Sauce de gombo, arachide et épinards, servie avec la boule.", "category": "Plats", "group": "tchad", "countries": ["TD", "CF"], "priceXaf": 2500, "image": null, "credit": null },
+    { "id": "poulet-yassa", "name": "Poulet yassa", "description": "Poulet mariné aux oignons et citron.", "category": "Plats", "group": "afrique-centrale", "countries": ["TD", "SN"], "priceXaf": 4000, "image": null, "credit": null },
+    { "id": "ndole", "name": "Ndolé", "description": "Feuilles amères, arachides et crevettes.", "category": "Plats", "group": "afrique-centrale", "countries": ["CM"], "priceXaf": 3000, "image": null, "credit": null },
+    { "id": "cheeseburger", "name": "Cheeseburger", "description": "Steak haché, cheddar, salade et tomate.", "category": "Fast-food", "group": "monde", "countries": ["*"], "priceXaf": 3500, "image": null, "credit": null },
+    { "id": "jus-de-baobab", "name": "Jus de baobab", "description": "Pulpe de pain de singe, lait et sucre.", "category": "Boissons", "group": "boissons", "countries": ["TD", "SN", "ML"], "priceXaf": 1000, "image": null, "credit": null }
+  ]
+}

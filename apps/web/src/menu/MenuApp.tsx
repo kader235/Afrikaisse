@@ -258,7 +258,7 @@ export function MenuApp() {
           <section key={c.id} id={`c-${c.id}`} className="m-section">
             <h2>{c.name}</h2>
             {c.products.map((p) => (
-              <button key={p.id} className={p.isAvailable ? 'm-item' : 'm-item off'} onClick={() => setSheet({ kind: 'product', product: p })}>
+              <button key={p.id} className={`m-item${p.isAvailable ? '' : ' off'}${p.photoUrl ? ' has-photo' : ''}`} onClick={() => setSheet({ kind: 'product', product: p })}>
                 <span className="m-text">
                   <strong>{p.name}</strong>
                   {p.description && <span className="m-desc">{p.description}</span>}
@@ -268,7 +268,12 @@ export function MenuApp() {
                     {!p.isAvailable && <em>Épuisé</em>}
                   </span>
                 </span>
-                {p.photoUrl && <img src={p.photoUrl} alt="" loading="lazy" width={88} height={88} />}
+                {p.photoUrl && <img src={p.photoUrl} alt="" loading="lazy" width={96} height={96} />}
+                {p.isAvailable && (
+                  <span className="m-plus" aria-hidden="true">
+                    +
+                  </span>
+                )}
               </button>
             ))}
           </section>
