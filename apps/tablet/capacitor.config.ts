@@ -22,7 +22,10 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
   },
   server: {
-    androidScheme: 'https',
+    // http et non https : les photos du menu servies en HTTP par le serveur local seraient
+    // bloquées comme « contenu mixte » dans une enveloppe https. Les écrans restent des
+    // fichiers de l'APK (aucun trafic réseau), et les appels API passent par le HTTP natif.
+    androidScheme: 'http',
   },
   plugins: {
     CapacitorHttp: { enabled: true },

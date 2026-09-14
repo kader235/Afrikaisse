@@ -22,6 +22,7 @@ import type { DiningTablesTable, LocationsTable, ZonesTable } from '@afrikaisse/
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
+import { createQrCode, revokeQrCodes } from './qr.ts';
 
 /**
  * Établissements, zones, tables et plan de salle.
@@ -464,6 +465,8 @@ export async function createTable(ctx: AppContext, scope: TenantScope, zoneId: s
         })
         .execute();
       const row = await emitTable(trx, ctx, scope, id, hlc);
+      // Chaque table active a son QR dès sa création (menu client, phase 3).
+      await createQrCode(trx, ctx, row, hlc);
       await writeAudit(trx, ctx, {
         tenantId: scope.tenantId,
         locationId: zone.location_id,
@@ -530,6 +533,8 @@ export async function archiveTable(ctx: AppContext, scope: TenantScope, tableId:
   return ctx.db.transaction().execute(async (trx) => {
     const hlc = ctx.clock.now();
     await trx.updateTable('dining_tables').set({ status: 'ARCHIVED', updated_at: ctx.now(), updated_hlc: hlc }).where('id', '=', tableId).execute();
+    // Un QR resté collé sur une table retirée ne doit plus ouvrir de menu.
+    await revokeQrCodes(trx, ctx, tableId, hlc);
     const row = await emitTable(trx, ctx, scope, tableId, hlc);
     await writeAudit(trx, ctx, {
       tenantId: scope.tenantId,

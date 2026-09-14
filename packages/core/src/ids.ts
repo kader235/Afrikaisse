@@ -16,6 +16,14 @@ export function uuidv7(now: number = Date.now()): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/** Jeton non devinable en base64url (16 octets = 128 bits → 22 caractères). Sert aux QR des tables. */
+export function generateToken(bytes = 16): string {
+  const raw = globalThis.crypto.getRandomValues(new Uint8Array(bytes));
+  let binary = '';
+  for (const b of raw) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export function isUuid(value: string): boolean {

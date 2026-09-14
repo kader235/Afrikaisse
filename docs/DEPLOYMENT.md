@@ -19,6 +19,7 @@ Variables (fichier `services/api/.env`, jamais commité) :
 | `AFK_HOST` | `127.0.0.1` (cloud), `0.0.0.0` (local) | Adresse d'écoute |
 | `AFK_JWT_SECRET` | généré et gardé en base | ≥ 32 caractères |
 | `AFK_CORS_ORIGINS` | vide (fermé) | Origines autorisées, séparées par des virgules |
+| `AFK_PUBLIC_URL` | origine de l'écran, sinon `https://app.afrikaisse.com` | Adresse écrite dans les QR des tables (`<adresse>/m/<jeton>`). **À régler en production** : un QR imprimé ne change plus |
 | `AFK_COOKIE_SECURE` | `true` en cloud | Cookie `Secure` |
 | `AFK_TRUST_PROXY` | `true` en cloud | IP réelle derrière LiteSpeed |
 | `AFK_AUTO_MIGRATE` | `true` | Migrations au démarrage |
@@ -70,6 +71,12 @@ npm run build:web     # → apps/web/dist/
 4. Web : déposer le contenu de `apps/web/dist/` dans le dossier du sous-domaine `app.<domaine>`.
    **Recommandé : même origine** (Web sur `app.<domaine>`, API sur `app.<domaine>/api`). Le cookie
    de renouvellement reste alors `SameSite=Strict`, sans CORS.
+   Le menu client est une seconde page (`menu.html`) servie pour toute adresse `/m/<jeton>`. Dans le
+   `.htaccess` du sous-domaine :
+   ```apache
+   RewriteEngine On
+   RewriteRule ^m/[A-Za-z0-9_-]+/?$ /menu.html [L]
+   ```
 5. Vérifier : `https://app.<domaine>/api/health` → `{"status":"ok","profile":"cloud",…}`.
 6. Donner l'accès back-office (Terminal, environnement Node activé) :
    ```bash

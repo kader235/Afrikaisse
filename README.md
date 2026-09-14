@@ -15,7 +15,8 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | 1 | Authentification, multi-tenant, RBAC, audit, back-office, invariants hors ligne | ✅ |
 | 2 | Établissements (mode Cloud / serveur local), zones, tables, plan de salle au doigt | ✅ |
 | 2 bis | Application tablette Android : Cloud ou serveur local, session dans le Keystore, mode tactile imposé | ✅ vérifiée sur WebView Chrome 83 ; 59 tests sur SQLite **et** PostgreSQL |
-| 3 | Menu, produits, catégories, modificateurs, QR des tables | À venir |
+| 3 | Menu (catégories, produits, versions, options, allergènes, photos compressées sur l'appareil), épuisé en un toucher, QR par table et planche A4, menu client par QR | ✅ 83 tests sur SQLite **et** PostgreSQL |
+| 4 | Commande client depuis le QR (panier, envoi) | À venir |
 
 ## Démarrer
 

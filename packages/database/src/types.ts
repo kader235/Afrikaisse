@@ -187,11 +187,141 @@ export interface SyncEventsTable {
   last_error: string | null;
 }
 
+// --- Phase 3 : menu, photos, QR ---------------------------------------------
+
+export interface MenuCategoriesTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  sort: number;
+  /** Masquée : reste gérée par le personnel mais n'apparaît pas sur le menu client. */
+  is_visible: Bool;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface ProductsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  category_id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  promo_price: number | null;
+  prep_time_min: number | null;
+  photo_media_id: string | null;
+  is_available: Bool;
+  /** JSON : tableau de chaînes. */
+  tags: string;
+  /** JSON : tableau d'allergènes (ALLERGENS). */
+  allergens: string;
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface ProductVariantsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  product_id: string;
+  name: string;
+  price_delta: number;
+  is_available: Bool;
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface ModifierGroupsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  min_select: number;
+  max_select: number;
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface ModifiersTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  group_id: string;
+  name: string;
+  price_delta: number;
+  is_available: Bool;
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+/** Un groupe d'options (« Sauces ») se réutilise sur plusieurs produits. */
+export interface ProductModifierGroupsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  product_id: string;
+  group_id: string;
+  sort: number;
+  created_at: number;
+  updated_hlc: string;
+}
+
+export interface MediaTable {
+  id: string;
+  tenant_id: string;
+  location_id: string | null;
+  content_type: 'image/jpeg' | 'image/png' | 'image/webp';
+  size: number;
+  width: number;
+  height: number;
+  sha256: string;
+  bytes: Uint8Array;
+  created_by: string | null;
+  created_at: number;
+}
+
+export interface QrCodesTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  table_id: string;
+  /** Jeton non devinable présent dans l'adresse du QR. */
+  token: string;
+  created_at: number;
+  /** Régénéré (photo du QR qui circule) ou table archivée. */
+  revoked_at: number | null;
+  updated_hlc: string;
+}
+
 export interface Database {
   tenants: TenantsTable;
   locations: LocationsTable;
   zones: ZonesTable;
   dining_tables: DiningTablesTable;
+  menu_categories: MenuCategoriesTable;
+  products: ProductsTable;
+  product_variants: ProductVariantsTable;
+  modifier_groups: ModifierGroupsTable;
+  modifiers: ModifiersTable;
+  product_modifier_groups: ProductModifierGroupsTable;
+  media: MediaTable;
+  qr_codes: QrCodesTable;
   users: UsersTable;
   memberships: MembershipsTable;
   auth_sessions: AuthSessionsTable;

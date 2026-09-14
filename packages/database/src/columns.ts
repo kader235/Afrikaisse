@@ -7,6 +7,7 @@ export interface ColumnKit {
   bool: 'smallint' | 'integer';
   ts: 'bigint' | 'integer';
   money: 'bigint' | 'integer';
+  blob: 'bytea' | 'blob';
   autoPk: { type: 'bigint' | 'integer'; build: (col: ColumnDefinitionBuilder) => ColumnDefinitionBuilder };
 }
 
@@ -17,6 +18,7 @@ export function columnKit(kind: DialectKind): ColumnKit {
       bool: 'smallint',
       ts: 'bigint',
       money: 'bigint',
+      blob: 'bytea',
       autoPk: { type: 'bigint', build: (col) => col.primaryKey().generatedAlwaysAsIdentity() },
     };
   }
@@ -25,6 +27,7 @@ export function columnKit(kind: DialectKind): ColumnKit {
     bool: 'integer',
     ts: 'integer',
     money: 'integer',
+    blob: 'blob',
     autoPk: { type: 'integer', build: (col) => col.primaryKey().autoIncrement() },
   };
 }

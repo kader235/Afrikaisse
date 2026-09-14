@@ -30,6 +30,8 @@ export const PERMISSIONS = [
   'subscription.manage',
   'menu.read',
   'menu.manage',
+  /** Marquer un produit ou une option « épuisé » pendant le service. */
+  'menu.availability',
   'tables.read',
   'tables.manage',
   'orders.read',
@@ -61,6 +63,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'audit.read',
     'menu.read',
     'menu.manage',
+    'menu.availability',
     'tables.read',
     'tables.manage',
     'orders.read',
@@ -81,6 +84,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'tenant.read',
     'location.read',
     'menu.read',
+    'menu.availability',
     'tables.read',
     'orders.read',
     'orders.create',
@@ -88,8 +92,8 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'payments.collect',
   ],
   WAITER: ['tenant.read', 'location.read', 'menu.read', 'tables.read', 'orders.read', 'orders.create'],
-  KITCHEN: ['tenant.read', 'location.read', 'menu.read', 'orders.read', 'kitchen.use'],
-  BAR: ['tenant.read', 'location.read', 'menu.read', 'orders.read', 'bar.use'],
+  KITCHEN: ['tenant.read', 'location.read', 'menu.read', 'menu.availability', 'orders.read', 'kitchen.use'],
+  BAR: ['tenant.read', 'location.read', 'menu.read', 'menu.availability', 'orders.read', 'bar.use'],
   STOCK_MANAGER: ['tenant.read', 'location.read', 'menu.read', 'inventory.read', 'inventory.manage'],
 };
 

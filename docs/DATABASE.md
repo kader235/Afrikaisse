@@ -67,6 +67,25 @@ Adaptations du §56, justifiées dans ARCHITECTURE.md :
 - Rien n'est supprimé : zones et tables s'archivent. Les commandes (phase 5) pourront toujours
   pointer vers une table archivée.
 
+## Tables livrées en phase 3 (migration `0003_menu`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `menu_categories` | Catégorie du menu d'un établissement | name, sort, **is_visible** (masquée = gérée mais absente du menu client), status |
+| `products` | Article | category_id, name, description, **price**, **promo_price**, prep_time_min, photo_media_id, **is_available**, tags (JSON), allergens (JSON), sort, status |
+| `product_variants` | Version (taille, portion) | product_id, name, **price_delta**, is_available, sort, status |
+| `modifier_groups` | Groupe d'options réutilisable (Cuisson, Sauces) | name, **min_select**, **max_select**, sort, status |
+| `modifiers` | Option d'un groupe | group_id, name, price_delta, is_available, sort, status |
+| `product_modifier_groups` | Lien produit ↔ groupe | product_id, group_id (unique ensemble), sort ; retiré = supprimé (événement `DELETE`) |
+| `media` | Photo | content_type, size, width, height, **sha256**, **bytes** (`bytea` / `blob`) |
+| `qr_codes` | QR d'une table | table_id, **token** (unique, 128 bits), revoked_at |
+
+- Les photos vivent **dans la base** : sauvegardées avec elle, et le serveur local n'a pas de dossier
+  à synchroniser à part. L'événement de synchronisation d'une photo ne porte que ses métadonnées ; le
+  moteur de synchronisation demandera les octets par l'identifiant.
+- La migration donne un QR à chaque table active existante. Ensuite, chaque table reçoit le sien à sa
+  création, et son QR est révoqué quand elle est archivée.
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

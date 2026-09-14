@@ -1,5 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { ApiError } from './api.ts';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { moneyToInput, parseMoney, type CurrencyCode } from '@afrikaisse/core';
+import { ApiError, UserFacingError } from './api.ts';
 import { LANGUAGES, useI18n, type Language } from './i18n.tsx';
 
 export const APP_VERSION = '0.1.0';
@@ -46,6 +47,10 @@ const ICONS = {
   down: 'M8 3v10M4 9l4 4 4-4',
   left: 'M13 8H3M7 4L3 8l4 4',
   right: 'M3 8h10M9 4l4 4-4 4',
+  menu: 'M3 2h10v12H3zM5.5 5h5M5.5 7.5h5M5.5 10h3',
+  image: 'M2 3h12v10H2zM2 11l3.5-3.5 3 3 2-2L14 12M10.5 6h.01',
+  print: 'M4 6V2h8v4M4 11.5H2.5V6h11v5.5H12M4 9h8v5H4z',
+  qr: 'M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h2v2H9zM12 12h2v2h-2zM12 9h2M9 12v2',
 } as const;
 export type IconName = keyof typeof ICONS;
 
@@ -59,7 +64,7 @@ export function Icon({ name }: { name: IconName }) {
 
 export function ErrorMessage({ error }: { error: unknown }) {
   if (!error) return null;
-  const message = error instanceof ApiError ? error.message : 'Une erreur inattendue est survenue.';
+  const message = error instanceof ApiError || error instanceof UserFacingError ? error.message : 'Une erreur inattendue est survenue.';
   const lines = error instanceof ApiError ? detailLines(error.details) : [];
   return (
     <div className="msg msg-error" role="alert">
@@ -81,9 +86,10 @@ function detailLines(details: unknown): string[] {
     return (details as { path: string; message: string }[]).map((d) => `${d.path.replace(/^\//, '') || 'formulaire'} : ${d.message}`);
   }
   if (!details || typeof details !== 'object') return [];
-  const d = details as { tables?: string[]; overlaps?: [string, string][]; outOfBounds?: string[] };
+  const d = details as { tables?: string[]; products?: string[]; overlaps?: [string, string][]; outOfBounds?: string[] };
   return [
     ...(d.tables?.length ? [`Tables concernées : ${d.tables.join(', ')}`] : []),
+    ...(d.products?.length ? [`Produits concernés : ${d.products.join(', ')}`] : []),
     ...(d.overlaps ?? []).map(([a, b]) => `${a} et ${b} se chevauchent`),
     ...(d.outOfBounds ?? []).map((label) => `${label} sort du plan`),
   ];
@@ -94,6 +100,63 @@ export function OkMessage({ children }: { children: ReactNode }) {
     <div className="msg msg-ok" role="status">
       {children}
     </div>
+  );
+}
+
+/**
+ * Montant saisi en unités courantes (« 5500 », « 12,50 »), transmis en unités mineures.
+ * Une saisie illisible bloque l'envoi du formulaire avec le message natif du navigateur.
+ */
+export function MoneyInput({
+  id,
+  value,
+  currency,
+  onChange,
+  required,
+  allowEmpty,
+  signed,
+}: {
+  id?: string;
+  value: number | null;
+  currency: CurrencyCode;
+  onChange: (value: number | null) => void;
+  required?: boolean;
+  allowEmpty?: boolean;
+  signed?: boolean;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState(value === null ? '' : moneyToInput(value, currency));
+  const [invalid, setInvalid] = useState(false);
+
+  function change(next: string) {
+    setText(next);
+    const trimmed = next.trim();
+    let parsed: number | null = null;
+    let ok = true;
+    if (!trimmed) {
+      ok = Boolean(allowEmpty);
+    } else {
+      const negative = signed && trimmed.startsWith('-');
+      const amount = parseMoney(negative ? trimmed.slice(1) : trimmed, currency);
+      ok = amount !== null;
+      parsed = amount === null ? null : negative ? -amount : amount;
+    }
+    setInvalid(!ok);
+    ref.current?.setCustomValidity(ok ? '' : 'Montant invalide');
+    if (ok) onChange(parsed);
+  }
+
+  return (
+    <input
+      ref={ref}
+      id={id}
+      inputMode="decimal"
+      autoComplete="off"
+      required={required}
+      aria-invalid={invalid}
+      value={text}
+      onChange={(e) => change(e.target.value)}
+    />
   );
 }
 

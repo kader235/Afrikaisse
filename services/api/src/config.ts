@@ -10,6 +10,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().optional(),
   AFK_JWT_SECRET: z.string().min(32).optional(),
   AFK_CORS_ORIGINS: z.string().default(''),
+  AFK_PUBLIC_URL: z.url().optional(),
   AFK_COOKIE_SECURE: flag.optional(),
   AFK_TRUST_PROXY: flag.optional(),
   AFK_AUTO_MIGRATE: flag.optional(),
@@ -27,6 +28,8 @@ export interface AppConfig {
   /** Absent : un secret est généré une fois et conservé dans node_state. */
   jwtSecret: string | undefined;
   corsOrigins: string[];
+  /** Adresse publique du menu client, écrite dans les QR (ex. https://app.afrikaisse.com). */
+  publicUrl: string | undefined;
   cookieSecure: boolean;
   trustProxy: boolean;
   autoMigrate: boolean;
@@ -48,6 +51,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     port: e.AFK_PORT ?? e.PORT ?? 4300,
     jwtSecret: e.AFK_JWT_SECRET,
     corsOrigins: e.AFK_CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),
+    publicUrl: e.AFK_PUBLIC_URL?.replace(/\/+$/, ''),
     cookieSecure: e.AFK_COOKIE_SECURE ?? cloud,
     trustProxy: e.AFK_TRUST_PROXY ?? cloud,
     autoMigrate: e.AFK_AUTO_MIGRATE ?? true,

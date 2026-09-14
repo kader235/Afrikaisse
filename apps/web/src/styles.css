@@ -1056,6 +1056,266 @@ dl.facts dd {
   height: 20px;
 }
 
+/* --- Menu (gestion) ----------------------------------------------------- */
+.menu-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+}
+
+.cat-panel {
+  border-inline-end: 1px solid var(--line);
+  background: var(--band);
+  min-width: 0;
+}
+
+.cat-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.cat-panel-head .btn {
+  padding: 0 8px;
+}
+
+.cat-panel-head .btn + .btn {
+  margin-inline-start: 4px;
+}
+
+.cat-panel-head .btn .ico {
+  margin: 0;
+}
+
+.cat-list button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cat-list button[aria-current='true'] {
+  background: var(--select);
+  font-weight: 600;
+}
+
+.cat-empty {
+  padding: 12px;
+}
+
+@media (max-width: 900px) {
+  .menu-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cat-panel {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cat-list {
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .cat-list button {
+    width: auto;
+    white-space: nowrap;
+    border-bottom: 0;
+    border-inline-end: 1px solid var(--line);
+  }
+
+  .cat-list button > span + span {
+    margin-inline-start: 10px;
+  }
+}
+
+.thumb {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--band);
+  object-fit: cover;
+}
+
+.price-old {
+  margin-inline-start: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: line-through;
+}
+
+textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--input-border);
+  border-radius: 2px;
+  background: var(--input);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px 70px auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.edit-head {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.edit-row .check {
+  justify-content: center;
+  margin: 0;
+}
+
+.edit-row .btn {
+  padding: 0 12px;
+}
+
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 2px 12px;
+}
+
+.check-grid .check {
+  margin: 0;
+}
+
+.photo-edit {
+  display: flex;
+  align-items: flex-start;
+}
+
+.photo-edit img,
+.photo-empty {
+  display: block;
+  flex: none;
+  width: 104px;
+  height: 104px;
+  margin-inline-end: 14px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--band);
+  object-fit: cover;
+}
+
+.photo-edit label.btn {
+  cursor: pointer;
+}
+
+.qr-thumb svg {
+  display: block;
+  width: 56px;
+  height: 56px;
+  background: #fff;
+}
+
+/* --- Planche de QR imprimée ---------------------------------------------- */
+.print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-sheet,
+  .print-sheet * {
+    visibility: visible;
+  }
+
+  .print-sheet {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: #fff;
+  }
+}
+
+.print-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6mm;
+}
+
+.print-card {
+  padding: 5mm 4mm;
+  border: 0.3mm solid #777;
+  border-radius: 3mm;
+  color: #000;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  text-align: center;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.print-name {
+  font-size: 11pt;
+  font-weight: 600;
+}
+
+.print-qr svg {
+  display: block;
+  width: 46mm;
+  height: 46mm;
+  margin: 3mm auto;
+}
+
+.print-table {
+  font-size: 18pt;
+  font-weight: 700;
+}
+
+.print-hint {
+  font-size: 9pt;
+}
+
+.print-zone {
+  margin-top: 1mm;
+  font-size: 8pt;
+  color: #555;
+}
+
 /* --- Choix exclusifs (serveur de la tablette) ---------------------------- */
 .choices {
   border: 1px solid var(--border);
@@ -1112,5 +1372,18 @@ dl.facts dd {
   .check input {
     width: 22px;
     height: 22px;
+  }
+
+  .cat-list button {
+    min-height: 52px;
+  }
+
+  .thumb {
+    width: 48px;
+    height: 48px;
+  }
+
+  .edit-row {
+    grid-template-columns: minmax(0, 1fr) 140px 70px auto;
   }
 }

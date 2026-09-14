@@ -55,6 +55,11 @@ export function apiBase(): string {
   return isNativeApp() ? (readServer()?.url ?? '') : '';
 }
 
+/** Adresse d'une photo servie par l'API (`/api/media/…`), là où l'écran la trouvera. */
+export function mediaSrc(url: string): string {
+  return `${apiBase()}${url}`;
+}
+
 export async function readRefreshToken(): Promise<string | null> {
   try {
     const value = await SecureStorage.get(REFRESH_KEY);

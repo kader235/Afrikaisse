@@ -8,6 +8,7 @@ import { AccountPage, AuditPage, OrganizationPage, PlatformPage } from './pages/
 import { TeamPage } from './pages/Team.tsx';
 import { FloorPage } from './pages/Floor.tsx';
 import { LocationsPage } from './pages/Locations.tsx';
+import { MenuPage } from './pages/Menu.tsx';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
 import type { ServerSwitch } from './pages/Auth.tsx';
@@ -20,7 +21,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'organization' | 'locations' | 'floor' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -140,6 +141,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
     { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read') },
     { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
+    { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read') },
     { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read') },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read') },
     { id: 'account', label: t('nav.account'), icon: 'user', visible: true },
@@ -147,7 +149,13 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   ];
   const visible = sections.filter((s) => s.visible);
   // Le personnel de salle ouvre directement le plan ; la direction, l'organisation.
-  const [section, setSection] = useState<Section>(() => (can('tables.read') && !can('tenant.update') ? 'floor' : visible[0]!.id));
+  // Le personnel ouvre son outil : la salle pour le service, le menu pour la cuisine et le bar.
+  const [section, setSection] = useState<Section>(() => {
+    if (can('tenant.update')) return visible[0]!.id;
+    if (can('tables.read')) return 'floor';
+    if (can('menu.availability')) return 'menu';
+    return visible[0]!.id;
+  });
   const current = visible.some((s) => s.id === section) ? section : visible[0]!.id;
 
   async function switchTo(tenantId: string) {
@@ -239,6 +247,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
         {current === 'floor' && <FloorPage me={me} />}
+        {current === 'menu' && <MenuPage me={me} />}
         {current === 'team' && <TeamPage me={me} />}
         {current === 'audit' && <AuditPage />}
         {current === 'account' && <AccountPage me={me} />}

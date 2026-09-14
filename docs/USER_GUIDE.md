@@ -68,6 +68,47 @@ Menu **Plan de salle**. Pensé pour la tablette : tout se fait au doigt.
 
 Les serveurs et caissiers consultent le plan sans pouvoir le modifier.
 
+## Le menu
+
+Menu **Menu**, trois onglets.
+
+### Produits
+- À gauche, les **catégories** : ➕ créer, ✎ renommer ou masquer (une catégorie masquée reste
+  gérée mais n'apparaît pas sur le menu client), ↑ ↓ changer l'ordre, archiver (seulement si vide).
+- À droite, les **produits** de la catégorie. **Nouveau produit** ouvre la fiche :
+  - nom, description, étiquettes (« Nouveau, Épicé »), temps de préparation ;
+  - **prix** et **prix promotionnel** (laisser vide sans promotion) ;
+  - **photo** : prise ou choisie sur l'appareil, réduite automatiquement avant l'envoi ;
+  - **versions** (33 cl / 1 litre, Simple / Double) avec leur supplément ;
+  - **groupes d'options** à cocher (Cuisson, Sauces…) ;
+  - **allergènes** (les 14 à déclaration obligatoire).
+- **Épuisé / Disponible** : un toucher pendant le service. La cuisine, le bar et la caisse peuvent le
+  faire ; le client voit aussitôt « Épuisé » sur son menu.
+
+### Options
+Les groupes d'options se créent une fois et servent à plusieurs produits.
+- **Choix minimum 1, maximum 1** : un choix obligatoire (Cuisson).
+- **Minimum 0** : facultatif (Suppléments, jusqu'au maximum indiqué).
+- Chaque option a son supplément (0 si gratuit). Touchez un groupe pour marquer une option épuisée.
+
+### QR codes
+Chaque table du plan de salle a son QR.
+- **Imprimer les QR** (depuis un ordinateur) : une planche A4, trois étiquettes par ligne, avec le nom
+  de l'établissement et le numéro de table.
+- **Régénérer le QR** si une photo du QR circule ou si l'étiquette est abîmée : l'ancien cesse
+  aussitôt de fonctionner, il faut coller le nouveau.
+- Une table archivée n'ouvre plus de menu.
+
+## Le menu client (QR)
+
+Le client scanne le QR de sa table avec l'appareil photo de son téléphone : le menu s'ouvre, sans
+application ni compte. Il voit le nom du restaurant et le numéro de sa table, peut chercher un plat,
+parcourir les catégories, et toucher un plat pour voir sa photo, sa description, ses versions,
+options et allergènes. Les articles épuisés restent visibles, marqués « Épuisé ».
+
+Dans cette version, le client consulte le menu et **commande auprès d'un serveur**. La commande
+depuis le téléphone arrive à l'étape suivante.
+
 ## L'équipe
 
 Menu **Équipe** (propriétaire, administrateur, gérant).

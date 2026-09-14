@@ -88,6 +88,37 @@ Le plan est une **grille de cases entières** : `x`, `y` (coin haut-gauche), `w`
 se touchent ne se chevauchent pas. Les règles (`findLayoutIssues`, `findFreeSpot`) sont dans
 `packages/core/src/floor.ts`, partagées par le serveur et la tablette.
 
+## Routes de la phase 3 — menu, photos, QR
+
+Chaque route de modification renvoie **le menu complet à jour** (`adminMenuSchema`) : l'écran n'a
+qu'une source de vérité.
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/menu` | `menu.read` | Catégories, produits (versions, groupes liés), groupes d'options |
+| POST | `/api/locations/{id}/categories` | `menu.manage` | Créer une catégorie (visible ou masquée) |
+| PUT | `/api/locations/{id}/categories/order` | `menu.manage` | Nouvel ordre (liste complète exigée) |
+| PATCH | `/api/categories/{id}` | `menu.manage` | Renommer, masquer |
+| POST | `/api/categories/{id}/archive` | `menu.manage` | Seulement une catégorie vide |
+| PUT | `/api/categories/{id}/products/order` | `menu.manage` | Ordre des produits |
+| POST | `/api/categories/{id}/products` | `menu.manage` | Produit avec versions, groupes d'options, allergènes, étiquettes, photo |
+| PATCH | `/api/products/{id}` | `menu.manage` | Champs transmis seulement ; `variants` et `modifierGroupIds` **remplacent** la liste (id connu → mis à jour, sans id → créé, absent → archivé) |
+| POST | `/api/products/{id}/archive` | `menu.manage` | Archiver |
+| POST | `/api/products/{id}/availability` | `menu.availability` | Épuisé / disponible (gérant, caisse, cuisine, bar) |
+| POST | `/api/locations/{id}/modifier-groups` | `menu.manage` | Groupe (min/max de choix) et ses options |
+| PATCH | `/api/modifier-groups/{id}` | `menu.manage` | Idem, options remplacées si transmises |
+| POST | `/api/modifier-groups/{id}/archive` | `menu.manage` | Refusé tant qu'un produit l'utilise (`details.products`) |
+| POST | `/api/modifiers/{id}/availability` | `menu.availability` | Option épuisée / disponible |
+| POST | `/api/locations/{id}/media` | `menu.manage` | Photo **déjà compressée par l'appareil**, en base64 (JPEG, PNG, WebP ; 800 Ko max). Le serveur vérifie la signature et les dimensions du fichier, pas le type annoncé |
+| GET | `/api/media/{id}` | public | Photo, cache d'un an (`immutable`, ETag), lisible depuis une autre origine |
+| GET | `/api/locations/{id}/qr-codes` | `tables.read` | QR actifs des tables, avec leur adresse |
+| POST | `/api/tables/{id}/qr/regenerate` | `tables.manage` | Nouveau jeton ; l'ancien cesse aussitôt de fonctionner |
+| GET | `/api/public/menu/{jeton}` | public | Menu client : établissement, table, catégories visibles, produits (épuisés signalés), versions, options. 404 si QR révoqué, table ou établissement archivé, organisation suspendue |
+
+Le **calcul du prix d'une ligne** (`priceLine`, `packages/core/src/menu.ts`) applique : prix promo sinon
+prix, plus version, plus options ; refuse version manquante, option d'un autre produit, choix hors
+min/max, article ou option épuisé, quantité hors 1-99. Il servira à chaque commande (phase 4-5).
+
 ## Temps réel (phases 5-8)
 
 - **Serveur local** : `GET /api/stream` en **SSE** (KDS, serveurs, POS), avec reprise par

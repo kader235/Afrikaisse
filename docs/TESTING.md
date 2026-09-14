@@ -49,6 +49,21 @@ npm run verify        # types + tests + bundle API + build web
 | Profil local | Établissement en mode serveur local, impossible de le repasser en Cloud |
 | Migration | `0002_floor` appliquée sur une base de la phase 1 déjà remplie (base de démonstration de l'interface) |
 
+## Couverture de la phase 3 (83 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Argent (cœur) | FCFA sans décimales, euro à deux ; lecture « 5 500 », « 12,50 € » ; refus d'une précision impossible |
+| Prix d'une ligne (cœur) | Version + options × quantité ; prix promo ; refus : version manquante ou inconnue, groupe obligatoire oublié, maximum dépassé, option épuisée, d'un autre produit ou choisie deux fois, quantité 0, produit épuisé |
+| Jetons de QR | 200 jetons tous différents, 22 caractères base64url |
+| Photos | Lecture des en-têtes PNG, JPEG, WebP ; faux fichier refusé ; type annoncé différent du contenu refusé ; 850 Ko refusés ; service avec cache immuable, ETag/304, en-tête cross-origin ; photo d'une autre organisation inutilisable |
+| Catégories | Ordre (liste incomplète refusée), masquage, archivage refusé tant qu'un produit y reste |
+| Produits | Versions et groupes remplacés proprement (id conservé, variante étrangère refusée), allergènes dédoublonnés, prix promo ≥ prix refusé, audit « prix modifié », événements de synchronisation dont la suppression d'un lien |
+| Options | Min > max et max > nombre d'options refusés ; archivage refusé tant qu'un produit l'utilise (noms renvoyés) |
+| Disponibilité | La cuisine marque un produit et une option épuisés mais ne change pas un prix ; le serveur ne peut pas |
+| QR et menu public | Un QR par table, adresse publique configurée ; menu sans session : catégorie masquée et produit archivé absents, épuisé signalé ; régénération (ancien jeton → 404) ; table archivée → 404 ; organisation suspendue → 404 ; jeton malformé → 400 |
+| Isolation | Menu, produit, catégorie, groupe, disponibilité, QR d'une autre organisation : 404 |
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

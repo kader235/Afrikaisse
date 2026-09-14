@@ -21,6 +21,9 @@ export class ApiError extends Error {
   }
 }
 
+/** Erreur locale (photo illisible…) dont le message est écrit pour l'utilisateur. */
+export class UserFacingError extends Error {}
+
 export const OFFLINE = 'OFFLINE';
 const TIMEOUT_MS = 15_000;
 
