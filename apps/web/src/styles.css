@@ -667,41 +667,240 @@ table.grid td.empty {
   text-align: end;
 }
 
-/* --- Accès (connexion, inscription) ------------------------------------ */
+/* --- Accès (connexion, inscription, serveur injoignable) -----------------
+ * Fond « bogolan » : anneaux concentriques dans deux coins et grand pan incurvé plus clair.
+ * Tout en CSS : rien à télécharger, fonctionne hors ligne et sur la WebView Chrome 83.
+ * Une variante claire (par défaut) et une sombre, suivant le thème choisi.
+ */
 .login-screen {
+  --access-bg: #e6ecf4;
+  --access-bg-2: #f6f8fb;
+  --access-ring: rgba(26, 95, 180, 0.08);
+  --access-card: rgba(255, 255, 255, 0.9);
+  --access-card-border: rgba(20, 60, 110, 0.14);
+  --access-top: #1a5fb4;
+  --access-text: #16202b;
+  --access-soft: #5b6470;
+  --access-gold: #a8761f;
+  --access-field: #ffffff;
+  --access-field-border: #c7d0dc;
+  --access-icon-bg: #eef2f7;
+  --access-shadow: 0 18px 48px rgba(20, 40, 70, 0.16);
   /* vh et non % : l'écran est enveloppé dans un <form> sans hauteur. */
   min-height: 100vh;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
+  position: relative;
+  overflow: hidden;
+  color: var(--access-text);
+  background: radial-gradient(150% 95% at 100% 100%, var(--access-bg-2) 0, var(--access-bg-2) 40%, transparent 41.5%), var(--access-bg);
+}
+
+:root[data-theme='dark'] .login-screen {
+  --access-bg: #0d131a;
+  --access-bg-2: #19212b;
+  --access-ring: rgba(255, 255, 255, 0.045);
+  --access-card: rgba(40, 47, 56, 0.84);
+  --access-card-border: rgba(255, 255, 255, 0.08);
+  --access-top: #1f4f8f;
+  --access-text: #f1f4f7;
+  --access-soft: #aab3be;
+  --access-gold: #e2b764;
+  --access-field: rgba(18, 23, 29, 0.78);
+  --access-field-border: rgba(255, 255, 255, 0.1);
+  --access-icon-bg: rgba(255, 255, 255, 0.04);
+  --access-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.login-screen::before,
+.login-screen::after {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0, transparent 13px, var(--access-ring) 13px, var(--access-ring) 16px);
+  pointer-events: none;
+}
+
+.login-screen::before {
+  top: -140px;
+  left: -300px;
+}
+
+.login-screen::after {
+  bottom: -180px;
+  right: -260px;
 }
 
 .login-center {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   padding: 24px 12px;
 }
 
-.login-screen .dialog {
-  box-shadow: 0 2px 10px rgba(16, 28, 44, 0.14);
+.access-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 26px 26px 22px;
+  color: var(--access-text);
+  background: var(--access-card);
+  border: 1px solid var(--access-card-border);
+  border-block-start: 4px solid var(--access-top);
+  border-radius: 14px;
+  box-shadow: var(--access-shadow);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
-.login-head {
+.access-card-wide {
+  max-width: 680px;
+}
+
+.access-brand {
   display: flex;
   align-items: center;
-  padding-bottom: 14px;
-  margin-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  justify-content: center;
+  margin-block-end: 22px;
 }
 
-.login-head svg {
-  width: 42px;
-  height: 42px;
+.access-brand svg {
+  flex: none;
+  width: 64px;
+  height: 64px;
   margin-inline-end: 12px;
 }
 
-.login-head strong {
+.access-name {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.access-name span,
+.access-product {
+  color: var(--access-gold);
+}
+
+.access-product {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.access-title {
+  margin-block-end: 12px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.access-field {
+  margin-block-end: 14px;
+}
+
+.access-field label {
   display: block;
-  font-size: 18px;
+  margin-block-end: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.access-input {
+  display: flex;
+  align-items: stretch;
+  height: 46px;
+  overflow: hidden;
+  background: var(--access-field);
+  border: 1px solid var(--access-field-border);
+  border-radius: 8px;
+}
+
+.access-input:focus-within {
+  border-color: var(--access-gold);
+  box-shadow: 0 0 0 3px rgba(226, 183, 100, 0.22);
+}
+
+.access-input svg {
+  flex: none;
+  width: 46px;
+  padding: 0 14px;
+  color: var(--access-soft);
+  background: var(--access-icon-bg);
+  border-inline-end: 1px solid var(--access-field-border);
+}
+
+.login-screen .access-input input {
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  padding: 0 12px;
+  font-size: 15px;
+  color: var(--access-text);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+.access-input input::placeholder {
+  color: var(--access-soft);
+  opacity: 0.8;
+}
+
+.login-screen .access-forgot {
+  display: block;
+  margin-block-start: 8px;
+  margin-inline-start: auto;
+  font-size: 13px;
+  color: var(--access-gold);
+  text-decoration: none;
+}
+
+.login-screen .access-help {
+  margin-block-end: 12px;
+  color: var(--access-text);
+  background: var(--access-icon-bg);
+  border-color: var(--access-field-border);
+}
+
+.access-foot {
+  margin-block-start: 6px;
+}
+
+.login-screen .access-submit,
+.login-screen .access-submit:hover:not(:disabled) {
+  width: 100%;
+  height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(90deg, #102f5c 0%, #1a5fb4 38%, #7d7a62 66%, #d9a94e 100%);
+  border: 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.login-screen .access-submit:hover:not(:disabled) {
+  filter: brightness(1.07);
+}
+
+.access-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-block-start: 14px;
+}
+
+.login-screen .access-links .link {
+  font-size: 14px;
+  color: var(--access-text);
+  text-decoration: underline;
 }
 
 .login-foot {
@@ -710,8 +909,32 @@ table.grid td.empty {
   justify-content: space-between;
 }
 
+.login-screen .statusbar {
+  position: relative;
+  z-index: 1;
+  color: var(--access-soft);
+  background: transparent;
+  border-color: transparent;
+}
+
 .login-screen .statusbar .push {
   margin-inline-start: auto;
+}
+
+@media (max-width: 480px) {
+  .access-card {
+    padding: 20px 16px 18px;
+    border-radius: 10px;
+  }
+
+  .access-name {
+    font-size: 25px;
+  }
+
+  .access-brand svg {
+    width: 54px;
+    height: 54px;
+  }
 }
 
 .choice-list button {

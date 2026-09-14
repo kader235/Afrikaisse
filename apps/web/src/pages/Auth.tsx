@@ -1,10 +1,11 @@
+import { LogoAfrikaisse } from '../logo.tsx';
 import { CLOUD_URL as CLOUD_URL_PAR_DEFAUT } from '../platform.ts';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { CURRENCY_CODES, LOCATION_TYPES, type SessionResponse } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { COUNTRIES, LOCATION_TYPE_LABELS } from '../labels.ts';
-import { APP_VERSION, BrandMark, ErrorMessage, Preferences } from '../ui.tsx';
+import { APP_VERSION, ErrorMessage, Preferences } from '../ui.tsx';
 
 /** Écran d'accès : une fenêtre centrée, une barre d'état. */
 /** Sur la tablette : le serveur utilisé, et de quoi en changer depuis n'importe quel écran d'accès. */
@@ -13,26 +14,24 @@ export interface ServerSwitch {
   onChange: () => void;
 }
 
-export function AccessScreen({ title, wide, children, footer, server }: { title: string; wide?: boolean; children: ReactNode; footer: ReactNode; server?: ServerSwitch }) {
+export function AccessScreen({ title, wide, bare, children, footer, server }: { title: string; wide?: boolean; bare?: boolean; children: ReactNode; footer: ReactNode; server?: ServerSwitch }) {
   const { t } = useI18n();
   return (
     <div className="login-screen">
       <div className="login-center">
-        <div className={wide ? 'dialog dialog-wide' : 'dialog'} style={{ maxWidth: wide ? 680 : 440 }}>
-          <div className="dialog-title">
-            <span>AfriKaisse — {title}</span>
-          </div>
-          <div className="dialog-body">
-            <div className="login-head">
-              <BrandMark />
-              <div>
-                <strong>AfriKaisse</strong>
-                <span className="muted">{t('app.product')}</span>
+        <div className={wide ? 'access-card access-card-wide' : 'access-card'}>
+          <div className="access-brand">
+            <LogoAfrikaisse />
+            <div>
+              <div className="access-name">
+                Afri<span>Kaisse</span>
               </div>
+              <div className="access-product">{t('app.product')}</div>
             </div>
-            {children}
           </div>
-          <div className="dialog-foot">{footer}</div>
+          {!bare && <h1 className="access-title">{title}</h1>}
+          <div className="access-body">{children}</div>
+          <div className="access-foot">{footer}</div>
         </div>
       </div>
       <footer className="statusbar">
@@ -56,6 +55,14 @@ export function AccessScreen({ title, wide, children, footer, server }: { title:
   );
 }
 
+function FieldIcon({ d }: { d: string }) {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function LoginPage({ onSession, onRegister, server }: { onSession: (s: SessionResponse) => void; onRegister: () => void; server?: ServerSwitch }) {
   const { t } = useI18n();
   const [email, setEmail] = useState('');
@@ -66,6 +73,7 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
   const [canPair, setCanPair] = useState(false);
   const [pairing, setPairing] = useState(false);
   const [paired, setPaired] = useState<string | null>(null);
+  const [forgot, setForgot] = useState(false);
   useEffect(() => {
     api<{ profile: string; configured?: boolean }>('GET', '/health').then(
       (h) => setCanPair(h.profile === 'local' && h.configured === false),
@@ -102,21 +110,24 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
   return (
     <form onSubmit={submit}>
       <AccessScreen
+        bare
         server={server}
         title={t('auth.login.title')}
         footer={
-          <div className="login-foot">
-            <button type="button" className="link" onClick={onRegister}>
-              {t('auth.createRestaurant')}
-            </button>
-            {canPair && (
-              <button type="button" className="link" onClick={() => setPairing(true)}>
-                Relier à AfriKaisse Cloud
-              </button>
-            )}
-            <button className="btn btn-primary" disabled={busy}>
+          <div className="access-actions">
+            <button className="btn btn-primary access-submit" disabled={busy}>
               {busy ? t('common.loading') : t('auth.login.submit')}
             </button>
+            <div className="access-links">
+              <button type="button" className="link" onClick={onRegister}>
+                {t('auth.createRestaurant')}
+              </button>
+              {canPair && (
+                <button type="button" className="link" onClick={() => setPairing(true)}>
+                  Relier à AfriKaisse Cloud
+                </button>
+              )}
+            </div>
           </div>
         }
       >
@@ -126,12 +137,45 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
             {paired}
           </div>
         )}
-        <div className="form" style={{ gridTemplateColumns: '120px minmax(0,1fr)' }}>
+        <div className="access-field">
           <label htmlFor="login-email">{t('auth.email')}</label>
-          <input id="login-email" type="email" autoComplete="username" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
-          <label htmlFor="login-password">{t('auth.password')}</label>
-          <input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <div className="access-input">
+            <FieldIcon d="M2.5 4h11v8h-11zM2.5 4.5L8 9l5.5-4.5" />
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="username"
+              required
+              autoFocus
+              placeholder={t('auth.email')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
         </div>
+        <div className="access-field">
+          <label htmlFor="login-password">{t('auth.password')}</label>
+          <div className="access-input">
+            <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
+            <input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              required
+              placeholder={t('auth.password')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+          <button type="button" className="link access-forgot" aria-expanded={forgot} onClick={() => setForgot((v) => !v)}>
+            {t('auth.forgot')}
+          </button>
+        </div>
+        {forgot && (
+          <div className="msg access-help" role="note">
+            {t('auth.forgotHelp')}
+          </div>
+        )}
       </AccessScreen>
     </form>
   );
