@@ -299,7 +299,7 @@ const fr = {
   'orders.selectHint': 'Touchez une commande pour afficher son détail et la faire avancer.',
   'nav.pos': 'Caisse',
   'nav.kitchen': 'Cuisine',
-  'nav.reports': 'Tableau de bord',
+  'nav.reports': 'Rapports',
   'nav.start': 'Bien démarrer',
   'nav.stock': 'Stock',
 };

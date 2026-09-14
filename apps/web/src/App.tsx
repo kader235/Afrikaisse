@@ -13,6 +13,7 @@ import { MenuPage } from './pages/Menu.tsx';
 import { OrdersPage } from './pages/Orders.tsx';
 import { PosPage } from './pages/Pos.tsx';
 import { KitchenPage } from './pages/Kitchen.tsx';
+import { DashboardPage } from './pages/Dashboard.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
 import { useActivityFeed } from './activity.ts';
@@ -28,7 +29,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'dashboard' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -146,22 +147,31 @@ type NavItem = { id: Section; label: string; icon: IconName; visible: boolean; b
 const NAV_GROUPS: [NavGroup, string][] = [
   ['home', ''],
   ['sale', 'Vente'],
-  ['restaurant', 'Restaurant'],
+  ['restaurant', 'Restauration'],
   ['manage', 'Gestion'],
   ['admin', 'Administration'],
 ];
 
 /** Accès rapides du téléphone (barre du bas), par métier : chacun ouvre son outil. */
 const TAB_PRIORITY: Record<Role, Section[]> = {
-  OWNER: ['reports', 'orders', 'pos', 'menu'],
-  ADMIN: ['reports', 'orders', 'pos', 'menu'],
-  MANAGER: ['orders', 'pos', 'floor', 'menu'],
+  OWNER: ['dashboard', 'orders', 'pos', 'menu'],
+  ADMIN: ['dashboard', 'orders', 'pos', 'menu'],
+  MANAGER: ['dashboard', 'orders', 'pos', 'floor'],
   CASHIER: ['pos', 'orders'],
   WAITER: ['floor', 'orders'],
   KITCHEN: ['kitchen'],
   BAR: ['kitchen'],
   STOCK_MANAGER: ['stock', 'menu'],
 };
+
+/** Initiales affichées dans la barre supérieure : « Achta Démo » → « AD ». */
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join('');
 
 function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => void; onSession: (s: SessionResponse) => void; onLogout: () => void }) {
   const { t, lang } = useI18n();
@@ -174,15 +184,16 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
 
   const sections: NavItem[] = [
-    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read'), group: 'home' },
+    { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard', visible: can('reports.read'), group: 'home' },
     { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect'), group: 'sale' },
     { id: 'orders', label: t('nav.orders'), icon: 'ticket', visible: can('orders.read'), badge: waiting, group: 'sale' },
     { id: 'floor', label: t('nav.floor'), icon: 'table', visible: can('tables.read'), group: 'sale' },
     { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use'), group: 'restaurant' },
     { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read'), group: 'restaurant' },
     { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read'), group: 'manage' },
-    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'manage' },
     { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read'), group: 'admin' },
+    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read'), group: 'admin' },
+    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'admin' },
     { id: 'organization', label: t('nav.organization'), icon: 'gear', visible: can('tenant.read'), group: 'admin' },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin, group: 'admin' },
@@ -197,6 +208,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const [section, setSection] = useState<Section>(() => quick[0]?.id ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
   const roleLabel = me.role ? ROLE_LABELS[lang][me.role] : '';
+  const place = me.locations.length === 1 ? me.locations[0]!.name : (me.tenant?.name ?? 'AfriKaisse');
 
   async function switchTo(tenantId: string) {
     setError(null);
@@ -255,21 +267,24 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
           </span>
         </div>
         <div className="topbar-context">
-          <strong>{me.tenant?.name ?? 'AfriKaisse'}</strong>
-          {me.locations.length === 1 && <span>{me.locations[0]!.name}</span>}
+          <span className="topbar-place">{place}</span>
+          {me.tenant && place !== me.tenant.name && <span className="topbar-org">{me.tenant.name}</span>}
         </div>
         <div className="topbar-side">
-          {waiting > 0 && can('orders.read') && current !== 'orders' && (
-            <button className="topbar-alert" onClick={() => open('orders')}>
-              <Icon name="bell" />
-              {waiting} à traiter
-            </button>
-          )}
           <span className={online ? 'topbar-status' : 'topbar-status off'}>
             <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
             {online ? 'En ligne' : 'Hors ligne'}
           </span>
+          {can('orders.read') && (
+            <button className="topbar-bell" aria-label={waiting > 0 ? `${waiting} à traiter` : 'Commandes'} onClick={() => open('orders')}>
+              <Icon name="bell" />
+              {waiting > 0 && <span className="badge-count">{waiting}</span>}
+            </button>
+          )}
           <button className="topbar-user" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
+            <span className="topbar-initials" aria-hidden="true">
+              {initials(me.user.displayName)}
+            </span>
             <span className="topbar-name">
               <strong>{me.user.displayName}</strong>
               <span>{roleLabel}</span>
@@ -286,10 +301,11 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
       <main className="workspace">
         {can('tenant.read') && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
         {!!error && <ErrorMessage error={error} />}
+        {current === 'dashboard' && <DashboardPage me={me} feed={can('orders.read') ? feed : undefined} onNavigate={open} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'pos' && <PosPage me={me} />}
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
-        {current === 'reports' && <ReportsPage me={me} feed={can('orders.read') ? feed : undefined} onNavigate={open} />}
+        {current === 'reports' && <ReportsPage />}
         {current === 'stock' && <StockPage me={me} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
@@ -359,7 +375,7 @@ function NavList({ items, current, onPick }: { items: NavItem[]; current: Sectio
   );
 }
 
-/** Panneau latéral : compte et réglages ; sur téléphone (« Menu »), toute la navigation en plus. */
+/** Panneau latéral : compte et réglages ; sur téléphone (« Plus »), toute la navigation en plus. */
 function SidePanel({
   mode,
   me,
