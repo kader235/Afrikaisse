@@ -11,8 +11,8 @@ const imageUrl = (file: string) => `/catalogue/images/${file}`;
 const RECOMMENDED = 'recommandes';
 
 /**
- * Importer des plats pré-remplis : pays, famille de plats, cartes à cocher, puis un import qui passe
- * par les mêmes routes que la saisie à la main (catégorie, photo compressée, produit).
+ * Importer des plats pré-remplis : pays, famille de plats, cartes à cocher (nom, prix, courte description,
+ * photo, disponible ou non), puis un import par les mêmes routes que la saisie à la main.
  */
 export function CatalogueImport({ menu, country, onClose, onDone }: { menu: AdminMenu; country: string; onClose: () => void; onDone: (imported: number, failed: string[]) => void }) {
   const [catalogue, setCatalogue] = useState<Catalogue | null>(null);
@@ -20,6 +20,8 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
   const [pays, setPays] = useState(country);
   const [group, setGroup] = useState(RECOMMENDED);
   const [chosen, setChosen] = useState<Set<string>>(() => new Set());
+  // Plats à importer « non disponibles » (le restaurateur ne les sert pas encore).
+  const [unavailable, setUnavailable] = useState<Set<string>>(() => new Set());
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const currency = menu.location.currency;
 
@@ -47,8 +49,8 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
   const allChosen = selectable.length > 0 && selectable.every((d) => chosen.has(d.id));
   const countryName = COUNTRIES.find((c) => c.code === pays)?.name ?? pays;
 
-  const toggle = (id: string) =>
-    setChosen((prev) => {
+  const flip = (set: (update: (prev: Set<string>) => Set<string>) => void, id: string) =>
+    set((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -102,6 +104,7 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
           description: dish.description,
           price: cataloguePrice(dish.priceXaf, currency),
           photoMediaId,
+          isAvailable: !unavailable.has(dish.id),
         });
         imported += 1;
       } catch {
@@ -145,10 +148,7 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
                 ))}
               </select>
             </label>
-            <p className="muted">
-              Cochez les plats que vous vendez. Ils arrivent avec photo, description et un prix indicatif en {currency}, à vérifier ensuite. Les plats déjà présents dans votre menu sont
-              ignorés.
-            </p>
+            <p className="muted">Touchez les plats que vous vendez. Les prix sont indicatifs en {currency} : vous les ajusterez ensuite. Les plats déjà dans votre menu sont grisés.</p>
           </div>
 
           {catalogue && (
@@ -184,31 +184,34 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
           <div className="dish-grid">
             {shown.map((d) => {
               const present = isPresent(d.name);
+              const on = chosen.has(d.id);
+              const available = !unavailable.has(d.id);
               return (
-                <button key={d.id} type="button" className="dish-card" aria-pressed={chosen.has(d.id)} disabled={present || !!progress} onClick={() => toggle(d.id)}>
-                  {d.image ? (
-                    <img className="dish-photo" src={imageUrl(d.image)} alt="" loading="lazy" />
-                  ) : (
-                    <span className="dish-photo dish-initial" aria-hidden="true">
-                      {d.name.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                  <span className="dish-check" aria-hidden="true" />
-                  <span className="dish-body">
-                    <strong>{d.name}</strong>
-                    {d.description && <span className="dish-desc">{d.description}</span>}
-                    <span className="dish-foot">
-                      <span className="dish-price">{formatMoney(cataloguePrice(d.priceXaf, currency), currency)}</span>
-                      <span className="tag">{d.category}</span>
-                    </span>
-                    {present && <span className="dish-present">Déjà dans votre menu</span>}
-                    {d.credit && (
-                      <span className="dish-credit" title={`${d.credit.author} · ${d.credit.license} · ${d.credit.source}`}>
-                        Photo : {d.credit.author} · {d.credit.license}
+                <div key={d.id} className={`dish-card${on ? ' on' : ''}${present ? ' present' : ''}`}>
+                  <button type="button" className="dish-select" aria-pressed={on} disabled={present || !!progress} onClick={() => flip(setChosen, d.id)}>
+                    {d.image ? (
+                      <img className="dish-photo" src={imageUrl(d.image)} alt="" loading="lazy" />
+                    ) : (
+                      <span className="dish-photo dish-initial" aria-hidden="true">
+                        {d.name.slice(0, 1).toUpperCase()}
                       </span>
                     )}
-                  </span>
-                </button>
+                    <span className="dish-check" aria-hidden="true" />
+                    <span className="dish-body">
+                      <strong>{d.name}</strong>
+                      <span className="dish-price">{formatMoney(cataloguePrice(d.priceXaf, currency), currency)}</span>
+                      {d.description && <span className="dish-desc">{d.description}</span>}
+                    </span>
+                  </button>
+                  {present ? (
+                    <span className="dish-avail dish-present">Déjà dans votre menu</span>
+                  ) : (
+                    <label className="dish-avail">
+                      <input type="checkbox" checked={available} disabled={!!progress} onChange={() => flip(setUnavailable, d.id)} />
+                      {available ? 'Disponible' : 'Non disponible'}
+                    </label>
+                  )}
+                </div>
               );
             })}
           </div>

@@ -4020,15 +4020,6 @@ fieldset.group > legend + * {
   color: var(--ok);
 }
 
-.dish-credit {
-  margin-top: 6px;
-  overflow: hidden;
-  font-size: 10px;
-  color: var(--muted);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 .catalogue-foot {
   display: flex;
   align-items: center;
@@ -4066,55 +4057,6 @@ fieldset.group > legend + * {
   }
 }
 
-/* --- Crédits des photos (refonte 2026) --- */
-.sheet-credits {
-  justify-self: start;
-  font-size: 12px;
-}
-
-.credits-list {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.credits-list li {
-  display: flex;
-  align-items: center;
-}
-
-.credits-list img {
-  flex: none;
-  width: 64px;
-  height: 48px;
-  margin-inline-end: 12px;
-  object-fit: cover;
-  background: var(--band);
-  border-radius: 8px;
-}
-
-.credits-list div {
-  min-width: 0;
-}
-
-.credits-list strong,
-.credits-list span {
-  display: block;
-}
-
-.credits-list span {
-  font-size: 12px;
-  color: var(--text-soft);
-}
-
-.credits-list .credits-source {
-  font-size: 11px;
-  color: var(--muted);
-  word-break: break-all;
-}
-
 /* --- Plan de salle (refonte 2026) --- */
 .plan {
   border-color: var(--border);
@@ -4136,4 +4078,85 @@ fieldset.group > legend + * {
 .workspace .kds {
   overflow: hidden;
   border-radius: 16px;
+}
+
+/* --- Cartes d'import : sélection et « Disponible » (refonte 2026) --- */
+.dish-card {
+  cursor: default;
+}
+
+.dish-card.on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.dish-card.present {
+  opacity: 0.55;
+}
+
+.dish-select {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  touch-action: manipulation;
+}
+
+.dish-select:disabled {
+  cursor: default;
+}
+
+.dish-card.on .dish-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.dish-card.on .dish-check::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  width: 7px;
+  height: 12px;
+  border: solid #ffffff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.dish-body .dish-price {
+  margin-top: 2px;
+}
+
+.dish-avail {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  border-top: 1px solid var(--line);
+}
+
+.dish-avail input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  margin-inline-end: 8px;
+  padding: 0;
+  box-shadow: none;
+  accent-color: var(--accent);
+}
+
+.dish-avail.dish-present {
+  margin-top: 0;
+  color: var(--ok);
 }
