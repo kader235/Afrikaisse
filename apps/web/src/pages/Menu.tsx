@@ -116,7 +116,6 @@ export function MenuPage({ me }: { me: Me }) {
         <div className="import-hero">
           <div>
             <h2>Votre menu est vide</h2>
-            <p className="muted">Importez en un geste les plats courants de votre pays, avec photo et prix indicatif, puis ajustez-les à votre carte.</p>
           </div>
           <button className="btn btn-primary" onClick={() => setImporting(true)}>
             <Icon name="add" />
@@ -625,7 +624,6 @@ function ProductDialog({ menu, categoryId, product, onSubmit, onClose }: { menu:
           <textarea id="p-description" maxLength={500} value={form.description} onChange={(e) => set('description', e.target.value)} />
           <label htmlFor="p-tags">{t('menu.tags')}</label>
           <input id="p-tags" value={form.tags} onChange={(e) => set('tags', e.target.value)} />
-          <span className="hint">{t('menu.tagsHint')}</span>
           <label htmlFor="p-prep">{t('menu.prepTime')}</label>
           <input id="p-prep" type="number" inputMode="numeric" min={0} max={240} value={form.prepTimeMin} onChange={(e) => set('prepTimeMin', e.target.value)} />
           <label htmlFor="p-station">Poste de préparation</label>
@@ -652,7 +650,6 @@ function ProductDialog({ menu, categoryId, product, onSubmit, onClose }: { menu:
           <MoneyInput id="p-price" required value={form.price} currency={currency} onChange={(v) => set('price', v)} />
           <label htmlFor="p-promo">{t('menu.promoPrice')}</label>
           <MoneyInput id="p-promo" allowEmpty value={form.promoPrice} currency={currency} onChange={(v) => set('promoPrice', v)} />
-          <span className="hint">{t('menu.promoHint')}</span>
         </div>
       </fieldset>
 
@@ -671,9 +668,6 @@ function ProductDialog({ menu, categoryId, product, onSubmit, onClose }: { menu:
                 {t('menu.photoRemove')}
               </button>
             )}
-            <p className="muted" style={{ marginTop: 6 }}>
-              {t('menu.photoHint')}
-            </p>
           </div>
         </div>
       </fieldset>
@@ -797,7 +791,10 @@ function OptionsTab({ menu, canManage, canAvailability, save, act, onRefresh }: 
                             {m.isAvailable ? t('menu.available') : t('options.soldOut')}
                           </button>
                         ) : (
-                          <span className={m.isAvailable ? 'state state-ok' : 'state state-off'}>{m.isAvailable ? t('menu.available') : t('options.soldOut')}</span>
+                          <span className={m.isAvailable ? 'state state-ok' : 'state state-off'}>
+                            <span className={m.isAvailable ? 'dot dot-ok' : 'dot dot-off'} />
+                            {m.isAvailable ? t('menu.available') : t('options.soldOut')}
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -806,7 +803,7 @@ function OptionsTab({ menu, canManage, canAvailability, save, act, onRefresh }: 
               </table>
             </fieldset>
           ) : (
-            <p className="muted">{t('options.selectHint')}</p>
+            null
           )}
         </aside>
       </div>
@@ -867,7 +864,7 @@ function GroupDialog({ group, currency, onSubmit, onClose }: { group?: ModifierG
         <label htmlFor="g-max">{t('options.max')}</label>
         <input id="g-max" type="number" inputMode="numeric" min={1} max={30} required value={maxSelect} onChange={(e) => setMax(Number(e.target.value))} />
         <span className="hint">
-          {choiceRule(minSelect, Math.max(1, maxSelect))} — {t('options.rulesHint')}
+          {choiceRule(minSelect, Math.max(1, maxSelect))}
         </span>
       </div>
       <fieldset className="group" style={{ marginTop: 12 }}>

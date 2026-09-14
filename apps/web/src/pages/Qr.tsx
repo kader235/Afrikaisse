@@ -86,7 +86,6 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
       <div className="window-body" style={{ paddingBottom: 0 }}>
         <ErrorMessage error={error} />
         {notice && !error && <OkMessage>{notice}</OkMessage>}
-        <p className="muted">{isNativeApp() ? `${t('qr.hint')} ${t('qr.printNative')}` : t('qr.hint')}</p>
         {list && !list.reachableFromInternet && (
           <div className="msg msg-warn">
             Ces QR mènent à <strong>{list.menuBaseUrl}</strong>, une adresse du réseau du restaurant : un client devrait d'abord rejoindre son Wi-Fi. Pour qu'il scanne et commande

@@ -44,8 +44,13 @@ const bureau = join(homedir(), 'Desktop');
 let copie = null;
 if (existsSync(bureau)) {
   copie = join(bureau, 'AfriKaisse-o2switch');
-  rmSync(copie, { recursive: true, force: true });
-  cpSync(sortie, copie, { recursive: true });
+  // Dossier ouvert dans l'Explorateur : Windows refuse de le supprimer, on remplace alors les fichiers un à un.
+  try {
+    rmSync(copie, { recursive: true, force: true });
+  } catch {
+    console.log('Dossier du Bureau verrouillé : fichiers remplacés sur place.');
+  }
+  cpSync(sortie, copie, { recursive: true, force: true });
 }
 
 const taille = (statSync(join(sortie, 'afrikaisse.tar.gz')).size / 1048576).toFixed(1).replace('.', ',');

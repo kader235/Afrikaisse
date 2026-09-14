@@ -47,11 +47,6 @@ export function StationsTab({ menu, canManage, onChanged }: { menu: AdminMenu; c
       <div className="window-body" style={{ paddingBottom: 0 }}>
         <ErrorMessage error={error} />
         {notice && !error && <OkMessage>{notice}</OkMessage>}
-        <p className="muted">
-          Chaque article commandé part au poste de son produit (fiche produit, « Poste de préparation »). Sans poste choisi, il part au premier poste Cuisine
-          {defaultKitchen ? ` (« ${defaultKitchen.name} »)` : ''}
-          {unassigned > 0 ? ` : c'est le cas de ${unassigned} produit(s)` : ''}. L'écran Cuisine peut n'afficher qu'un seul poste.
-        </p>
       </div>
       <div className="grid-wrap" style={{ marginTop: 10 }}>
         <table className="grid">
@@ -151,9 +146,6 @@ function StationDialog({ locationId, station, onDone, onClose }: { locationId: s
               ))}
             </span>
           </div>
-          <p className="muted" style={{ marginTop: 10 }}>
-            Le type décide qui peut faire avancer le poste : l'équipe cuisine pour « Cuisine », l'équipe du bar pour « Bar ».
-          </p>
         </div>
       </Dialog>
     </form>

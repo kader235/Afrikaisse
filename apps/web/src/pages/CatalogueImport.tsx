@@ -159,7 +159,6 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
                 ))}
               </select>
             </label>
-            <p className="muted">Touchez les plats que vous vendez. Les prix sont indicatifs en {currency} : vous les ajusterez ensuite. Les plats déjà dans votre menu sont grisés.</p>
           </div>
 
           {catalogue && (

@@ -104,7 +104,6 @@ export function ReportsPage({ me, feed, onNavigate }: { me: Me; feed?: ActivityF
   const money = (v: number) => (report ? formatMoney(v, report.currency) : '');
   const period = report ? (report.from === report.to ? `Journée du ${shortDate(report.from)}` : `Du ${shortDate(report.from)} au ${shortDate(report.to)}`) : null;
   const live = !!report && !!today && report.to === today && !!locationId;
-  const compareLabel = preset === 'today' ? "par rapport à hier" : preset === 'yesterday' ? 'par rapport à avant-hier' : report ? `par rapport aux ${spanDays(report.from, report.to)} jours précédents` : '';
 
   return (
     <Window
@@ -194,7 +193,6 @@ export function ReportsPage({ me, feed, onNavigate }: { me: Me; feed?: ActivityF
                       Annulées <strong className="num">{report.totals.cancelledCount}</strong>
                       {report.totals.cancelledCount > 0 && ` (${money(report.totals.cancelledAmount)})`}
                     </span>
-                    {previous && <span className="summary-compare">Évolution {compareLabel}</span>}
                   </div>
                 </section>
                 <fieldset className="group">

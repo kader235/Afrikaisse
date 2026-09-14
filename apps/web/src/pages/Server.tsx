@@ -53,9 +53,6 @@ export function ServerPage({ current, onSaved }: { current: ServerChoice | null;
           </div>
         }
       >
-        <p className="muted" style={{ marginBottom: 12 }}>
-          {t('server.intro')}
-        </p>
         <div className="choices" role="radiogroup">
           <label className="choice">
             <input
@@ -84,7 +81,6 @@ export function ServerPage({ current, onSaved }: { current: ServerChoice | null;
             />
             <span>
               <strong>{t('server.local')}</strong>
-              <small>{t('server.localHint')}</small>
             </span>
           </label>
         </div>

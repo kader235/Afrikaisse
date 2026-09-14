@@ -466,10 +466,6 @@ function SubscriptionPanel({ subscription: s }: { subscription: Subscription }) 
           })}
         </tbody>
       </table>
-      <p className="muted">
-        À l'échéance, le service continue : caisse, cuisine, commandes et synchronisation ne s'arrêtent jamais. Après {GRACE_DAYS} jours de grâce, seuls les ajouts d'établissements, de membres et
-        de serveurs locaux sont suspendus.
-      </p>
       <table className="grid offers-table">
         <thead>
           <tr>
@@ -499,7 +495,6 @@ function SubscriptionPanel({ subscription: s }: { subscription: Subscription }) 
           })}
         </tbody>
       </table>
-      <p className="muted">Pour changer d'offre ou renouveler, contactez GLOBALTECH BUSINESS TD (mobile money ou virement) : l'offre est activée depuis la plateforme AfriKaisse.</p>
     </fieldset>
   );
 }

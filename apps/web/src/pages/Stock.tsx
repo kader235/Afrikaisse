@@ -213,10 +213,7 @@ export function StockPage({ me }: { me: Me }) {
                     </table>
                   </fieldset>
                 ) : (
-                  <p className="muted">
-                    Touchez un article pour voir ses mouvements. Les ventes confirmées déduisent les recettes toutes seules ; un plat dont un ingrédient manque passe « épuisé » et revient à la
-                    réception suivante.
-                  </p>
+                  null
                 )}
               </aside>
             </div>
@@ -457,12 +454,12 @@ function RecipesTab({ menu, items, canManage, currency, onSaved }: { menu: Admin
       </div>
       <aside className="floor-side">
         {!product ? (
-          <p className="muted">Choisissez un plat ou une boisson pour décrire ce qu'il consomme : les ventes déduiront ces quantités du stock.</p>
+          null
         ) : (
           <fieldset className="group">
             <legend>Recette — {product.name}</legend>
             <ErrorMessage error={error} />
-            {items.length === 0 && <p className="muted">Créez d'abord des articles dans l'onglet Articles.</p>}
+            {items.length === 0 && <p className="muted">Aucun article en stock.</p>}
             {rows.map((r) => {
               const item = items.find((i) => i.id === r.itemId);
               return (

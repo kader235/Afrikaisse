@@ -45,7 +45,6 @@ export function BackupsPanel() {
       <p>
         Une copie vérifiée de la base est faite au démarrage puis toutes les heures : les 24 dernières, et une par jour sur 30 jours, dans <code>{data.dir}</code>.
       </p>
-      <p className="muted">Copiez régulièrement ce dossier sur une clé USB ou un autre ordinateur : une panne de disque emporterait aussi les copies.</p>
       <ErrorMessage error={error} />
       {notice && !error && <OkMessage>{notice}</OkMessage>}
       <div className="toolbar" style={{ padding: '8px 0' }}>

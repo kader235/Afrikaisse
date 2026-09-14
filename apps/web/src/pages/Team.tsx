@@ -266,7 +266,6 @@ function MemberDialog({ me, grantable, member, onSaved, onClose }: { me: Me; gra
           <div className="form">
             <label htmlFor="m-name">{t('team.name')}</label>
             <input id="m-name" required minLength={2} autoFocus disabled={member?.sharedAccount} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
-            {member?.sharedAccount && <span className="hint">{t('team.sharedHint')}</span>}
             <label htmlFor="m-email">{t('auth.email')}</label>
             <input id="m-email" type="email" required readOnly={!!member} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             <label htmlFor="m-role">{t('team.role')}</label>
@@ -290,7 +289,6 @@ function MemberDialog({ me, grantable, member, onSaved, onClose }: { me: Me; gra
               <>
                 <label htmlFor="m-password">{t('team.initialPassword')}</label>
                 <input id="m-password" type="password" minLength={10} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-                <span className="hint">{t('team.existingAccountHint')}</span>
               </>
             )}
           </div>

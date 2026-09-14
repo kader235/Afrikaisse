@@ -322,9 +322,6 @@ function CancelDialog({ order, onConfirm, onClose }: { order: Order; onConfirm: 
         }
       >
         <div className="dialog-body">
-          <p className="muted" style={{ marginBottom: 10 }}>
-            {t('orders.cancelHint')}
-          </p>
           <div className="form">
             <label htmlFor="cancel-reason">{t('orders.reason')}</label>
             <input id="cancel-reason" required maxLength={200} autoFocus value={reason} onChange={(e) => setReason(e.target.value)} />

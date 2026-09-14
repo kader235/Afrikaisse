@@ -42,10 +42,7 @@ export function SyncPanel() {
     <fieldset className="group">
       <legend>Liaison avec AfriKaisse Cloud</legend>
       {!status.paired ? (
-        <p className="muted">
-          Ce serveur fonctionne seul, sans Cloud. Pour suivre le restaurant à distance, il se relie à un établissement AfriKaisse Cloud au moment de l'installation (écran de connexion, « Relier à
-          AfriKaisse Cloud »).
-        </p>
+        <p className="muted">Serveur autonome, non relié au Cloud.</p>
       ) : (
         <>
           <dl className="kv">
@@ -73,7 +70,7 @@ export function SyncPanel() {
               Pas de liaison pour l'instant : {status.lastError} Le restaurant continue de fonctionner ; les changements partiront dès le retour d'Internet.
             </div>
           ) : (
-            <p className="muted">Synchronisation automatique toutes les 5 secondes quand Internet est disponible.</p>
+            null
           )}
           <ErrorMessage error={error} />
           {notice && !error && <OkMessage>{notice}</OkMessage>}

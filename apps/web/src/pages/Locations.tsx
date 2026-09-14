@@ -207,10 +207,6 @@ export function LocationsPage({ me, onChanged }: { me: Me; onChanged: () => void
           <div className="dialog-body">
             <p>Sur le PC du restaurant, installez AfriKaisse, puis à l'écran de connexion choisissez « Relier à AfriKaisse Cloud » et saisissez :</p>
             <p className="pairing-code">{pairing.code}</p>
-            <p className="muted">
-              Valable jusqu'à {new Date(pairing.expiresAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, une seule fois. Une fois relié, l'établissement passe en mode « serveur local » :
-              la caisse, la cuisine et les commandes fonctionnent même sans Internet, et tout remonte ici dès que la connexion revient.
-            </p>
           </div>
         </Dialog>
       )}
@@ -357,7 +353,6 @@ function LocationDialog({ location, onSaved, onClose }: { location?: LocationDet
                   </option>
                 ))}
               </select>
-              <span className="hint">{t('loc.cutoffHint')}</span>
               <label htmlFor="l-mode">{t('loc.mode')}</label>
               <select id="l-mode" value={form.operatingMode} onChange={set('operatingMode')}>
                 {OPERATING_MODES.map((mode) => (
@@ -366,7 +361,6 @@ function LocationDialog({ location, onSaved, onClose }: { location?: LocationDet
                   </option>
                 ))}
               </select>
-              <span className="hint">{t('loc.modeHint')}</span>
             </div>
           </fieldset>
         </div>
@@ -459,10 +453,6 @@ function DevicesDialog({ location, onClose }: { location: LocationDetails; onClo
             </table>
           </div>
         )}
-        <p className="muted">
-          Un serveur révoqué ne peut plus envoyer ni recevoir de données. S'il n'en reste aucun, l'établissement repasse en mode Cloud ; « Relier un serveur local » donne le code du PC de
-          remplacement.
-        </p>
       </div>
     </Dialog>
   );

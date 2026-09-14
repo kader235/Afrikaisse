@@ -219,10 +219,6 @@ function PairScreen({ server, onDone, onCancel }: { server?: ServerSwitch; onDon
         }
       >
         <ErrorMessage error={error} />
-        <p className="muted" style={{ marginBottom: 10 }}>
-          Dans AfriKaisse Cloud, menu Établissements : choisissez l'établissement, puis « Relier un serveur local ». Un code de 8 caractères s'affiche pendant 10 minutes. L'équipe, la salle et la carte
-          sont copiées sur ce PC ; les ventes remontent ensuite au Cloud dès qu'Internet est là.
-        </p>
         <div className="form" style={{ gridTemplateColumns: '140px minmax(0,1fr)' }}>
           <label htmlFor="pair-url">Adresse du Cloud</label>
           <input id="pair-url" type="url" required value={cloudUrl} onChange={(e) => setCloudUrl(e.target.value)} />
@@ -292,7 +288,6 @@ export function RegisterPage({ onSession, onLogin, server }: { onSession: (s: Se
           <div className="form">
             <label htmlFor="r-org">{t('auth.organizationName')}</label>
             <input id="r-org" required minLength={2} autoFocus value={form.organizationName} onChange={set('organizationName')} />
-            <span className="hint">{t('auth.organizationHint')}</span>
           </div>
         </fieldset>
         <fieldset className="group">

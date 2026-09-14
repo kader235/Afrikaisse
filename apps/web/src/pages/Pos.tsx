@@ -514,7 +514,7 @@ export function SaleTab({
         </div>
 
         <ul className="pos-lines">
-          {lines.length === 0 && <li className="pos-empty muted">Touchez un produit pour l'ajouter.</li>}
+          {lines.length === 0 && <li className="pos-empty muted">Ticket vide</li>}
           {lines.map((l) => (
             <li key={l.key} className="pos-line">
               <div>
@@ -756,7 +756,7 @@ function CheckoutTab({
 
       <aside className="floor-side">
         {!selected ? (
-          <p className="muted">Touchez une note pour afficher l'addition et l'encaisser.</p>
+          null
         ) : (
           <fieldset className="group order-detail">
             <legend>{checkTitle(selected)}</legend>
@@ -1105,9 +1105,6 @@ function DiscountDialog({ order, onDone, onClose }: { order: Order; onDone: (o: 
               {formatMoney(order.subtotal - preview, order.currency)} <small className="muted">(−{formatMoney(preview, order.currency)})</small>
             </strong>
           </div>
-          <p className="muted" style={{ marginTop: 10 }}>
-            La remise est inscrite au journal avec votre nom.
-          </p>
         </div>
       </Dialog>
     </form>
@@ -1289,7 +1286,6 @@ function DrawerTab({
         >
           <fieldset className="group drawer-open">
             <legend>Ouvrir la caisse</legend>
-            <p className="muted">Comptez les espèces présentes dans le tiroir avant le service.</p>
             <div className="form">
               <label htmlFor="float">Fond de caisse</label>
               <MoneyInput id="float" value={float} currency={currency} required onChange={setFloat} />
@@ -1544,9 +1540,6 @@ function CloseDialog({ session, onDone, onClose }: { session: CashSession; onDon
       >
         <div className="dialog-body">
           <ErrorMessage error={error} />
-          <p className="muted" style={{ marginBottom: 10 }}>
-            Comptez les espèces du tiroir et saisissez le total. La clôture est définitive et inscrite au journal.
-          </p>
           <div className="form">
             <label>Espèces attendues</label>
             <strong className="big-amount">{formatMoney(expected, session.currency)}</strong>

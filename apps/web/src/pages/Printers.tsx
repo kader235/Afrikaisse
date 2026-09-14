@@ -92,10 +92,6 @@ export function PrintersTab({ locationId, stations }: { locationId: string; stat
       <div className="window-body" style={{ paddingBottom: 0 }}>
         <ErrorMessage error={error} />
         {notice && !error && <OkMessage>{notice}</OkMessage>}
-        <p className="muted">
-          Imprimantes thermiques réseau (ESC/POS, port 9100) branchées sur la box du restaurant. Les tickets partent du serveur AfriKaisse installé sur le PC du restaurant. Sans ce serveur, utilisez
-          « Imprimer » depuis un ordinateur (ticket 80 mm).
-        </p>
       </div>
       <div className="grid-wrap" style={{ marginTop: 10 }}>
         <table className="grid">
@@ -277,9 +273,6 @@ function PrinterDialog({ locationId, printer, stations, onDone, onClose }: { loc
               Imprime les reçus de la caisse
             </label>
           </div>
-          <p className="muted" style={{ marginTop: 10 }}>
-            L'adresse IP s'imprime en général en maintenant le bouton d'avance papier au démarrage de l'imprimante. Réservez-la sur la box pour qu'elle ne change pas.
-          </p>
         </div>
       </Dialog>
     </form>

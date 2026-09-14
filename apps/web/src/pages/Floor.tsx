@@ -514,7 +514,7 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
                   )}
                 </fieldset>
               ) : (
-                <p className="muted">{editing ? t('floor.hintArrange') : t('floor.hintSelect')}</p>
+                null
               )}
               {editing && dirty && conflicts.size === 0 && <div className="msg msg-warn">{t('floor.unsaved')}</div>}
               {conflicts.size > 0 && (
@@ -958,7 +958,6 @@ function ZoneDialog({ locationId, zone, onSaved, onClose }: { locationId: string
             <input id="z-width" type="number" inputMode="numeric" required min={PLAN.minWidth} max={PLAN.maxWidth} value={form.planWidth} onChange={(e) => setForm({ ...form, planWidth: Number(e.target.value) })} />
             <label htmlFor="z-height">{t('floor.planHeight')}</label>
             <input id="z-height" type="number" inputMode="numeric" required min={PLAN.minHeight} max={PLAN.maxHeight} value={form.planHeight} onChange={(e) => setForm({ ...form, planHeight: Number(e.target.value) })} />
-            <span className="hint">{t('floor.planHint')}</span>
           </div>
         </div>
       </Dialog>
