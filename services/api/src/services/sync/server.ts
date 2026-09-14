@@ -65,6 +65,11 @@ async function buildSnapshot(db: Db, tenantId: string, locationId: string): Prom
     { table: 'media', rows: await any.selectFrom('media').selectAll().where('tenant_id', '=', tenantId).where(inScope).execute() },
   ];
   for (const table of LOCATION_TABLES) snapshot.push({ table, rows: await any.selectFrom(table).selectAll().where('location_id', '=', locationId).execute() });
+  // Un établissement relié en cours de journée continue sa numérotation (commande n°5, reçu n°12…) :
+  // repartir de 1 créerait des doublons que le Cloud refuserait.
+  for (const table of ['order_counters', 'document_counters']) {
+    snapshot.push({ table, rows: await any.selectFrom(table).selectAll().where('location_id', '=', locationId).execute() });
+  }
   return snapshot.map((t) => ({ table: t.table, rows: t.rows.map(encodeRow) }));
 }
 

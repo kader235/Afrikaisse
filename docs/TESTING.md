@@ -242,7 +242,27 @@ transport qui remplace le réseau (`syncTransport`), dans un seul scénario :
 | QR hybride | Commande QR en ligne n°901 → descendue « en attente » sur T2 → confirmée sur place → le client la voit confirmée en ligne |
 | Sécurité | Secret faux 401 ; identifiant mal formé 400 ; écriture dans une organisation voisine `REJECTED` ; élévation « administrateur plateforme » neutralisée (le renommage passe, le droit non) |
 
-**Défaut trouvé par ce test et corrigé** : sous PostgreSQL, un identifiant d'événement mal formé provoquait une erreur interne (colonne UUID). Il est désormais refusé dès l'entrée.
+Le scénario commence par un service déjà fait en ligne (commande n°1, reçu n°1, caisse clôturée) : la vente faite sur le PC devient la commande n°2 avec le reçu n°2.
+
+**Défauts trouvés et corrigés** :
+1. Sous PostgreSQL, un identifiant d'événement mal formé provoquait une erreur interne (colonne UUID). Il est désormais refusé dès l'entrée.
+2. Relié en cours de journée, le serveur local repartait de la commande n°1 et du reçu n°1 : le Cloud refusait les doublons (3 conflits). La copie initiale emporte maintenant les compteurs.
+
+**Essai réel par HTTP, sans rien installer** (`scratchpad/e2e-sync.mjs`) :
+- Cloud : l'API de démonstration (établissement « Sahel Saveurs Moursal », 4 commandes du jour) ;
+- serveur local : lancé depuis le paquet Windows par son lanceur, dossier de données neuf.
+
+| Étape | Résultat |
+|---|---|
+| Code créé dans le Cloud | `AJP9-RY8B` |
+| Serveur local neuf | `configured: false` |
+| Appairage par HTTP | « Groupe Sahel Saveurs — Sahel Saveurs Moursal », `configured: true`, 14 produits copiés |
+| Connexion sur le PC | compte du Cloud |
+| Vente à emporter sur le PC | commande **n°5**, reçu **n°4** (suite de la numérotation du Cloud) |
+| Synchronisation | 4 événements envoyés, 0 conflit, pas d'erreur |
+| Vu dans le Cloud | commande n°5, payée, client « Essai synchro » |
+
+Le premier passage de cet essai, avant le correctif 2, avait montré le défaut en conditions réelles.
 
 ## Vérification de l'application tablette (phase 2 bis)
 

@@ -132,7 +132,10 @@ dernier push et pull réussis, écart d'horloge avec le Cloud. Ces valeurs alime
 3. Le Cloud crée l'appareil `LOCAL_SERVER` et son secret (renvoyé une fois, stocké haché), passe l'établissement en `HYBRID`, et renvoie une **copie initiale** :
    - organisation, établissement, membres (mots de passe compris, droits plateforme retirés), photos ;
    - zones, tables, QR, postes, carte complète, imprimantes, stock et recettes ;
+   - les **compteurs de commandes et de reçus** : un établissement relié en cours de journée continue sa numérotation au lieu de repartir de 1 (sinon doublons refusés par le Cloud) ;
    - le curseur courant.
+
+   Avant l'appairage, **clôturer la caisse ouverte dans le Cloud** : un établissement n'a qu'une caisse ouverte, et c'est désormais celle du PC.
 4. Le serveur local l'insère et retient `sync_cloud_url`, `sync_device_id`, `sync_device_secret`, `sync_location_id` et `sync_cursor` dans `node_state`.
 
 **Boucle** (toutes les 5 s, serveur local relié) :

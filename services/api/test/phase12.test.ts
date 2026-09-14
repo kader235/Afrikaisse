@@ -47,6 +47,13 @@ describe.each(ENGINES)('Phase 12 — synchronisation serveur local ↔ Cloud (%s
     const jus = menu.products[0];
     const waiter = as(cloud, (await login(cloud, (await addMember(cloud, org.token, 'WAITER')).email)).json().accessToken);
 
+    // Déjà un service en ligne aujourd'hui : commande n°1 et reçu n°1 dans le Cloud, caisse clôturée.
+    await owner.post(`/api/locations/${locationId}/cash-sessions`, { openingFloat: 0 });
+    const early = (await owner.post(`/api/locations/${locationId}/orders`, { serviceType: 'TAKEAWAY', lines: [{ productId: jus.id, quantity: 1 }] })).json();
+    await owner.post(`/api/locations/${locationId}/payments`, { target: { kind: 'order', id: early.id }, method: 'CASH', amount: 1000 });
+    const cloudDrawer = (await owner.get(`/api/locations/${locationId}/cash-session`)).json().session;
+    await owner.post(`/api/cash-sessions/${cloudDrawer.id}/close`, { countedCash: 1000 });
+
     // Code d'appairage : responsable seulement.
     expect((await waiter.post(`/api/locations/${locationId}/pairing-code`)).statusCode).toBe(403);
     const { code } = (await owner.post(`/api/locations/${locationId}/pairing-code`)).json();
@@ -72,14 +79,20 @@ describe.each(ENGINES)('Phase 12 — synchronisation serveur local ↔ Cloud (%s
     // Une vente locale remonte : commande, paiement, caisse.
     await lo.post(`/api/locations/${locationId}/cash-sessions`, { openingFloat: 0 });
     const sale = (await lo.post(`/api/locations/${locationId}/orders`, { tableId: t1.id, lines: [{ productId: jus.id, quantity: 2 }] })).json();
-    expect((await lo.post(`/api/locations/${locationId}/payments`, { target: { kind: 'order', id: sale.id }, method: 'CASH', amount: 2000 })).statusCode).toBe(201);
+    const localReceipt = await lo.post(`/api/locations/${locationId}/payments`, { target: { kind: 'order', id: sale.id }, method: 'CASH', amount: 2000 });
+    expect(localReceipt.statusCode).toBe(201);
+    // La numérotation reprend là où le Cloud s'était arrêté.
+    expect([sale.number, localReceipt.json().payment.receiptNumber]).toEqual([2, 2]);
     const run = (await lo.post('/api/system/sync/now')).json();
     expect(run).toMatchObject({ conflicts: 0, status: { paired: true, pending: 0, lastError: null } });
     expect(run.pushed).toBeGreaterThanOrEqual(5);
     const cloudOrders = (await owner.get(`/api/locations/${locationId}/orders?view=today`)).json();
-    expect(cloudOrders.map((o: { number: number; total: number; paymentStatus: string }) => [o.number, o.total, o.paymentStatus])).toEqual([[1, 2000, 'PAID']]);
+    expect(cloudOrders.map((o: { number: number; total: number; paymentStatus: string }) => [o.number, o.total, o.paymentStatus]).sort((a: (string | number)[], b: (string | number)[]) => Number(a[0]) - Number(b[0]))).toEqual([
+      [1, 1000, 'PAID'],
+      [2, 2000, 'PAID'],
+    ]);
     const report = (await owner.get(`/api/locations/${locationId}/reports/sales?from=${sale.businessDate}&to=${sale.businessDate}`)).json();
-    expect(report.totals).toMatchObject({ revenue: 2000, collected: 2000 });
+    expect(report.totals).toMatchObject({ revenue: 3000, collected: 3000 });
 
     // Une modification faite en ligne redescend.
     await owner.patch(`/api/products/${jus.id}`, { price: 1500 });
@@ -90,7 +103,7 @@ describe.each(ENGINES)('Phase 12 — synchronisation serveur local ↔ Cloud (%s
     // Rejeu complet (coupure pendant un envoi) : aucun doublon.
     await localDb.db.updateTable('sync_events').set({ status: 'PENDING' }).where('device_id', '=', local.ctx.nodeId).execute();
     expect((await lo.post('/api/system/sync/now')).json()).toMatchObject({ conflicts: 0, status: { pending: 0 } });
-    expect((await owner.get(`/api/locations/${locationId}/orders?view=today`)).json()).toHaveLength(1);
+    expect((await owner.get(`/api/locations/${locationId}/orders?view=today`)).json()).toHaveLength(2);
 
     // QR en ligne d'un établissement hybride : numéroté 901, confirmé sur place, suivi en ligne.
     const token = (await owner.get(`/api/locations/${locationId}/qr-codes`)).json().codes.find((c: { tableLabel: string }) => c.tableLabel === 'T2').token;
