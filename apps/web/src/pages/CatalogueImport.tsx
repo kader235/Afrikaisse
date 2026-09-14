@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CATALOGUE_CATEGORIES, catalogueSchema, cataloguePrice, dishesForCountry, formatMoney, type AdminMenu, type Catalogue, type Media } from '@afrikaisse/core';
-import { UserFacingError, api } from '../api.ts';
+import { ApiError, UserFacingError, api } from '../api.ts';
 import { compressImage } from '../images.ts';
 import { COUNTRIES } from '../labels.ts';
 import { ErrorMessage } from '../ui.tsx';
@@ -9,6 +9,17 @@ import { ErrorMessage } from '../ui.tsx';
 const CATALOGUE_URL = '/catalogue/catalogue.json';
 const imageUrl = (file: string) => `/catalogue/images/${file}`;
 const RECOMMENDED = 'recommandes';
+
+/** Panne passagère du serveur (application qui redémarre chez l'hébergeur) : on retente une fois. */
+async function retryOnce<T>(call: () => Promise<T>): Promise<T> {
+  try {
+    return await call();
+  } catch (err) {
+    if (!(err instanceof ApiError) || (err.status !== 0 && err.status < 500)) throw err;
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    return call();
+  }
+}
 
 /**
  * Importer des plats pré-remplis : pays, famille de plats, cartes à cocher (nom, prix, courte description,
@@ -82,7 +93,7 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
       const same = (c: { name: string }) => c.name.trim().toLowerCase() === name.toLowerCase();
       const found = current.categories.find(same);
       if (found) return found.id;
-      current = await api<AdminMenu>('POST', `/locations/${menu.location.id}/categories`, { name });
+      current = await retryOnce(() => api<AdminMenu>('POST', `/locations/${menu.location.id}/categories`, { name }));
       return current.categories.find(same)!.id;
     };
 
@@ -94,18 +105,18 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
           try {
             const blob = await (await fetch(imageUrl(dish.image))).blob();
             const image = await compressImage(new File([blob], dish.image, { type: blob.type || 'image/webp' }), 1024, 0.8);
-            photoMediaId = (await api<Media>('POST', `/locations/${menu.location.id}/media`, { contentType: image.contentType, dataBase64: image.dataBase64 })).id;
+            photoMediaId = (await retryOnce(() => api<Media>('POST', `/locations/${menu.location.id}/media`, { contentType: image.contentType, dataBase64: image.dataBase64 }))).id;
           } catch {
             photoMediaId = null; // un plat sans photo vaut mieux qu'un plat absent
           }
         }
-        current = await api<AdminMenu>('POST', `/categories/${catId}/products`, {
+        current = await retryOnce(() => api<AdminMenu>('POST', `/categories/${catId}/products`, {
           name: dish.name,
           description: dish.description,
           price: cataloguePrice(dish.priceXaf, currency),
           photoMediaId,
           isAvailable: !unavailable.has(dish.id),
-        });
+        }));
         imported += 1;
       } catch {
         failed.push(dish.name);

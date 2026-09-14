@@ -91,7 +91,7 @@ export function MenuPage({ me }: { me: Me }) {
       count={menu ? `${menu.products.length} ${t('menu.productsCount')}` : undefined}
       bodyless
       toolbar={
-        (locations && locations.length > 1) || (menu && can('menu.manage')) ? (
+        (locations && locations.length > 1) || (menu && can('menu.manage') && menu.products.length > 0) ? (
           <>
             {locations && locations.length > 1 && (
               <select aria-label={t('team.location')} value={locationId ?? ''} onChange={(e) => setLocationId(e.target.value)} style={{ width: 'auto', marginInlineEnd: 8 }}>
@@ -102,7 +102,7 @@ export function MenuPage({ me }: { me: Me }) {
                 ))}
               </select>
             )}
-            {menu && can('menu.manage') && (
+            {menu && can('menu.manage') && menu.products.length > 0 && (
               <button className="btn btn-primary" onClick={() => setImporting(true)}>
                 <Icon name="add" />
                 Importer des plats

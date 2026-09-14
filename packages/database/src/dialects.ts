@@ -54,7 +54,12 @@ const INT8_OID = 20;
 async function postgresDialect(url: string, max: number): Promise<Dialect> {
   const pg = (await import('pg')).default;
   pg.types.setTypeParser(INT8_OID, (v) => Number(v));
-  return new PostgresDialect({ pool: new pg.Pool({ connectionString: url, max }) });
+  // Sur un hébergement mutualisé, PostgreSQL coupe les connexions inactives : sans écouteur, l'erreur
+  // émise par le pool arrête le processus Node (et l'hébergeur renvoie sa page d'erreur). On la journalise,
+  // on ferme nous-mêmes les connexions au repos, et le pool en rouvre une à la requête suivante.
+  const pool = new pg.Pool({ connectionString: url, max, idleTimeoutMillis: 10_000, keepAlive: true });
+  pool.on('error', (err) => console.error('PostgreSQL : connexion au repos perdue, elle sera rouverte.', err.message));
+  return new PostgresDialect({ pool });
 }
 
 /**

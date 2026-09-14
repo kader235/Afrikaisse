@@ -4160,3 +4160,265 @@ fieldset.group > legend + * {
   margin-top: 0;
   color: var(--ok);
 }
+
+/* =====================================================================
+ * Retouches « logiciel de gestion » : moins de gabarit, plus d'identité.
+ * Bandeau bleu comme Scolaar et WifiHub, liseré or, motif bogolan discret ;
+ * coins nets, bordures franches, pas d'ombres décoratives ni de dégradés.
+ * ===================================================================== */
+:root {
+  --bar-1: #134a8e;
+  --bar-2: #1a5fb4;
+  --bar-gold: #d4a24c;
+}
+
+:root[data-theme='dark'] {
+  --bar-1: #0e2747;
+  --bar-2: #153d70;
+  --bar-gold: #b8862f;
+}
+
+.topbar {
+  position: relative;
+  overflow: hidden;
+  height: 64px;
+  color: #ffffff;
+  background: linear-gradient(90deg, var(--bar-1), var(--bar-2));
+  border-bottom: 3px solid var(--bar-gold);
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  top: -150px;
+  right: -120px;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0, transparent 11px, rgba(255, 255, 255, 0.07) 11px, rgba(255, 255, 255, 0.07) 13px);
+  pointer-events: none;
+}
+
+.topbar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.topbar-brand svg {
+  padding: 3px;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.topbar-brand strong {
+  color: #ffffff;
+}
+
+.topbar-brand span {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.tabs {
+  align-self: stretch;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.tab {
+  height: 100%;
+  padding: 0 16px;
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 0;
+  border-bottom: 3px solid transparent;
+}
+
+.tab + .tab {
+  margin-inline-start: 0;
+}
+
+.tab:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tab[aria-current='page'] {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border-bottom-color: var(--bar-gold);
+  box-shadow: none;
+}
+
+.topbar-side {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+}
+
+.topbar-status {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: 10px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: #ffffff;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}
+
+.topbar-status.off {
+  background: rgba(199, 54, 43, 0.85);
+}
+
+.topbar-status .dot {
+  margin-inline-end: 6px;
+}
+
+.topbar-user {
+  padding: 6px 10px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+}
+
+.topbar-user:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.topbar-name {
+  margin: 0;
+}
+
+.topbar-name span {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 1180px) {
+  .topbar-name {
+    display: block;
+  }
+
+  .topbar-status {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    overflow: visible;
+  }
+
+  .tabs {
+    background: var(--window);
+    border-top: 1px solid var(--border);
+  }
+
+  .tab {
+    height: 56px;
+    color: var(--text-soft);
+    border-bottom: 0;
+  }
+
+  .tab:hover,
+  .tab[aria-current='page'] {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .topbar-name span {
+    display: none;
+  }
+}
+
+/* Coins nets, bordures franches, pas d'ombres décoratives. */
+.window,
+.kpi,
+.board-col,
+.alert-card,
+fieldset.group,
+.sheet-tile,
+.dish-card,
+.pos-tile,
+.order-card,
+.plan,
+.workspace .kds {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.dialog {
+  border-radius: 10px;
+}
+
+.btn,
+input,
+select,
+.chip-tab,
+.msg,
+.icon-btn {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.plan-table {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.tag,
+.window-title .count,
+.count-pill {
+  border-radius: 4px;
+}
+
+table.grid th {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-soft);
+  background: var(--grid-head);
+}
+
+.sheet-group h2 {
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-soft);
+}
+
+/* Pas de dégradés décoratifs. */
+.import-hero {
+  background: var(--band);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.pos-tile-initial,
+.dish-initial {
+  color: var(--muted);
+  background: var(--band);
+}
+
+.kpi-main {
+  background: var(--window);
+  border-color: var(--accent);
+}
+
+/* Téléphone : la barre d'onglets reste fixée en bas, malgré le premier plan donné aux enfants du bandeau. */
+@media (max-width: 760px) {
+  .topbar > .tabs {
+    position: fixed;
+    z-index: 30;
+  }
+}
+
+/* Téléphone : le motif du bandeau débordait de 120 px à droite et élargissait toute la page. */
+@media (max-width: 760px) {
+  .topbar::after {
+    display: none;
+  }
+}

@@ -72,7 +72,8 @@ async function toError(res: Response): Promise<ApiError> {
     const data = (await res.json()) as ErrorResponse;
     return new ApiError(res.status, data.error.code, data.error.message, data.error.details);
   } catch {
-    return new ApiError(res.status, 'INTERNAL', 'Réponse inattendue du serveur.');
+    // Page d'erreur de l'hébergeur (pare-feu, application qui redémarre…) : le code HTTP aide à trouver la cause.
+    return new ApiError(res.status, 'INTERNAL', `Réponse inattendue du serveur (HTTP ${res.status}).`);
   }
 }
 

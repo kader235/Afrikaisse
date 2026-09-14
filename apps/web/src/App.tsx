@@ -240,14 +240,18 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
             </button>
           )}
         </nav>
-        <button className="topbar-user" onClick={() => setMoreOpen(true)} aria-label="Mon compte et réglages">
-          <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
-          <span className="topbar-name">
-            <strong>{me.user.displayName}</strong>
-            <span>{me.role ? ROLE_LABELS[lang][me.role] : ''}</span>
+        <div className="topbar-side">
+          <span className={online ? 'topbar-status' : 'topbar-status off'}>
+            <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
+            {online ? 'En ligne' : 'Hors ligne'}
           </span>
-          <span className="avatar">{initials(me.user.displayName)}</span>
-        </button>
+          <button className="topbar-user" onClick={() => setMoreOpen(true)} aria-label="Mon compte et réglages">
+            <span className="topbar-name">
+              <strong>{me.user.displayName}</strong>
+              <span>{me.role ? ROLE_LABELS[lang][me.role] : ''}</span>
+            </span>
+          </button>
+        </div>
       </header>
 
       <main className="workspace">
@@ -302,14 +306,6 @@ const TAB_PRIORITY: Record<Role, Section[]> = {
   STOCK_MANAGER: ['stock', 'menu'],
 };
 
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join('');
-
 const GROUP_TITLES: Record<NavItem['group'], string> = { service: 'Service', admin: 'Administration', account: 'Compte' };
 
 /** « Plus » : tout ce qui n'a pas sa place dans les onglets, en grandes tuiles, avec les réglages et la déconnexion. */
@@ -344,7 +340,6 @@ function MoreSheet({
     <div className="sheet-overlay" role="presentation" onClick={onClose}>
       <aside className="sheet" role="dialog" aria-modal="true" aria-label="Plus" onClick={(e) => e.stopPropagation()}>
         <div className="sheet-head">
-          <span className="avatar avatar-lg">{initials(me.user.displayName)}</span>
           <div className="sheet-who">
             <strong>{me.user.displayName}</strong>
             <span>
