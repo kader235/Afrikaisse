@@ -4566,3 +4566,17 @@ table.grid td.empty {
     grid-column: 1 / -1;
   }
 }
+
+/* Rail : un libellé passe à la ligne plutôt que d'être coupé (police agrandie par le système). */
+@media (max-width: 1200px), (pointer: coarse) and (max-width: 1366px) {
+  .sidebar .nav-label {
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Tableau vide : le message se lit en entier. */
+table.grid td.empty {
+  white-space: normal;
+}

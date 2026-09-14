@@ -147,7 +147,7 @@ export function StockPage({ me }: { me: Me }) {
                     {items?.length === 0 && (
                       <tr>
                         <td className="empty" colSpan={6}>
-                          Aucun article. Créez vos ingrédients et boissons (poulet, riz, huile, bouteilles…), puis faites une réception.
+                          Aucun article en stock.
                         </td>
                       </tr>
                     )}
