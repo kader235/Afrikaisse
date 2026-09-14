@@ -80,10 +80,10 @@ creer_base() {
   esac
   utilisateurs="$(uapi --output=json Postgresql list_users 2>&1 || true)"
   case "$utilisateurs" in
-    *"\"$BASE\""*) uapi_ok Postgresql set_password user="$BASE" password="$MDP" || return 1; echo "  utilisateur $BASE : nouveau mot de passe" ;;
-    *) uapi_ok Postgresql create_user name="$BASE" password="$MDP" || return 1; echo "  utilisateur $BASE créé" ;;
+    *"\"$UTILISATEUR\""*) uapi_ok Postgresql set_password user="$UTILISATEUR" password="$MDP" || return 1; echo "  utilisateur $UTILISATEUR : nouveau mot de passe" ;;
+    *) uapi_ok Postgresql create_user name="$UTILISATEUR" password="$MDP" || return 1; echo "  utilisateur $UTILISATEUR créé" ;;
   esac
-  uapi_ok Postgresql grant_all_privileges user="$BASE" database="$BASE" || return 1
+  uapi_ok Postgresql grant_all_privileges user="$UTILISATEUR" database="$BASE" || return 1
 }
 
 echo "== Vérifications =="
@@ -103,9 +103,11 @@ if [ -f "$APP/.env" ]; then
 else
   PREMIERE_FOIS=1
   BASE="$(whoami)_afrikaisse"
+  # cPanel refuse un utilisateur du même nom que la base.
+  UTILISATEUR="$(whoami)_afk"
   if [ -n "$MDP_MANUEL" ]; then
     MDP="$MDP_MANUEL"
-    echo "  base créée à la main : $BASE"
+    echo "  base créée à la main : $BASE, utilisateur $UTILISATEUR"
   else
     MDP="$(openssl rand -base64 36 | tr -dc 'A-Za-z0-9' | head -c 32)"
     if ! creer_base; then
@@ -113,9 +115,9 @@ else
       echo "cPanel n'accepte pas la création automatique. Faites-la à la main, une seule fois :"
       echo "  1. cPanel > Bases de données PostgreSQL > Créer une base : afrikaisse"
       echo "     (cPanel la nomme $BASE)"
-      echo "  2. Même page > Ajouter un utilisateur : afrikaisse, avec un mot de passe solide"
-      echo "     (cPanel le nomme $BASE). Notez ce mot de passe."
-      echo "  3. Même page > Ajouter l'utilisateur à la base : $BASE sur $BASE, tous les privilèges"
+      echo "  2. Même page > Ajouter un utilisateur : afk, avec un mot de passe solide"
+      echo "     (cPanel le nomme $UTILISATEUR). Notez ce mot de passe."
+      echo "  3. Même page > Ajouter l'utilisateur à la base : $UTILISATEUR sur $BASE, tous les privilèges"
       echo "  4. Terminal :  bash ~/DEPOSER-AFRIKAISSE.sh base"
       echo "     puis tapez le mot de passe de l'étape 2."
       exit 1
@@ -128,7 +130,7 @@ else
   umask 077
   cat > "$APP/.env" <<FIN
 AFK_PROFILE=cloud
-AFK_DB=postgres://${BASE}:${MDP_URL}@localhost/${BASE}
+AFK_DB=postgres://${UTILISATEUR}:${MDP_URL}@localhost/${BASE}
 AFK_JWT_SECRET=${SECRET}
 AFK_PUBLIC_URL=${ADRESSE}
 AFK_WEB_DIR=${APP}/web
