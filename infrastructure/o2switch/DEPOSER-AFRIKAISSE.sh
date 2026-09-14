@@ -9,6 +9,9 @@
 #   1. Gestionnaire de fichiers : déposer afrikaisse.tar.gz et ce fichier dans le dossier personnel
 #   2. Terminal cPanel :   bash ~/DEPOSER-AFRIKAISSE.sh
 #
+# Si cPanel refuse de créer la base tout seul, la créer à la main (le script explique comment), puis :
+#   bash ~/DEPOSER-AFRIKAISSE.sh base        (le mot de passe est demandé, sans s'afficher)
+#
 # Donner l'accès « Plateforme » (une fois, compte déjà créé sur le site) :
 #   bash ~/DEPOSER-AFRIKAISSE.sh admin vous@exemple.td
 #
@@ -45,6 +48,16 @@ if [ "${1:-}" = "admin" ]; then
   exit 0
 fi
 
+MDP_MANUEL=""
+if [ "${1:-}" = "base" ]; then
+  read -rsp "Mot de passe de l'utilisateur de la base (il ne s'affiche pas) : " MDP_MANUEL
+  echo
+  if [ -z "$MDP_MANUEL" ]; then
+    echo "Mot de passe vide : rien n'a été fait."
+    exit 1
+  fi
+fi
+
 # Appel cPanel qui échoue bruyamment : uapi répond 0 même quand il refuse.
 uapi_ok() {
   local reponse
@@ -53,8 +66,24 @@ uapi_ok() {
     *'"status":1'*) return 0 ;;
   esac
   echo "cPanel a refusé : uapi $*" | sed 's/password=[^ ]*/password=***/'
-  printf '%s\n' "$reponse" | grep -o '"errors":\[[^]]*\]' | head -1 || true
+  printf '%s\n' "$reponse" | grep -o '"errors":\[[^]]*\]' | head -c 300 || true
+  echo
   return 1
+}
+
+creer_base() {
+  local bases utilisateurs
+  bases="$(uapi --output=json Postgresql list_databases 2>&1 || true)"
+  case "$bases" in
+    *"\"$BASE\""*) echo "  base $BASE déjà créée" ;;
+    *) uapi_ok Postgresql create_database name="$BASE" || return 1; echo "  base $BASE créée" ;;
+  esac
+  utilisateurs="$(uapi --output=json Postgresql list_users 2>&1 || true)"
+  case "$utilisateurs" in
+    *"\"$BASE\""*) uapi_ok Postgresql set_password user="$BASE" password="$MDP" || return 1; echo "  utilisateur $BASE : nouveau mot de passe" ;;
+    *) uapi_ok Postgresql create_user name="$BASE" password="$MDP" || return 1; echo "  utilisateur $BASE créé" ;;
+  esac
+  uapi_ok Postgresql grant_all_privileges user="$BASE" database="$BASE" || return 1
 }
 
 echo "== Vérifications =="
@@ -74,25 +103,32 @@ if [ -f "$APP/.env" ]; then
 else
   PREMIERE_FOIS=1
   BASE="$(whoami)_afrikaisse"
-  MDP="$(openssl rand -base64 36 | tr -dc 'A-Za-z0-9' | head -c 32)"
+  if [ -n "$MDP_MANUEL" ]; then
+    MDP="$MDP_MANUEL"
+    echo "  base créée à la main : $BASE"
+  else
+    MDP="$(openssl rand -base64 36 | tr -dc 'A-Za-z0-9' | head -c 32)"
+    if ! creer_base; then
+      echo
+      echo "cPanel n'accepte pas la création automatique. Faites-la à la main, une seule fois :"
+      echo "  1. cPanel > Bases de données PostgreSQL > Créer une base : afrikaisse"
+      echo "     (cPanel la nomme $BASE)"
+      echo "  2. Même page > Ajouter un utilisateur : afrikaisse, avec un mot de passe solide"
+      echo "     (cPanel le nomme $BASE). Notez ce mot de passe."
+      echo "  3. Même page > Ajouter l'utilisateur à la base : $BASE sur $BASE, tous les privilèges"
+      echo "  4. Terminal :  bash ~/DEPOSER-AFRIKAISSE.sh base"
+      echo "     puis tapez le mot de passe de l'étape 2."
+      exit 1
+    fi
+  fi
   SECRET="$(openssl rand -base64 72 | tr -dc 'A-Za-z0-9' | head -c 64)"
-
-  BASES="$(uapi --output=json PostgresqlFE list_databases 2>&1 || true)"
-  case "$BASES" in
-    *"\"$BASE\""*) echo "  base $BASE déjà créée" ;;
-    *) uapi_ok PostgresqlFE create_database name="$BASE"; echo "  base $BASE créée" ;;
-  esac
-  UTILISATEURS="$(uapi --output=json PostgresqlFE list_users 2>&1 || true)"
-  case "$UTILISATEURS" in
-    *"\"$BASE\""*) uapi_ok PostgresqlFE set_password user="$BASE" password="$MDP"; echo "  utilisateur $BASE : nouveau mot de passe" ;;
-    *) uapi_ok PostgresqlFE create_user name="$BASE" password="$MDP"; echo "  utilisateur $BASE créé" ;;
-  esac
-  uapi_ok PostgresqlFE grant_all_privileges user="$BASE" database="$BASE"
+  # Le mot de passe va dans une adresse postgres:// : ses caractères spéciaux doivent être encodés.
+  MDP_URL="$("$NODE" -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$MDP")"
 
   umask 077
   cat > "$APP/.env" <<FIN
 AFK_PROFILE=cloud
-AFK_DB=postgres://${BASE}:${MDP}@localhost/${BASE}
+AFK_DB=postgres://${BASE}:${MDP_URL}@localhost/${BASE}
 AFK_JWT_SECRET=${SECRET}
 AFK_PUBLIC_URL=${ADRESSE}
 AFK_WEB_DIR=${APP}/web
@@ -134,7 +170,13 @@ echo
 
 echo "== Base =="
 if ! (cd "$APP" && "$NODE" cli.cjs migrate); then
-  echo "La base n'a pas pu être mise à jour. Envoyez une photo de cet écran."
+  echo "La base n'a pas pu être mise à jour."
+  if [ "$PREMIERE_FOIS" = "1" ]; then
+    echo "Première installation : vérifiez le mot de passe et que l'utilisateur est bien ajouté à la base,"
+    echo "puis effacez le réglage raté et recommencez :"
+    echo "  rm ~/afrikaisse/.env && bash ~/DEPOSER-AFRIKAISSE.sh base"
+  fi
+  echo "Envoyez une photo de cet écran."
   exit 1
 fi
 echo
@@ -170,7 +212,7 @@ case "$VU" in
       *)
         echo "L'application ne répond pas avec la nouvelle version."
         echo "Réponse reçue : ${VU:-rien}"
-        echo "Journal : tail -50 $APP/passenger.log"
+        echo "Journal :  tail -50 ~/afrikaisse/stderr.log"
         echo "Envoyez une photo de cet écran et de ce journal."
         ;;
     esac

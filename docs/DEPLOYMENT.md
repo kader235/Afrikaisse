@@ -65,7 +65,7 @@ fait le reste :
 
 | Étape | Détail |
 |---|---|
-| Première fois | Crée la base PostgreSQL et son utilisateur (`uapi PostgresqlFE`), écrit `~/afrikaisse/.env` : mot de passe et secret JWT générés sur place, `chmod 600`. Un `.env` existant n'est jamais réécrit |
+| Première fois | Crée la base PostgreSQL et son utilisateur (`uapi Postgresql`, ou à la main dans cPanel si le module est refusé : `bash ~/DEPOSER-AFRIKAISSE.sh base`), écrit `~/afrikaisse/.env` : mot de passe et secret JWT générés sur place, `chmod 600`. Un `.env` existant n'est jamais réécrit |
 | Sauvegarde | `sauvegarder.sh` avant toute migration d'une base existante (pg_dump compressé, 14 jours) |
 | Code | Remplace `web/`, pose `server.cjs`, `cli.cjs`, `VERSION` |
 | Base | `node cli.cjs migrate` : une erreur arrête tout |
