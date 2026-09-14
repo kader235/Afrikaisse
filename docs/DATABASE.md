@@ -120,6 +120,18 @@ d'activité des écrans.
 | `products` (colonne ajoutée) | Poste du produit | `station_id` (null : premier poste Cuisine) |
 | `order_items` (colonnes ajoutées) | Routage et avancement en cuisine | `station_id` (copié à la commande), `kds_status` `QUEUED/PREPARING/READY`, `kds_updated_at` ; index (station_id, kds_status) |
 
+## Tables livrées en phase 13 (migration `0007_stock`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `inventory_items` | Article de stock | name, unit, `min_level_milli`, unit_cost, status |
+| `inventory_movements` | Mouvement, **ajout seulement** | item_id, kind `IN/OUT/LOSS/COUNT/SALE/SALE_CANCEL`, `quantity_milli` signé, unit_cost, reason, order_id, by_user_id |
+| `recipe_items` | Ligne de recette | product_id, variant_id (null : toutes versions), item_id, `quantity_milli` |
+| `products` (colonne ajoutée) | Motif d'épuisement | `unavailable_reason` : `STOCK` ou null |
+
+Quantités en **millièmes entiers**. Le niveau n'est pas stocké : c'est `SUM(quantity_milli)`.
+Écart assumé avec le schéma cible : pas de table `recipes` séparée, la recette est l'ensemble des lignes d'un produit.
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

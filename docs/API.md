@@ -193,6 +193,23 @@ et « Bar ». Annoncer une commande « prête » depuis l'écran Commandes marqu
 | GET | `/*` (hors `/api`) | — | Serveur local lancé avec `AFK_WEB_DIR` : application web (`assets/` en cache définitif, pages sans cache), `/m/{jeton}` → menu client, toute autre adresse sans extension → `index.html` ; jamais de fichier hors du dossier |
 | GET | `/api/locations/{id}/reports/sales?from=AAAA-MM-JJ&to=AAAA-MM-JJ` | `reports.read` | Ventes par **journée d'exploitation** (366 jours au plus) : `totals` (chiffre d'affaires, encaissé, commandes, ticket moyen, articles, remises, annulées), `byDay` (tous les jours de la période), `byMethod`, `byHour` (fuseau de l'établissement), `bySource`, `byServiceType`, `topProducts` (15). Chiffre d'affaires = commandes confirmées non annulées ; les commandes QR encore en attente n'y entrent pas |
 
+## Routes de la phase 13 — stock et recettes
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/inventory` | `inventory.read` | Articles : niveau (somme des mouvements), seuil, coût unitaire, valeur, état `OK/LOW/OUT`, nombre de recettes |
+| POST | `/api/locations/{id}/inventory` | `inventory.manage` | Créer : nom, unité (`PIECE, PORTION, KG, G, L, CL, ML`), seuil, coût |
+| PATCH | `/api/inventory/{id}` | `inventory.manage` | Modifier |
+| POST | `/api/inventory/{id}/archive` | `inventory.manage` | Refusé (409, produits listés) s'il entre dans une recette |
+| POST | `/api/inventory/{id}/movements` | `inventory.manage` | `IN` (réception, coût facultatif qui devient le coût de référence), `OUT` et `LOSS` (motif obligatoire, jamais au-delà du stock), `COUNT` (quantité comptée : l'écart est enregistré). Quantités décimales, 3 décimales au plus |
+| GET | `/api/inventory/{id}/movements` | `inventory.read` | 100 derniers mouvements (dont ventes `SALE` et `SALE_CANCEL` avec n° de commande) |
+| GET / PUT | `/api/products/{id}/recipe` | `inventory.read` / `inventory.manage` | Recette : `{itemId, variantId \| null, quantity}` ; `variantId: null` = toutes versions |
+
+Effets sur les commandes :
+- **Confirmation** d'une commande (saisie en caisse ou par un serveur, ou QR confirmé) : déduction des recettes (`SALE`), une seule fois.
+- **Annulation après confirmation** : restitution (`SALE_CANCEL`).
+- **Ingrédient insuffisant pour une portion** : le plat passe épuisé avec le motif `STOCK` (journal `menu.stock_out`). Il redevient disponible au réapprovisionnement (`menu.stock_back`), sauf si quelqu'un l'a épuisé à la main.
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

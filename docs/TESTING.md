@@ -192,6 +192,16 @@ Installateur `AfriKaisse-Setup-0.1.0.exe` compilé (Inno Setup 6). L'installatio
 - plan de salle avec Salle et Terrasse ;
 - menu aux 5 catégories.
 
+## Phase 13 — stock (158 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Articles et mouvements | Nouvel article vide « épuisé » ; réception de 10 à 1 500 → valeur 15 000 ; quantités décimales (5,5 kg ; 0,33 l) ; inventaire compté → écart −9 ; perte sans motif 400 ; sortie au-delà du stock 409 ; 4 décimales 400 |
+| Recettes | Poulet + riz ; bissap par version (0,33 l / 1 l) ; version d'un autre produit 404 ; même article deux fois 400 ; article d'un autre restaurant 404 |
+| Ventes | Commande caisse de 2 yassas, 1 bissap 1 l et du pain sans recette → poulet 8, riz 5,1, bissap 1 ; mouvement « vente » avec le n° de commande ; annulation → stock restauré ; commande QR en attente : rien ; confirmée (deux fois) : une seule déduction |
+| Rupture | Dernier poulet vendu → yassa épuisé en caisse et sur le menu QR, nouvelle commande refusée ; réception → disponible ; épuisé à la main : le stock ne le remet pas en vente |
+| Droits et isolation | Serveur refusé ; magasinier crée un article ; archivage refusé tant qu'une recette l'utilise ; autre organisation 404 |
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

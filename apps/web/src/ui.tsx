@@ -55,6 +55,7 @@ const ICONS = {
   kitchen: 'M3 7.5h10v6H3zM1.5 7.5h13M5.5 5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5M6 10.5h4',
   chart: 'M2 14h12M4 12V8M7 12V4M10 12V6.5M13 12V9',
   start: 'M3 8.5l3 3 7-7',
+  box: 'M2 5l6-3 6 3v6l-6 3-6-3zM2 5l6 3 6-3M8 8v6',
 } as const;
 export type IconName = keyof typeof ICONS;
 

@@ -24,6 +24,7 @@ import type { OrdersTable } from '@afrikaisse/database';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import { requireTenant, type AuthState, type TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
+import { consumeStock, restoreStock } from './stock.ts';
 
 /**
  * Commandes, sessions de table et appels du client.
@@ -553,6 +554,9 @@ export async function updateOrderStatus(ctx: AppContext, auth: AuthState | null,
     }
     await addHistory(trx, ctx, order, order.status, to, { userId: scope.userId, source: 'STAFF', reason: cleanReason }, hlc);
     await emitOrder(trx, ctx, orderId, 'ORDER_STATUS_CHANGED', hlc);
+    // Stock : consommé à la confirmation, restitué si la commande est annulée ensuite.
+    if (to === 'CONFIRMED') await consumeStock(trx, ctx, order, scope.userId);
+    if (to === 'CANCELLED') await restoreStock(trx, ctx, order, scope.userId);
     let final = to;
     // Payée d'avance (comptoir) puis servie : rien ne reste à faire, la commande se termine seule.
     if (to === 'SERVED' && order.payment_status === 'PAID') {

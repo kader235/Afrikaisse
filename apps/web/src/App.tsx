@@ -14,6 +14,7 @@ import { PosPage } from './pages/Pos.tsx';
 import { KitchenPage } from './pages/Kitchen.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
 import { StartPage } from './pages/Start.tsx';
+import { StockPage } from './pages/Stock.tsx';
 import type { SetupStatus } from '@afrikaisse/core';
 import { useActivityFeed } from './activity.ts';
 import { ServerPage } from './pages/Server.tsx';
@@ -28,7 +29,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'start' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'start' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -159,6 +160,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect') },
     { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use') },
     { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read') },
+    { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read') },
     { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
     { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read') },
     { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
@@ -174,6 +176,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     if (me.role === 'CASHIER') return 'pos';
     if (me.role === 'KITCHEN' || me.role === 'BAR') return 'kitchen';
     if (me.role === 'WAITER') return 'floor';
+    if (me.role === 'STOCK_MANAGER') return 'stock';
     if (can('orders.read')) return 'orders';
     if (can('tables.read')) return 'floor';
     if (can('menu.availability')) return 'menu';
@@ -286,6 +289,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'pos' && <PosPage me={me} />}
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
         {current === 'reports' && <ReportsPage />}
+        {current === 'stock' && <StockPage me={me} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
         {current === 'floor' && <FloorPage me={me} feed={feed} />}

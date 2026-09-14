@@ -243,6 +243,29 @@ Menu **Cuisine** : cuisiniers et barmen arrivent directement dessus.
 - Les commandes QR n'arrivent en cuisine qu'une fois **confirmées** par la salle.
 - **Plein écran** masque tout le reste sur une tablette murale.
 
+## Le stock
+
+Menu **Stock** (propriétaire, administrateur, gérant, magasinier).
+
+### Articles
+- **Nouvel article** : poulet (pièce), riz (kg), huile (l), bière 65 cl (pièce)… avec un **seuil d'alerte** et un coût.
+- **Réception** à chaque livraison : quantité et coût. Le dernier coût devient la référence.
+- **Inventaire** : saisir ce qui a été compté ; AfriKaisse enregistre l'écart.
+- **Perte** (périmé, cassé) et **Sortie** : toujours avec un motif.
+- Le stock n'est jamais tapé à la main : il découle des mouvements. Toucher un article affiche son historique, ventes comprises, avec leur numéro de commande.
+- État **Bas** sous le seuil, **Épuisé** à zéro ; l'onglet affiche le nombre d'articles à réapprovisionner.
+
+### Recettes
+Onglet **Recettes** : choisir un plat, puis ajouter ses ingrédients.
+- Exemple : poulet yassa = 1 poulet et 0,2 kg de riz.
+- Pour une boisson en plusieurs formats, une ligne par **version** : bissap 33 cl = 0,33 l, 1 litre = 1 l.
+- Le **coût matière estimé** et sa part du prix de vente s'affichent.
+
+Pendant le service :
+- **Déduction** : chaque commande confirmée déduit sa recette ; une commande annulée la rend.
+- **Rupture** : quand un ingrédient ne suffit plus pour une portion, le plat passe **épuisé** tout seul, sur la caisse comme sur le menu QR.
+- **Réapprovisionnement** : il revient à la réception suivante. Un plat épuisé à la main reste épuisé.
+
 ## Le tableau de bord
 
 Menu **Tableau de bord** (propriétaire, administrateur, gérant).

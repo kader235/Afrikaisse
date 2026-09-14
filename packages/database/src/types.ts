@@ -214,6 +214,8 @@ export interface ProductsTable {
   promo_price: number | null;
   prep_time_min: number | null;
   station_id: string | null;
+  /** 'STOCK' : épuisé par le stock, rendu disponible seul au réapprovisionnement. */
+  unavailable_reason: 'STOCK' | null;
   photo_media_id: string | null;
   is_available: Bool;
   /** JSON : tableau de chaînes. */
@@ -520,7 +522,54 @@ export interface StationsTable {
   updated_hlc: string;
 }
 
+export interface InventoryItemsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  unit: 'PIECE' | 'PORTION' | 'KG' | 'G' | 'L' | 'CL' | 'ML';
+  min_level_milli: number;
+  unit_cost: number | null;
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+/** Ajout seulement : le niveau d'un article est la somme de ses mouvements (en millièmes). */
+export interface InventoryMovementsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  item_id: string;
+  kind: 'IN' | 'OUT' | 'LOSS' | 'COUNT' | 'SALE' | 'SALE_CANCEL';
+  quantity_milli: number;
+  unit_cost: number | null;
+  reason: string | null;
+  order_id: string | null;
+  by_user_id: string | null;
+  created_at: number;
+  hlc: string;
+}
+
+export interface RecipeItemsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  product_id: string;
+  /** null : pour toutes les versions du produit. */
+  variant_id: string | null;
+  item_id: string;
+  quantity_milli: number;
+  created_at: number;
+  updated_hlc: string;
+}
+
 export interface Database {
+  inventory_items: InventoryItemsTable;
+  inventory_movements: InventoryMovementsTable;
+  recipe_items: RecipeItemsTable;
   stations: StationsTable;
   cash_sessions: CashSessionsTable;
   cash_movements: CashMovementsTable;

@@ -27,6 +27,7 @@ import type { CashSessionsTable } from '@afrikaisse/database';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
+import { consumeStock } from './stock.ts';
 import {
   addHistory,
   assertLocation,
@@ -128,6 +129,7 @@ export async function createStaffOrder(ctx: AppContext, scope: TenantScope, loca
         await insertItems(trx, ctx, order, priced);
         await addHistory(trx, ctx, order, null, 'CONFIRMED', { userId: scope.userId, source: 'STAFF' }, hlc);
         await emitOrder(trx, ctx, orderId, 'ORDER_PLACED', hlc);
+        await consumeStock(trx, ctx, order, scope.userId);
       });
       return loadOrder(ctx.db, orderId);
     } catch (err) {

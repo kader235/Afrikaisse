@@ -406,6 +406,7 @@ export async function createProduct(ctx: AppContext, scope: TenantScope, categor
         promo_price: input.promoPrice,
         prep_time_min: input.prepTimeMin,
         station_id: input.stationId,
+        unavailable_reason: null,
         photo_media_id: input.photoMediaId,
         is_available: flag(input.isAvailable),
         tags: JSON.stringify(input.tags),
@@ -508,7 +509,8 @@ export async function setProductAvailability(ctx: AppContext, scope: TenantScope
   assertActive(product.status, 'Ce produit est archivé.');
   await ctx.db.transaction().execute(async (trx) => {
     const hlc = ctx.clock.now();
-    await trx.updateTable('products').set({ is_available: flag(isAvailable), updated_at: ctx.now(), updated_hlc: hlc }).where('id', '=', productId).execute();
+    // Geste manuel : il prime sur le stock (un produit épuisé à la main ne revient pas seul).
+    await trx.updateTable('products').set({ is_available: flag(isAvailable), unavailable_reason: null, updated_at: ctx.now(), updated_hlc: hlc }).where('id', '=', productId).execute();
     await emitRow(trx, ctx, 'products', productId, hlc);
     await writeAudit(trx, ctx, { tenantId: scope.tenantId, locationId: product.location_id, actorUserId: scope.userId, action: isAvailable ? 'menu.product_available' : 'menu.product_sold_out', entityType: 'product', entityId: productId, data: { name: product.name }, meta });
   });
