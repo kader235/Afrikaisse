@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   MOBILE_MONEY_PROVIDERS,
+  MONEY_MAX,
   ORDER_STATUS_LABELS,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
@@ -154,7 +155,12 @@ export function PosPage({ me }: { me: Me }) {
     const id = setInterval(() => {
       if (!document.hidden) void loadChecks();
     }, 5000);
-    return () => clearInterval(id);
+    const onVisible = () => !document.hidden && void loadChecks();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [loadChecks, loadDrawer]);
 
   useEffect(() => {
@@ -171,6 +177,10 @@ export function PosPage({ me }: { me: Me }) {
     void loadChecks();
     void loadDrawer();
   };
+  const say = (text: string) => {
+    setError(null);
+    setNotice(text);
+  };
 
   if (!locationId || !location) return <ErrorMessage error={new Error('Aucun établissement')} />;
 
@@ -183,25 +193,51 @@ export function PosPage({ me }: { me: Me }) {
 
   return (
     <>
-      <Window
-        className="page-pos"
-        title="Caisse"
-        count={drawer ? `Caisse ouverte · espèces ${formatMoney(drawer.summary.expectedCash, currency)}` : drawer === null && canCollect ? 'Caisse fermée' : undefined}
-        bodyless
-      >
-        <div className="subtabs" role="tablist">
-          {tabs
-            .filter(([, , visible]) => visible)
-            .map(([id, label]) => (
-              <button key={id} role="tab" aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>
-                {label}
-                {id === 'checkout' && due.length > 0 && <span className="count-pill">{due.length}</span>}
-              </button>
-            ))}
+      <Window className="page-pos" title="Caisse" bodyless>
+        <div className="pos-bar">
+          <div className="subtabs" role="tablist">
+            {tabs
+              .filter(([, , visible]) => visible)
+              .map(([id, label]) => (
+                <button
+                  key={id}
+                  role="tab"
+                  aria-current={tab === id ? 'page' : undefined}
+                  onClick={() => {
+                    setTab(id);
+                    setError(null);
+                    setNotice(null);
+                  }}
+                >
+                  {label}
+                  {id === 'checkout' && due.length > 0 && <span className="count-pill">{due.length}</span>}
+                </button>
+              ))}
+          </div>
+          {canCollect && drawer !== undefined && (
+            <div className="pos-drawer">
+              {drawer ? (
+                <>
+                  <span className="st st-ready">Caisse ouverte</span>
+                  <span className="pos-drawer-cash">Espèces {formatMoney(drawer.summary.expectedCash, currency)}</span>
+                </>
+              ) : (
+                <>
+                  <span className="st st-cancelled">Caisse fermée</span>
+                  {tab !== 'drawer' && (
+                    <button className="btn" onClick={() => setTab('drawer')}>
+                      Ouvrir la caisse
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        {(!!error || notice) && (
-          <div className="window-body" style={{ paddingBottom: 0 }}>
+        {/* En vente, les messages vont dans le ticket : rien ne doit décaler les produits sous le doigt. */}
+        {tab !== 'sale' && (!!error || notice) && (
+          <div className="pos-messages">
             <ErrorMessage error={error} />
             {notice && !error && <OkMessage>{notice}</OkMessage>}
           </div>
@@ -212,11 +248,18 @@ export function PosPage({ me }: { me: Me }) {
             locationId={locationId}
             menu={menu}
             floor={floor}
+            checks={checks}
             currency={currency}
             canCollect={canCollect}
-            onSent={(order, payNow) => {
+            drawerOpen={!!drawer}
+            error={error}
+            notice={notice}
+            onDismiss={() => {
               setError(null);
-              setNotice(`Commande n°${order.number} envoyée · ${formatMoney(order.total, order.currency)}`);
+              setNotice(null);
+            }}
+            onSent={(order, payNow) => {
+              say(`Commande n°${order.number} envoyée · ${formatMoney(order.total, order.currency)}`);
               void loadChecks();
               if (payNow) {
                 setPaying({
@@ -251,10 +294,7 @@ export function PosPage({ me }: { me: Me }) {
             locationName={location.name}
             onPay={setPaying}
             onChanged={refresh}
-            onNotice={(text) => {
-              setError(null);
-              setNotice(text);
-            }}
+            onNotice={say}
             onOpenDrawer={() => setTab('drawer')}
             print={print}
           />
@@ -271,10 +311,7 @@ export function PosPage({ me }: { me: Me }) {
               if (next !== undefined) setDrawer(next);
               refresh();
             }}
-            onNotice={(text) => {
-              setError(null);
-              setNotice(text);
-            }}
+            onNotice={say}
             onReceipt={setReceipt}
             print={print}
           />
@@ -290,8 +327,7 @@ export function PosPage({ me }: { me: Me }) {
           onDone={(r) => {
             setPaying(null);
             setReceipt(r);
-            setError(null);
-            setNotice(`Reçu n°${r.payment.receiptNumber} · ${PAYMENT_METHOD_LABELS[r.payment.method]} ${formatMoney(r.payment.amount, r.location.currency)}`);
+            say(`Reçu n°${r.payment.receiptNumber} · ${PAYMENT_METHOD_LABELS[r.payment.method]} ${formatMoney(r.payment.amount, r.location.currency)}`);
             refresh();
           }}
         />
@@ -309,8 +345,7 @@ export function PosPage({ me }: { me: Me }) {
                   onClick={async () => {
                     try {
                       await api('POST', `/payments/${receipt.payment.id}/print`);
-                      setError(null);
-                      setNotice(`Reçu n°${receipt.payment.receiptNumber} envoyé à l'imprimante de caisse.`);
+                      say(`Reçu n°${receipt.payment.receiptNumber} envoyé à l'imprimante de caisse.`);
                       setReceipt(null);
                     } catch (err) {
                       setError(err);
@@ -352,18 +387,28 @@ export function SaleTab({
   locationId,
   menu,
   floor,
+  checks,
   currency,
   canCollect,
+  drawerOpen,
   fixedTableId,
+  error,
+  notice,
+  onDismiss,
   onSent,
   onError,
 }: {
   locationId: string;
   menu: AdminMenu | null;
   floor: Floor | null;
+  checks?: Check[] | null;
   currency: CurrencyCode;
   canCollect: boolean;
+  drawerOpen?: boolean;
   fixedTableId?: string;
+  error?: unknown;
+  notice?: ReactNode;
+  onDismiss?: () => void;
   onSent: (order: Order, payNow: boolean) => void;
   onError: (err: unknown) => void;
 }) {
@@ -374,7 +419,9 @@ export function SaleTab({
   const [tableId, setTableId] = useState(fixedTableId ?? '');
   const [customerName, setCustomerName] = useState('');
   const [note, setNote] = useState('');
+  const [noteOpen, setNoteOpen] = useState(false);
   const [options, setOptions] = useState<PricingProduct | null>(null);
+  const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const categories = useMemo(() => (menu ? [...menu.categories].sort((a, b) => a.sort - b.sort) : []), [menu]);
@@ -385,11 +432,21 @@ export function SaleTab({
     const list = q ? menu.products.filter((p) => p.name.toLowerCase().includes(q)) : menu.products.filter((p) => p.categoryId === activeCategory);
     return [...list].sort((a, b) => a.sort - b.sort);
   }, [menu, activeCategory, query]);
+  // Sans aucune photo dans la liste, des tuiles de texte : pas de cadres vides.
+  const withPhotos = products.some((p) => p.photoUrl);
+  const inTicket = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const l of lines) counts.set(l.productId, (counts.get(l.productId) ?? 0) + l.quantity);
+    return counts;
+  }, [lines]);
 
   const total = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
   const count = lines.reduce((s, l) => s + l.quantity, 0);
+  const table = floor?.tables.find((t) => t.id === (fixedTableId ?? tableId)) ?? null;
+  const tableZone = table ? floor?.zones.find((z) => z.id === table.zoneId) : undefined;
 
   function add(line: Omit<TicketLine, 'key'>) {
+    if (error || notice) onDismiss?.();
     setLines((current) => {
       const same = current.find((l) => l.productId === line.productId && l.variantId === line.variantId && l.note === line.note && [...l.modifierIds].sort().join() === [...line.modifierIds].sort().join());
       return same ? current.map((l) => (l === same ? { ...l, quantity: Math.min(99, l.quantity + line.quantity) } : l)) : [...current, { ...line, key: nextKey() }];
@@ -420,6 +477,7 @@ export function SaleTab({
       });
       setLines([]);
       setNote('');
+      setNoteOpen(false);
       setCustomerName('');
       setTableId(fixedTableId ?? '');
       onSent(order, payNow);
@@ -430,100 +488,113 @@ export function SaleTab({
     }
   }
 
-  const zones = floor ? [...floor.zones].sort((a, b) => a.sort - b.sort) : [];
-
   return (
     <div className="pos-sale">
-      <nav className="pos-cats" aria-label="Catégories">
-        {!menu && <p className="muted pad">Chargement…</p>}
-        {categories.map((c) => (
-          <button
-            key={c.id}
-            aria-current={!query && activeCategory === c.id ? 'true' : undefined}
-            onClick={() => {
-              setQuery('');
-              setCategoryId(c.id);
-            }}
-          >
-            {c.name}
-          </button>
-        ))}
-      </nav>
-
       <div className="pos-catalog">
-        <div className="pos-search">
-          <input type="search" placeholder="Rechercher un produit…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Rechercher un produit" />
+        <div className="pos-browse">
+          <label className="pos-search">
+            <Icon name="search" />
+            <input type="search" placeholder="Rechercher" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Rechercher un produit" />
+          </label>
+          <nav className="pos-cats" aria-label="Catégories">
+            {!menu && <span className="muted">Chargement…</span>}
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                aria-pressed={!query && activeCategory === c.id}
+                onClick={() => {
+                  setQuery('');
+                  setCategoryId(c.id);
+                }}
+              >
+                {c.name}
+              </button>
+            ))}
+          </nav>
         </div>
-        <div className="pos-products">
-          {menu && products.length === 0 && <p className="muted">Aucun produit.</p>}
+
+        <div className={withPhotos ? 'pos-products' : 'pos-products pos-products-text'}>
+          {menu && products.length === 0 && <p className="pos-none muted">{query ? 'Aucun produit trouvé.' : 'Aucun produit dans cette catégorie.'}</p>}
           {products.map((p) => {
             const hasOptions = p.variants.length > 0 || p.modifierGroupIds.length > 0;
+            const qty = inTicket.get(p.id) ?? 0;
             return (
-              <button key={p.id} className="pos-tile" disabled={!p.isAvailable} onClick={() => tap(p)}>
-                {p.photoUrl ? (
-                  <img className="pos-tile-photo" src={mediaSrc(p.photoUrl)} alt="" loading="lazy" />
-                ) : (
-                  <span className="pos-tile-photo pos-tile-initial" aria-hidden="true">
-                    {p.name.slice(0, 1).toUpperCase()}
-                  </span>
-                )}
+              <button key={p.id} className={qty > 0 ? 'pos-tile in-ticket' : 'pos-tile'} disabled={!p.isAvailable} onClick={() => tap(p)}>
+                {withPhotos &&
+                  (p.photoUrl ? (
+                    <img className="pos-tile-photo" src={mediaSrc(p.photoUrl)} alt="" loading="lazy" />
+                  ) : (
+                    <span className="pos-tile-photo pos-tile-blank" aria-hidden="true">
+                      <Icon name="kitchen" />
+                    </span>
+                  ))}
                 <span className="pos-tile-name">{p.name}</span>
                 <span className="pos-tile-foot">
                   <span className="pos-tile-price">{formatMoney(p.promoPrice ?? p.price, currency)}</span>
-                  {!p.isAvailable ? <span className="st st-cancelled">Épuisé</span> : hasOptions && <span className="muted">Options…</span>}
+                  {!p.isAvailable ? <span className="pos-tile-tag">Épuisé</span> : hasOptions && <span className="pos-tile-tag">Options</span>}
                 </span>
+                {qty > 0 && (
+                  <span className="pos-tile-qty" aria-label={`${qty} dans le ticket`}>
+                    {qty}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      <aside className="pos-ticket">
+      <aside className="pos-ticket" aria-label="Ticket">
         <div className="pos-dest">
           {fixedTableId ? (
-            <strong className="pos-fixed">Table {floor?.tables.find((t) => t.id === fixedTableId)?.label}</strong>
+            <strong className="pos-fixed">Table {table?.label}</strong>
           ) : (
-          <>
-          <span className="segmented">
-            {(['DINE_IN', 'TAKEAWAY'] as const).map((s) => (
-              <button key={s} className="btn" aria-pressed={serviceType === s} onClick={() => setServiceType(s)}>
-                {SERVICE_TYPE_LABELS[s]}
-              </button>
-            ))}
-          </span>
-          {serviceType === 'DINE_IN' ? (
-            <select aria-label="Table" value={tableId} onChange={(e) => setTableId(e.target.value)}>
-              <option value="">Sans table (comptoir)</option>
-              {zones.map((z) => (
-                <optgroup key={z.id} label={z.name}>
-                  {floor!.tables
-                    .filter((t) => t.zoneId === z.id)
-                    .sort((a, b) => a.label.localeCompare(b.label, 'fr', { numeric: true }))
-                    .map((t) => (
-                      <option key={t.id} value={t.id}>
-                        Table {t.label}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>
-          ) : (
-            <input placeholder="Nom du client (facultatif)" maxLength={60} value={customerName} onChange={(e) => setCustomerName(e.target.value)} aria-label="Nom du client" />
-          )}
-          </>
+            <>
+              <span className="segmented">
+                {(['DINE_IN', 'TAKEAWAY'] as const).map((s) => (
+                  <button key={s} className="btn" aria-pressed={serviceType === s} onClick={() => setServiceType(s)}>
+                    {SERVICE_TYPE_LABELS[s]}
+                  </button>
+                ))}
+              </span>
+              {serviceType === 'DINE_IN' ? (
+                <button type="button" className="pos-pick" disabled={!floor} onClick={() => setPicking(true)}>
+                  <Icon name="table" />
+                  <span className="pos-pick-text">
+                    <small>{table ? tableZone?.name ?? 'Table' : 'Table'}</small>
+                    <strong>{table ? `Table ${table.label}` : 'Comptoir'}</strong>
+                  </span>
+                  <Icon name="chevron" />
+                </button>
+              ) : (
+                <input placeholder="Nom du client" maxLength={60} value={customerName} onChange={(e) => setCustomerName(e.target.value)} aria-label="Nom du client" />
+              )}
+            </>
           )}
         </div>
 
         <ul className="pos-lines">
-          {lines.length === 0 && <li className="pos-empty muted">Ticket vide</li>}
+          {lines.length === 0 &&
+            (notice ? (
+              <li className="pos-empty">
+                <OkMessage>{notice}</OkMessage>
+              </li>
+            ) : (
+              <li className="pos-empty muted">Ticket vide</li>
+            ))}
           {lines.map((l) => (
             <li key={l.key} className="pos-line">
-              <div>
-                <strong>{l.name}</strong>
-                {l.detail && <div className="muted">{l.detail}</div>}
-                {l.note && <div className="order-note">« {l.note} »</div>}
+              <strong className="pos-line-name">{l.name}</strong>
+              <span className="pos-line-total num">{formatMoney(l.unitPrice * l.quantity, currency)}</span>
+              <div className="pos-line-detail">
+                {l.detail && <span>{l.detail}</span>}
+                {l.quantity > 1 && (
+                  <span>
+                    {l.quantity} × {formatMoney(l.unitPrice, currency)}
+                  </span>
+                )}
+                {l.note && <span className="order-note">« {l.note} »</span>}
               </div>
-              <span className="num">{formatMoney(l.unitPrice * l.quantity, currency)}</span>
               <span className="qty">
                 <button className="btn" aria-label={`Retirer un ${l.name}`} onClick={() => changeQty(l.key, -1)}>
                   −
@@ -538,24 +609,41 @@ export function SaleTab({
         </ul>
 
         <div className="pos-foot">
-          <input placeholder="Remarque pour la cuisine" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} aria-label="Remarque" />
+          {!!error && <ErrorMessage error={error} />}
+          {(noteOpen || !!note) && (
+            <input className="pos-note" autoFocus={!note} placeholder="Remarque pour la cuisine" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} aria-label="Remarque pour la cuisine" />
+          )}
           <div className="pos-total">
             <span>
-              Total <small className="muted">({count} article{count > 1 ? 's' : ''})</small>
+              Total · {count} article{count > 1 ? 's' : ''}
             </span>
             <strong>{formatMoney(total, currency)}</strong>
           </div>
-          <div className="pos-actions">
-            <button className="btn btn-primary" disabled={busy || lines.length === 0} onClick={() => send(false)}>
-              Envoyer la commande
-            </button>
-            {canCollect && (
-              <button className="btn" disabled={busy || lines.length === 0} onClick={() => send(true)}>
+          <button className="btn btn-primary pos-send" disabled={busy || lines.length === 0} onClick={() => send(false)}>
+            Envoyer la commande
+          </button>
+          <div className="pos-tools">
+            {canCollect && drawerOpen && (
+              <button className="btn pos-collect" disabled={busy || lines.length === 0} onClick={() => send(true)}>
+                <Icon name="cash" />
                 Envoyer et encaisser
               </button>
             )}
-            <button className="btn" disabled={busy || lines.length === 0} onClick={() => setLines([])}>
-              Vider le ticket
+            <button className="btn btn-icon" title="Remarque pour la cuisine" aria-label="Remarque pour la cuisine" aria-pressed={noteOpen || !!note} onClick={() => setNoteOpen((open) => !open)}>
+              <Icon name="edit" />
+            </button>
+            <button
+              className="btn btn-icon"
+              title="Vider le ticket"
+              aria-label="Vider le ticket"
+              disabled={busy || lines.length === 0}
+              onClick={() => {
+                setLines([]);
+                setNote('');
+                setNoteOpen(false);
+              }}
+            >
+              <Icon name="trash" />
             </button>
           </div>
         </div>
@@ -572,7 +660,68 @@ export function SaleTab({
           }}
         />
       )}
+
+      {picking && floor && (
+        <TablePicker
+          floor={floor}
+          checks={checks ?? null}
+          currency={currency}
+          value={tableId}
+          onClose={() => setPicking(false)}
+          onPick={(id) => {
+            setTableId(id);
+            setPicking(false);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/** Choix de la table au doigt : les tables par zone, libres ou occupées (reste à payer). */
+function TablePicker({ floor, checks, currency, value, onPick, onClose }: { floor: Floor; checks: Check[] | null; currency: CurrencyCode; value: string; onPick: (tableId: string) => void; onClose: () => void }) {
+  const open = new Map<string, Check>();
+  for (const c of checks ?? []) if (c.kind === 'session' && c.tableId) open.set(c.tableId, c);
+  const zones = [...floor.zones].sort((a, b) => a.sort - b.sort);
+
+  return (
+    <Dialog
+      title="Choisir la table"
+      onClose={onClose}
+      wide
+      footer={
+        <button type="button" className="btn" onClick={onClose}>
+          Annuler
+        </button>
+      }
+    >
+      <div className="dialog-body table-picker">
+        <button type="button" className="pick-counter" aria-pressed={!value} onClick={() => onPick('')}>
+          Comptoir, sans table
+        </button>
+        {zones.map((z) => {
+          const tables = floor.tables.filter((t) => t.zoneId === z.id && t.status === 'ACTIVE').sort((a, b) => a.label.localeCompare(b.label, 'fr', { numeric: true }));
+          if (tables.length === 0) return null;
+          return (
+            <section key={z.id} className="pick-zone">
+              <h3>{z.name}</h3>
+              <div className="pick-grid">
+                {tables.map((t) => {
+                  const check = open.get(t.id);
+                  return (
+                    <button type="button" key={t.id} className="pick-table" aria-pressed={value === t.id} onClick={() => onPick(t.id)}>
+                      <strong>{t.label}</strong>
+                      <span className={check ? 'st st-progress' : 'st st-ready'}>{check ? 'Occupée' : 'Libre'}</span>
+                      <small className="muted">{check ? formatMoney(check.remaining, currency) : `${t.capacity} places`}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </Dialog>
   );
 }
 
@@ -708,59 +857,37 @@ function CheckoutTab({
   const [discountFor, setDiscountFor] = useState<Order | null>(null);
   const [transfer, setTransfer] = useState(false);
   const list = checks ?? [];
-  const selected = list.find((c) => `${c.kind}:${c.id}` === selectedKey) ?? null;
+  const keyOf = (c: Check) => `${c.kind}:${c.id}`;
+  // Toujours une note affichée : jamais de panneau vide à côté de la liste.
+  const selected = list.find((c) => keyOf(c) === selectedKey) ?? list[0] ?? null;
 
   return (
-    <div className="floor">
-      <div className="grid-wrap">
-        <table className="grid">
-          <thead>
-            <tr>
-              <th>Note</th>
-              <th>Ouverte</th>
-              <th>Cmd</th>
-              <th>Total</th>
-              <th>Payé</th>
-              <th>Reste</th>
-            </tr>
-          </thead>
-          <tbody>
-            {checks === null && (
-              <tr>
-                <td className="empty" colSpan={6}>
-                  Chargement…
-                </td>
-              </tr>
-            )}
-            {checks !== null && list.length === 0 && (
-              <tr>
-                <td className="empty" colSpan={6}>
-                  Aucune note ouverte.
-                </td>
-              </tr>
-            )}
-            {list.map((c) => (
-              <tr key={`${c.kind}:${c.id}`} className="selectable" aria-selected={`${c.kind}:${c.id}` === selectedKey} onClick={() => setSelectedKey(`${c.kind}:${c.id}`)}>
-                <td>
-                  <strong>{checkTitle(c)}</strong>
-                </td>
-                <td className="num">{hhmm(c.openedAt)}</td>
-                <td className="num">{c.orders.length}</td>
-                <td className="num">{formatMoney(c.total, c.currency)}</td>
-                <td className="num">{c.paid > 0 ? formatMoney(c.paid, c.currency) : '—'}</td>
-                <td className="num">{c.remaining > 0 ? <strong>{formatMoney(c.remaining, c.currency)}</strong> : <span className="st st-ready">Réglée</span>}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="pos-checkout">
+      <div className="check-list" role="listbox" aria-label="Notes ouvertes">
+        {checks === null && <p className="check-empty muted">Chargement…</p>}
+        {checks !== null && list.length === 0 && <p className="check-empty muted">Aucune note ouverte.</p>}
+        {list.map((c) => (
+          <button key={keyOf(c)} role="option" aria-selected={selected === c} className="check-row" onClick={() => setSelectedKey(keyOf(c))}>
+            <span className="check-row-main">
+              <strong>{checkTitle(c)}</strong>
+              <small className="muted">
+                {hhmm(c.openedAt)} · {c.orders.length} commande{c.orders.length > 1 ? 's' : ''}
+                {c.paid > 0 && ` · payé ${formatMoney(c.paid, c.currency)}`}
+              </small>
+            </span>
+            <span className="check-row-amount">{c.remaining > 0 ? formatMoney(c.remaining, c.currency) : <span className="st st-ready">Réglée</span>}</span>
+            <Icon name="chevronRight" />
+          </button>
+        ))}
       </div>
 
-      <aside className="floor-side">
-        {!selected ? (
-          null
-        ) : (
-          <fieldset className="group order-detail">
-            <legend>{checkTitle(selected)}</legend>
+      {selected && (
+        <aside className="check-detail" aria-label={checkTitle(selected)}>
+          <div className="check-detail-head">
+            <strong>{checkTitle(selected)}</strong>
+            <span className="muted">Ouverte à {hhmm(selected.openedAt)}</span>
+          </div>
+          <div className="check-detail-body">
             {selected.orders.length === 0 && <p className="muted">Aucune commande en cours sur cette table.</p>}
             {selected.orders.map((o) => (
               <div key={o.id} className="check-order">
@@ -801,9 +928,11 @@ function CheckoutTab({
                 )}
               </div>
             ))}
-            <div className="order-total">
+          </div>
+          <div className="check-detail-foot">
+            <div className="order-line-head">
               <span>Total</span>
-              <strong>{formatMoney(selected.total, selected.currency)}</strong>
+              <span className="num">{formatMoney(selected.total, selected.currency)}</span>
             </div>
             {selected.paid > 0 && (
               <div className="order-line-head">
@@ -811,14 +940,15 @@ function CheckoutTab({
                 <span className="num">{formatMoney(selected.paid, selected.currency)}</span>
               </div>
             )}
-            <div className="order-total big">
+            <div className="check-due">
               <span>Reste à payer</span>
               <strong>{formatMoney(selected.remaining, selected.currency)}</strong>
             </div>
-            <div className="order-actions">
+            <div className="check-actions">
               {has('payments.collect') &&
                 (drawerOpen ? (
                   <button className="btn btn-primary" disabled={selected.remaining <= 0} onClick={() => onPay(selected)}>
+                    <Icon name="cash" />
                     Encaisser
                   </button>
                 ) : (
@@ -826,21 +956,26 @@ function CheckoutTab({
                     Ouvrir la caisse pour encaisser
                   </button>
                 ))}
-              {print && selected.orders.length > 0 && (
-                <button className="btn" onClick={() => print(<BillTicket check={selected} locationName={locationName} />)}>
-                  <Icon name="print" />
-                  Imprimer l'addition
-                </button>
-              )}
-              {selected.kind === 'session' && has('orders.create') && (
-                <button className="btn" onClick={() => setTransfer(true)}>
-                  Changer de table
-                </button>
+              {((print && selected.orders.length > 0) || (selected.kind === 'session' && has('orders.create'))) && (
+                <div className="check-actions-row">
+                  {print && selected.orders.length > 0 && (
+                    <button className="btn" onClick={() => print(<BillTicket check={selected} locationName={locationName} />)}>
+                      <Icon name="print" />
+                      Addition
+                    </button>
+                  )}
+                  {selected.kind === 'session' && has('orders.create') && (
+                    <button className="btn" onClick={() => setTransfer(true)}>
+                      <Icon name="move" />
+                      Changer de table
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          </fieldset>
-        )}
-      </aside>
+          </div>
+        </aside>
+      )}
 
       {discountFor && (
         <DiscountDialog
@@ -871,38 +1006,55 @@ function CheckoutTab({
   );
 }
 
+/** Billets courants en FCFA : l’exact, puis les coupures rondes jusqu’au billet de 50 000. */
+const CASH_NOTES = [500, 1000, 2000, 5000, 10000, 20000, 50000];
+
+const KEYPAD = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '00', '0', 'back'] as const;
+
+/**
+ * Encaissement au pavé numérique : pas de clavier du système qui recouvre la fenêtre sur tablette.
+ * Deux cases : le montant encaissé et, en espèces, la somme reçue ; la première touche remplace la valeur affichée.
+ * Au clavier physique, chiffres, retour arrière et Entrée fonctionnent aussi.
+ */
 export function PayDialog({ locationId, check, drawerOpen, onDone, onClose }: { locationId: string; check: Check; drawerOpen: boolean; onDone: (r: Receipt) => void; onClose: () => void }) {
   const currency = check.currency;
   const [method, setMethod] = useState<PaymentMethod>('CASH');
-  const [amount, setAmount] = useState<number | null>(check.remaining);
-  const [amountKey, setAmountKey] = useState(0);
+  const [amount, setAmount] = useState(check.remaining);
   const [tendered, setTendered] = useState<number | null>(null);
-  const [tenderedKey, setTenderedKey] = useState(0);
+  const [field, setField] = useState<'amount' | 'tendered'>('tendered');
+  const [fresh, setFresh] = useState(true);
   const [provider, setProvider] = useState('');
   const [reference, setReference] = useState('');
   const { busy, error, run } = useAction();
 
-  const value = amount ?? 0;
-  const given = tendered ?? value;
-  const change = method === 'CASH' ? given - value : 0;
-  const valid = value > 0 && value <= check.remaining && (method !== 'CASH' || given >= value);
+  const target = method === 'CASH' ? field : 'amount';
+  const given = tendered ?? amount;
+  const change = method === 'CASH' ? given - amount : 0;
+  const valid = amount > 0 && amount <= check.remaining && (method !== 'CASH' || given >= amount);
 
-  const setSplit = (parts: number) => {
-    setAmount(splitEvenly(check.remaining, parts)[0]!);
-    setAmountKey((k) => k + 1);
-    setTendered(null);
-    setTenderedKey((k) => k + 1);
-  };
+  function focusField(next: 'amount' | 'tendered') {
+    setField(next);
+    setFresh(true);
+  }
 
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!valid) return;
+  function press(key: string) {
+    const current = target === 'amount' ? amount : tendered ?? 0;
+    const base = fresh ? 0 : current;
+    const next = key === 'back' ? Math.floor(base / 10) : key === 'clear' ? 0 : base * 10 ** key.length + Number(key);
+    if (next > MONEY_MAX) return;
+    setFresh(false);
+    if (target === 'amount') setAmount(next);
+    else setTendered(next);
+  }
+
+  function pay() {
+    if (!valid || busy || !drawerOpen) return;
     void run(async () => {
       onDone(
         await api<Receipt>('POST', `/locations/${locationId}/payments`, {
           target: { kind: check.kind, id: check.id },
           method,
-          amount: value,
+          amount,
           tendered: method === 'CASH' ? given : null,
           provider: method === 'MOBILE_MONEY' ? provider.trim() || null : null,
           reference: reference.trim() || null,
@@ -911,16 +1063,43 @@ export function PayDialog({ locationId, check, drawerOpen, onDone, onClose }: { 
     });
   }
 
+  // Clavier physique : les touches alimentent le pavé, sauf pendant la saisie de la référence.
+  const pressRef = useRef(press);
+  const payRef = useRef(pay);
+  pressRef.current = press;
+  payRef.current = pay;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      if (/^[0-9]$/.test(e.key)) pressRef.current(e.key);
+      else if (e.key === 'Backspace') pressRef.current('back');
+      else if (e.key === 'Delete') pressRef.current('clear');
+      else if (e.key === 'Enter') payRef.current();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const parts = [1, 2, 3, 4].map((n) => [n, splitEvenly(check.remaining, n)[0]!] as const);
+
   return (
-    <form onSubmit={submit}>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        pay();
+      }}
+    >
       <Dialog
         title={`Encaisser — ${checkTitle(check)}`}
         onClose={onClose}
         wide
         footer={
           <>
-            <button className="btn btn-primary" disabled={!valid || busy || !drawerOpen}>
-              Valider {valid && `· ${formatMoney(value, currency)}`}
+            <button className="btn btn-primary pay-submit" disabled={!valid || busy || !drawerOpen}>
+              Valider · {formatMoney(amount, currency)}
             </button>
             <button type="button" className="btn" onClick={onClose}>
               Annuler
@@ -928,85 +1107,120 @@ export function PayDialog({ locationId, check, drawerOpen, onDone, onClose }: { 
           </>
         }
       >
-        <div className="dialog-body">
+        <div className="dialog-body pay">
           <ErrorMessage error={error} />
           {!drawerOpen && <div className="msg msg-warn">La caisse est fermée : ouvrez-la dans l'onglet Caisse.</div>}
-          <div className="order-total big">
-            <span>Reste à payer</span>
-            <strong>{formatMoney(check.remaining, currency)}</strong>
-          </div>
-          <div className="pay-methods">
-            {PAYMENT_METHODS.map((m) => (
-              <button type="button" key={m} className="chip" aria-pressed={method === m} onClick={() => setMethod(m)}>
-                {PAYMENT_METHOD_LABELS[m]}
-              </button>
-            ))}
-          </div>
+          <div className="pay-grid">
+            <div className="pay-side">
+              <div className="pay-due">
+                <span>Reste à payer</span>
+                <strong>{formatMoney(check.remaining, currency)}</strong>
+              </div>
 
-          <div className="form" style={{ marginTop: 12 }}>
-            <label htmlFor="pay-amount">Montant</label>
-            <div>
-              <MoneyInput key={amountKey} id="pay-amount" value={amount} currency={currency} required onChange={setAmount} />
-              <div className="chips" style={{ marginTop: 6 }}>
-                <button type="button" className="chip" onClick={() => setSplit(1)}>
-                  Tout
-                </button>
-                {[2, 3, 4].map((n) => (
-                  <button type="button" key={n} className="chip" onClick={() => setSplit(n)}>
-                    1/{n} · {formatMoney(splitEvenly(check.remaining, n)[0]!, currency)}
+              <span className="pay-label">Mode de paiement</span>
+              <div className="pay-methods">
+                {PAYMENT_METHODS.map((m) => (
+                  <button
+                    type="button"
+                    key={m}
+                    className="chip"
+                    aria-pressed={method === m}
+                    onClick={() => {
+                      setMethod(m);
+                      focusField(m === 'CASH' ? 'tendered' : 'amount');
+                    }}
+                  >
+                    {PAYMENT_METHOD_LABELS[m]}
                   </button>
                 ))}
               </div>
-            </div>
 
-            {method === 'CASH' && (
-              <>
-                <label htmlFor="pay-tendered">Somme remise</label>
-                <div>
-                  <MoneyInput key={tenderedKey} id="pay-tendered" value={tendered} currency={currency} allowEmpty onChange={setTendered} />
-                  <div className="chips" style={{ marginTop: 6 }}>
-                    {cashSuggestions(value).map((v) => (
-                      <button
-                        type="button"
-                        key={v}
-                        className="chip"
-                        aria-pressed={tendered === v}
-                        onClick={() => {
-                          setTendered(v);
-                          setTenderedKey((k) => k + 1);
-                        }}
-                      >
-                        {formatMoney(v, currency)}
+              <span className="pay-label">Part de l'addition</span>
+              <div className="pay-split">
+                {parts.map(([n, value]) => (
+                  <button
+                    type="button"
+                    key={n}
+                    className="chip"
+                    aria-pressed={amount === value && (n === 1 || value !== check.remaining)}
+                    onClick={() => {
+                      setAmount(value);
+                      setTendered(null);
+                      focusField(method === 'CASH' ? 'tendered' : 'amount');
+                    }}
+                  >
+                    {n === 1 ? 'Tout' : `1/${n}`}
+                  </button>
+                ))}
+              </div>
+
+              {method === 'MOBILE_MONEY' && (
+                <>
+                  <span className="pay-label">Opérateur</span>
+                  <div className="chips">
+                    {MOBILE_MONEY_PROVIDERS.map((p) => (
+                      <button type="button" key={p} className="chip" aria-pressed={provider === p} onClick={() => setProvider(provider === p ? '' : p)}>
+                        {p}
                       </button>
                     ))}
                   </div>
-                </div>
-                <label>Monnaie à rendre</label>
-                <strong className={change < 0 ? 'big-amount danger' : 'big-amount'}>{change < 0 ? 'Somme insuffisante' : formatMoney(change, currency)}</strong>
-              </>
-            )}
-
-            {method === 'MOBILE_MONEY' && (
-              <>
-                <label htmlFor="pay-provider">Opérateur</label>
-                <>
-                  <input id="pay-provider" list="mm-providers" maxLength={40} value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="Airtel Money, Moov Money…" />
-                  <datalist id="mm-providers">
-                    {MOBILE_MONEY_PROVIDERS.map((p) => (
-                      <option key={p} value={p} />
-                    ))}
-                  </datalist>
                 </>
-              </>
-            )}
-            {method !== 'CASH' && (
-              <>
-                <label htmlFor="pay-ref">Référence</label>
-                <input id="pay-ref" maxLength={60} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={method === 'MOBILE_MONEY' ? 'N° de transaction' : 'Facultatif'} />
-              </>
-            )}
+              )}
+              {method !== 'CASH' && (
+                <label className="pay-ref">
+                  <span className="pay-label">Référence</span>
+                  <input maxLength={60} value={reference} onChange={(e) => setReference(e.target.value)} placeholder={method === 'MOBILE_MONEY' ? 'N° de transaction' : 'Facultatif'} />
+                </label>
+              )}
+            </div>
+
+            <div className="pay-pad">
+              <button type="button" className="pay-field" aria-pressed={target === 'amount'} onClick={() => focusField('amount')}>
+                <span>Montant encaissé</span>
+                <strong>{formatMoney(amount, currency)}</strong>
+              </button>
+              {method === 'CASH' && (
+                <>
+                  <button type="button" className="pay-field" aria-pressed={target === 'tendered'} onClick={() => focusField('tendered')}>
+                    <span>Reçu du client</span>
+                    <strong>{formatMoney(given, currency)}</strong>
+                  </button>
+                  <div className="chips pay-quick">
+                    {cashSuggestions(amount, CASH_NOTES)
+                      .slice(0, 4)
+                      .map((v) => (
+                        <button
+                          type="button"
+                          key={v}
+                          className="chip"
+                          aria-pressed={given === v}
+                          onClick={() => {
+                            setTendered(v);
+                            focusField('tendered');
+                          }}
+                        >
+                          {formatMoney(v, currency)}
+                        </button>
+                      ))}
+                  </div>
+                </>
+              )}
+              <div className="keypad">
+                {KEYPAD.map((k) => (
+                  <button type="button" key={k} className="keypad-key" aria-label={k === 'back' ? 'Effacer un chiffre' : undefined} onClick={() => press(k)}>
+                    {k === 'back' ? <Icon name="backspace" /> : k}
+                  </button>
+                ))}
+              </div>
+              {method === 'CASH' && (
+                <div className="pay-change">
+                  <span>Monnaie à rendre</span>
+                  <strong>{change < 0 ? 'Insuffisant' : formatMoney(change, currency)}</strong>
+                </div>
+              )}
+            </div>
           </div>
-          {value > check.remaining && <div className="msg msg-warn" style={{ marginTop: 10 }}>Le montant dépasse le reste à payer.</div>}
+          {amount > check.remaining && <div className="msg msg-warn pay-over">Le montant dépasse le reste à payer.</div>}
         </div>
       </Dialog>
     </form>

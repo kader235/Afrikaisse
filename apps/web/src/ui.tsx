@@ -64,6 +64,9 @@ const ICONS = {
   bell: 'M4 11.5V7a4 4 0 0 1 8 0v4.5l1.5 1.5h-11zM6.5 14.5h3',
   list: 'M2.5 4h11M2.5 8h11M2.5 12h11',
   close: 'M4 4l8 8M12 4l-8 8',
+  trash: 'M2.5 4h11M6 4V2.5h4V4M3.8 4l.7 10h7l.7-10M6.7 6.5v5M9.3 6.5v5',
+  search: 'M7 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM14 14l-3.5-3.5',
+  backspace: 'M5.5 3h8.5v10H5.5L1.5 8zM7.5 6l4 4M11.5 6l-4 4',
   chevron: 'M4 6l4 4 4-4',
 } as const;
 export type IconName = keyof typeof ICONS;

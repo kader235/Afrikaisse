@@ -563,18 +563,16 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
               Fermer
             </button>
           </div>
-          {!!entryError && (
-            <div className="entry-error">
-              <ErrorMessage error={entryError} />
-            </div>
-          )}
           <SaleTab
             locationId={locationId}
             menu={menu}
             floor={floor}
+            checks={checks}
             currency={menu.location.currency}
             canCollect={false}
             fixedTableId={entry.id}
+            error={entryError}
+            onDismiss={() => setEntryError(null)}
             onSent={(order) => {
               setEntry(null);
               setEntryError(null);

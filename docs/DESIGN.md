@@ -114,6 +114,22 @@ Au doigt, la base passe à 16 px.
    chaque ligne ouvre l'écran concerné.
 4. **Commandes en cours** et **meilleures ventes**.
 
+## Caisse (écran de travail tablette)
+
+- **Une barre** : onglets Vente / Encaissement (compteur) / Caisse, et à droite l'état de la caisse (pastille + espèces
+  attendues, ou « Caisse fermée » + « Ouvrir la caisse »). Au doigt, le titre de page disparaît : le rail dit déjà où l'on est.
+- **Vente** : catalogue à gauche (recherche + catégories en boutons sur une ligne, tuiles 150 px ; sans aucune photo
+  dans la liste, tuiles de texte), ticket à droite sur toute la hauteur (360 px, 320 en portrait). Tuile déjà dans le
+  ticket = bordure bleue + quantité en case bleue. Table choisie dans une fenêtre de tables par zone (libre / occupée +
+  reste à payer), jamais dans une liste déroulante. Pied fixe : total 26 px, « Envoyer la commande », puis
+  « Envoyer et encaisser » (seulement caisse ouverte), remarque et vider en boutons-icônes.
+- **Messages de la vente dans le ticket** (vide après envoi) : rien n'apparaît au-dessus des produits sous le doigt.
+- **Encaissement** : liste des notes (titre, heure, reste à payer) ; la première est affichée d'office à droite avec
+  total, reste à payer et « Encaisser » en bas.
+- **Paiement au pavé numérique** : mode en 4 boutons, parts 1/2 1/3 1/4, cases « Montant encaissé » et « Reçu du
+  client », billets proposés jusqu'à 50 000, monnaie à rendre. Pas de clavier du système sur tablette ; au PC les
+  chiffres, retour arrière et Entrée marchent au clavier.
+
 ## Écrire
 
 Libellés courts qui disent ce qui se passe : « Nouvelle commande », « Encaisser », « Fermer la caisse ». Pas de texte
