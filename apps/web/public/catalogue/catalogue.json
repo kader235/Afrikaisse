@@ -2,16 +2,2321 @@
   "version": 1,
   "baseCurrency": "XAF",
   "groups": [
-    { "id": "tchad", "label": "Plats du Tchad" },
-    { "id": "afrique-centrale", "label": "Afrique centrale" },
-    { "id": "monde", "label": "Cuisine du monde et fast-food" },
-    { "id": "boissons", "label": "Boissons" }
+    {
+      "id": "tchad",
+      "label": "Plats du Tchad"
+    },
+    {
+      "id": "afrique-centrale",
+      "label": "Afrique centrale"
+    },
+    {
+      "id": "afrique-ouest",
+      "label": "Afrique de l'Ouest"
+    },
+    {
+      "id": "afrique-nord",
+      "label": "Afrique du Nord"
+    },
+    {
+      "id": "afrique-est-sud",
+      "label": "Afrique de l'Est et du Sud"
+    },
+    {
+      "id": "monde",
+      "label": "Cuisine du monde et fast-food"
+    },
+    {
+      "id": "boissons",
+      "label": "Boissons"
+    },
+    {
+      "id": "desserts",
+      "label": "Desserts et petit-déjeuner"
+    }
   ],
   "dishes": [
-    { "id": "daraba", "name": "Daraba", "description": "Sauce de gombo, arachide et épinards, servie avec la boule.", "category": "Plats", "group": "tchad", "countries": ["TD", "CF"], "priceXaf": 2500, "image": null, "credit": null },
-    { "id": "poulet-yassa", "name": "Poulet yassa", "description": "Poulet mariné aux oignons et citron.", "category": "Plats", "group": "afrique-centrale", "countries": ["TD", "SN"], "priceXaf": 4000, "image": null, "credit": null },
-    { "id": "ndole", "name": "Ndolé", "description": "Feuilles amères, arachides et crevettes.", "category": "Plats", "group": "afrique-centrale", "countries": ["CM"], "priceXaf": 3000, "image": null, "credit": null },
-    { "id": "cheeseburger", "name": "Cheeseburger", "description": "Steak haché, cheddar, salade et tomate.", "category": "Fast-food", "group": "monde", "countries": ["*"], "priceXaf": 3500, "image": null, "credit": null },
-    { "id": "jus-de-baobab", "name": "Jus de baobab", "description": "Pulpe de pain de singe, lait et sucre.", "category": "Boissons", "group": "boissons", "countries": ["TD", "SN", "ML"], "priceXaf": 1000, "image": null, "credit": null }
+    {
+      "id": "boule-mil",
+      "name": "Boule de mil (aïch)",
+      "description": "Pâte ferme de farine de mil, accompagnement de base des sauces tchadiennes.",
+      "category": "Accompagnements",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "SD",
+        "NE",
+        "CM"
+      ],
+      "priceXaf": 500,
+      "image": "boule-mil.webp",
+      "credit": {
+        "author": "Salma kyari",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Tuwo_da_miyan_ganye.jpg"
+      }
+    },
+    {
+      "id": "boule-mais",
+      "name": "Boule de maïs",
+      "description": "Pâte ferme de farine de maïs, servie en demi-sphère avec la sauce.",
+      "category": "Accompagnements",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "CM",
+        "NG"
+      ],
+      "priceXaf": 500,
+      "image": "boule-mais.webp",
+      "credit": {
+        "author": "Zakaria Tunsung",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:T._Z_and_okro_soup.jpg"
+      }
+    },
+    {
+      "id": "daraba",
+      "name": "Daraba",
+      "description": "Sauce de gombo frais, pâte d'arachide, tomate et légumes-feuilles, servie avec la boule.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF"
+      ],
+      "priceXaf": 2000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "sauce-gombo",
+      "name": "Sauce gombo",
+      "description": "Sauce gluante de gombo à la viande ou au poisson, servie avec la boule ou le kissar.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "CM",
+        "NE",
+        "SD"
+      ],
+      "priceXaf": 2000,
+      "image": "sauce-gombo.webp",
+      "credit": {
+        "author": "Cissé kensky",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Sauce_ti_nv%C3%A8k%C3%A8_na_gnama.jpg"
+      }
+    },
+    {
+      "id": "sauce-longo-longo",
+      "name": "Sauce longo-longo (mouloukhiyé)",
+      "description": "Sauce gluante de feuilles de corète à la viande, servie avec la boule.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "CM",
+        "SD"
+      ],
+      "priceXaf": 2000,
+      "image": "sauce-longo-longo.webp",
+      "credit": {
+        "author": "Ghada Elajb",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:%D8%B9%D8%B5%D9%8A%D8%AF%D8%A9_%D9%88%D9%85%D9%84%D8%A7%D8%AD_%D8%AE%D8%B6%D8%B1%D8%A9.jpg"
+      }
+    },
+    {
+      "id": "sauce-longue",
+      "name": "Sauce longue (tan koul)",
+      "description": "Sauce épaisse du sud du Tchad, à la viande grillée ou au poisson fumé, avec la boule.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD"
+      ],
+      "priceXaf": 2000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "sauce-karkandji",
+      "name": "Sauce oseille (karkandji)",
+      "description": "Sauce de feuilles d'oseille de Guinée à la viande et à la pâte d'arachide.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "SD"
+      ],
+      "priceXaf": 2000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "sauce-arachide",
+      "name": "Sauce arachide",
+      "description": "Sauce onctueuse à la pâte d'arachide et à la viande, servie avec la boule ou le riz.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "CM",
+        "CG"
+      ],
+      "priceXaf": 2000,
+      "image": "sauce-arachide.webp",
+      "credit": {
+        "author": "Marshiayers",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Mafe.malien.jpg"
+      }
+    },
+    {
+      "id": "tagalie",
+      "name": "Tagalié (sauce charmout)",
+      "description": "Sauce de gombo séché et de viande séchée charmout, servie avec le kissar ou la boule.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "SD"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "kissar",
+      "name": "Kissar et sauce",
+      "description": "Fine galette de mil ou de riz, servie avec une sauce à la viande.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "SD"
+      ],
+      "priceXaf": 1500,
+      "image": "kissar.webp",
+      "credit": {
+        "author": "Ghada Elajb",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:%D8%A7%D9%84%D9%83%D8%B3%D8%B1%D8%A9_%D8%A7%D9%84%D8%B3%D9%88%D8%AF%D8%A7%D9%86%D9%8A%D8%A9_%D9%88%D8%B3%D9%84%D8%B7%D8%A9_%D9%88%D9%85%D9%84%D8%A7%D8%AD_%D8%A3%D9%85_%D8%B1%D9%82%D9%8A%D9%82%D8%A9.jpg"
+      }
+    },
+    {
+      "id": "jarret-boeuf",
+      "name": "Jarret de bœuf (doulouf)",
+      "description": "Jarret de bœuf mijoté longuement dans une sauce tomate, oignon et épices.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "CM"
+      ],
+      "priceXaf": 3000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "capitaine-braise",
+      "name": "Poisson capitaine braisé",
+      "description": "Capitaine du fleuve Chari grillé à la braise, servi avec piment, oignon et frites.",
+      "category": "Grillades",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CM",
+        "NG",
+        "NE",
+        "ML"
+      ],
+      "priceXaf": 6000,
+      "image": "capitaine-braise.webp",
+      "credit": {
+        "author": "Maryleine",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Poisson_brais%C3%A9_prise_pour_le_Wiki_Africa_2025_en_Angola.jpg"
+      }
+    },
+    {
+      "id": "poisson-seche",
+      "name": "Poisson séché en sauce (salanga)",
+      "description": "Poisson salé-séché du lac Tchad mijoté en sauce tomate ou gombo.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CM",
+        "NE",
+        "NG"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "marara",
+      "name": "Marara",
+      "description": "Abats de bœuf ou de mouton servis en bouillon relevé au piment et au citron.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "SD"
+      ],
+      "priceXaf": 2000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "chourba",
+      "name": "Chourba",
+      "description": "Soupe de viande ou de poisson à la tomate, à l'oignon et au persil.",
+      "category": "Entrées",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "SD",
+        "DZ",
+        "TN",
+        "MA"
+      ],
+      "priceXaf": 1500,
+      "image": "chourba.webp",
+      "credit": {
+        "author": "Miansari66",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Afghani_Mutton_Shorba.JPG"
+      }
+    },
+    {
+      "id": "madide",
+      "name": "Bouillie de mil (madidé)",
+      "description": "Bouillie de farine de mil blanc, de lait et de sucre, servie chaude.",
+      "category": "Petit-déjeuner",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "SD",
+        "NE"
+      ],
+      "priceXaf": 500,
+      "image": "madide.webp",
+      "credit": {
+        "author": "Umuhiera",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Millet_porridge_with_kose.jpg"
+      }
+    },
+    {
+      "id": "tchitchinga",
+      "name": "Brochettes de bœuf (tchitchinga)",
+      "description": "Brochettes de bœuf épicées grillées au feu de bois, servies avec oignon et piment.",
+      "category": "Grillades",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "CM",
+        "NE"
+      ],
+      "priceXaf": 1000,
+      "image": "tchitchinga.webp",
+      "credit": {
+        "author": "Adèlekiema",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Brochettes_de_viande_de_boeuf_au_piment_frais.jpg"
+      }
+    },
+    {
+      "id": "kilichi",
+      "name": "Kilichi",
+      "description": "Fines lanières de bœuf séchées, enrobées d'épices et de pâte d'arachide.",
+      "category": "Grillades",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "NE",
+        "NG",
+        "CM"
+      ],
+      "priceXaf": 1500,
+      "image": "kilichi.webp",
+      "credit": {
+        "author": "Rgaudin",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Niger_kilishi.JPG"
+      }
+    },
+    {
+      "id": "poulet-braise",
+      "name": "Poulet braisé",
+      "description": "Demi-poulet mariné et grillé à la braise, servi avec piment et oignon.",
+      "category": "Grillades",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CM",
+        "CI",
+        "CF",
+        "GA",
+        "CG",
+        "SN",
+        "BF",
+        "ML",
+        "NE",
+        "BJ",
+        "TG"
+      ],
+      "priceXaf": 3500,
+      "image": "poulet-braise.webp",
+      "credit": {
+        "author": "MIA20102",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Poulet_brais%C3%A9_25122024.jpg"
+      }
+    },
+    {
+      "id": "mouton-braise",
+      "name": "Mouton braisé",
+      "description": "Morceaux de mouton grillés à la braise, servis avec oignon, piment et pain.",
+      "category": "Grillades",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "NE",
+        "SN",
+        "ML",
+        "BF",
+        "CM",
+        "SD"
+      ],
+      "priceXaf": 3500,
+      "image": "mouton-braise.webp",
+      "credit": {
+        "author": "Rgaudin",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Grillade_de_mouton_pour_Tabaski.jpg"
+      }
+    },
+    {
+      "id": "riz-gras",
+      "name": "Riz gras",
+      "description": "Riz cuit dans une sauce tomate à la viande et aux légumes.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "BF",
+        "ML",
+        "NE",
+        "CM",
+        "CF",
+        "BJ",
+        "TG"
+      ],
+      "priceXaf": 1500,
+      "image": "riz-gras.webp",
+      "credit": {
+        "author": "Etudi5",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Un_plat_de_riz_gras.jpg"
+      }
+    },
+    {
+      "id": "foul",
+      "name": "Foul",
+      "description": "Fèves cuites écrasées à l'huile, au cumin et à l'oignon, servies avec du pain.",
+      "category": "Petit-déjeuner",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "SD",
+        "EG",
+        "LY"
+      ],
+      "priceXaf": 1000,
+      "image": "foul.webp",
+      "credit": {
+        "author": "Miansari66",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Ful_Medames.JPG"
+      }
+    },
+    {
+      "id": "lentilles",
+      "name": "Lentilles en sauce (ads)",
+      "description": "Lentilles mijotées à l'oignon, à l'ail et au cumin, servies avec du pain.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "SD",
+        "EG"
+      ],
+      "priceXaf": 1000,
+      "image": "lentilles.webp",
+      "credit": {
+        "author": "Andy Li",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Homemade_Lentil_Soup_-_Lavash_2025-02-10.jpg"
+      }
+    },
+    {
+      "id": "sauce-kanda",
+      "name": "Sauce kanda",
+      "description": "Boulettes de viande hachée mijotées en sauce tomate ou arachide.",
+      "category": "Plats",
+      "group": "tchad",
+      "countries": [
+        "TD",
+        "CF",
+        "CM"
+      ],
+      "priceXaf": 2000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "ndole",
+      "name": "Ndolé",
+      "description": "Feuilles de ndolé à la pâte d'arachide, viande et crevettes, avec plantain ou miondo.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM",
+        "GA",
+        "GQ"
+      ],
+      "priceXaf": 2500,
+      "image": "ndole.webp",
+      "credit": {
+        "author": "Mbiappa William",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Plat_de_ndol%C3%A8_au_poulet_dans_un_restaurant_camerounais.jpg"
+      }
+    },
+    {
+      "id": "poulet-dg",
+      "name": "Poulet DG",
+      "description": "Poulet sauté avec plantains mûrs frits, carottes, haricots verts et poivrons.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM",
+        "GA",
+        "CG",
+        "CF",
+        "TD"
+      ],
+      "priceXaf": 4000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "eru",
+      "name": "Eru",
+      "description": "Feuilles d'eru et de waterleaf mijotées à l'huile de palme, viande et poisson fumé.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM",
+        "NG"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "koki",
+      "name": "Koki",
+      "description": "Gâteau de haricots écrasés à l'huile de palme, cuit à la vapeur en feuilles.",
+      "category": "Entrées",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM"
+      ],
+      "priceXaf": 1000,
+      "image": "koki.webp",
+      "credit": {
+        "author": "Adesolive",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Koki_Beans.jpg"
+      }
+    },
+    {
+      "id": "mbongo-tchobi",
+      "name": "Mbongo tchobi",
+      "description": "Sauce noire aux épices mbongo, au poisson ou à la viande, servie avec plantain.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "achu",
+      "name": "Achu et sauce jaune",
+      "description": "Pâte de taro pilé servie avec une sauce jaune à l'huile de palme et aux épices.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM"
+      ],
+      "priceXaf": 2500,
+      "image": "achu.webp",
+      "credit": {
+        "author": "Joso11",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Achu,_a_traditional_meal_from_the_North_West_and_West_Regions_of_Cameroon.jpg"
+      }
+    },
+    {
+      "id": "saka-saka",
+      "name": "Saka-saka (pondu)",
+      "description": "Feuilles de manioc pilées mijotées à l'huile de palme et au poisson fumé.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CG",
+        "CD",
+        "CF",
+        "GA",
+        "AO"
+      ],
+      "priceXaf": 2000,
+      "image": "saka-saka.webp",
+      "credit": {
+        "author": "Pangou Stephane",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Le_saka-saka_plus_le_poisson_et_le_foufou_pour_le_concours_de_photo_wiki_loves_Africa_2025_en_Angola.jpg"
+      }
+    },
+    {
+      "id": "moambe",
+      "name": "Poulet à la moambe",
+      "description": "Poulet mijoté dans une sauce à la noix de palme, servi avec riz ou chikwangue.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CD",
+        "CG",
+        "GA",
+        "AO"
+      ],
+      "priceXaf": 3500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "liboke",
+      "name": "Liboké de poisson",
+      "description": "Poisson assaisonné cuit à l'étouffée dans des feuilles de bananier.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CG",
+        "CD"
+      ],
+      "priceXaf": 3500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "poisson-braise-baton",
+      "name": "Poisson braisé et bâton de manioc",
+      "description": "Poisson grillé à la braise avec piment écrasé, servi avec bâton de manioc.",
+      "category": "Grillades",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM",
+        "GA",
+        "CG",
+        "CF",
+        "GQ"
+      ],
+      "priceXaf": 3500,
+      "image": "poisson-braise-baton.webp",
+      "credit": {
+        "author": "LE MOSAR DE L'ECONOMIE",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Poisson_brais%C3%A9_au_d%C3%A9cor_de_citron_et_piment.jpg"
+      }
+    },
+    {
+      "id": "chikwangue",
+      "name": "Chikwangue",
+      "description": "Pain de manioc fermenté cuit en feuilles, accompagnement des sauces.",
+      "category": "Accompagnements",
+      "group": "afrique-centrale",
+      "countries": [
+        "CG",
+        "CD",
+        "GA",
+        "CF",
+        "CM",
+        "AO"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "foufou-manioc",
+      "name": "Foufou de manioc",
+      "description": "Pâte élastique de farine de manioc, servie avec les sauces et bouillons.",
+      "category": "Accompagnements",
+      "group": "afrique-centrale",
+      "countries": [
+        "CD",
+        "CG",
+        "CM",
+        "CF",
+        "GA",
+        "NG"
+      ],
+      "priceXaf": 500,
+      "image": "foufou-manioc.webp",
+      "credit": {
+        "author": "Umuhiera",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Fufu_with_groundnut_soup.jpg"
+      }
+    },
+    {
+      "id": "beignets-haricots",
+      "name": "Beignets-haricots-bouillie",
+      "description": "Beignets de farine servis avec haricots en sauce et bouillie de maïs.",
+      "category": "Petit-déjeuner",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM"
+      ],
+      "priceXaf": 500,
+      "image": "beignets-haricots.webp",
+      "credit": {
+        "author": "Dieph Carlos",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Sp%C3%A9cialit%C3%A9_locale_camerounaise_de_fa%C3%A7on_g%C3%A9n%C3%A9rale.jpg"
+      }
+    },
+    {
+      "id": "soya",
+      "name": "Soya",
+      "description": "Fines tranches de bœuf épicées grillées en brochettes, servies avec oignon et piment.",
+      "category": "Grillades",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM",
+        "GA",
+        "CF",
+        "TD"
+      ],
+      "priceXaf": 1000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "okok",
+      "name": "Okok (koko)",
+      "description": "Feuilles de gnetum émincées cuites à la pâte d'arachide, servies avec bâton de manioc.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM",
+        "GA",
+        "CF",
+        "CG",
+        "CD"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "poulet-nyembwe",
+      "name": "Poulet nyembwe",
+      "description": "Poulet mijoté dans une sauce à la graine de palme, spécialité gabonaise.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "GA",
+        "CG",
+        "CM"
+      ],
+      "priceXaf": 3500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "makayabu",
+      "name": "Makayabu",
+      "description": "Morue ou poisson salé dessalé et mijoté en sauce tomate et oignon.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CD",
+        "CG"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "kondre",
+      "name": "Kondrè",
+      "description": "Plantains mijotés avec viande de chèvre ou de bœuf et épices de l'Ouest.",
+      "category": "Plats",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM"
+      ],
+      "priceXaf": 3000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "porc-braise",
+      "name": "Porc braisé",
+      "description": "Morceaux de porc marinés et grillés à la braise, servis avec plantain ou miondo.",
+      "category": "Grillades",
+      "group": "afrique-centrale",
+      "countries": [
+        "CM",
+        "CG",
+        "CD",
+        "GA",
+        "CF",
+        "BJ",
+        "TG",
+        "CI"
+      ],
+      "priceXaf": 2500,
+      "image": "porc-braise.webp",
+      "credit": {
+        "author": "Cardorel zoko",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Porc_brais%C3%A9_2.jpg"
+      }
+    },
+    {
+      "id": "gozo",
+      "name": "Gozo",
+      "description": "Boule de manioc de Centrafrique, servie avec les sauces aux feuilles.",
+      "category": "Accompagnements",
+      "group": "afrique-centrale",
+      "countries": [
+        "CF"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "thieboudienne",
+      "name": "Thiéboudienne",
+      "description": "Riz au poisson cuit dans une sauce tomate avec légumes, à la sénégalaise.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "SN",
+        "GM",
+        "MR",
+        "ML",
+        "GN"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "yassa-poulet",
+      "name": "Poulet yassa",
+      "description": "Poulet mariné au citron et aux oignons confits, servi avec du riz blanc.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "SN",
+        "GM",
+        "ML",
+        "GN",
+        "CI"
+      ],
+      "priceXaf": 2500,
+      "image": "yassa-poulet.webp",
+      "credit": {
+        "author": "Arnaud 25",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Poulet_yassa_01.jpg"
+      }
+    },
+    {
+      "id": "mafe",
+      "name": "Mafé",
+      "description": "Ragoût de viande à la sauce d'arachide et légumes, servi avec du riz.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "SN",
+        "ML",
+        "GN",
+        "GM",
+        "CI",
+        "BF",
+        "MR"
+      ],
+      "priceXaf": 2000,
+      "image": "mafe.webp",
+      "credit": {
+        "author": "Arnaud 25",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Maf%C3%A9_de_poisson.jpg"
+      }
+    },
+    {
+      "id": "attieke-poisson",
+      "name": "Attiéké poisson",
+      "description": "Semoule de manioc servie avec poisson braisé, tomate, oignon et piment.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "CI",
+        "BF",
+        "TG",
+        "BJ",
+        "CM",
+        "SN",
+        "ML"
+      ],
+      "priceXaf": 2500,
+      "image": "attieke-poisson.webp",
+      "credit": {
+        "author": "Samigolden07",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Atti%C3%A9k%C3%A9_poisson_fum%C3%A9.jpg"
+      }
+    },
+    {
+      "id": "garba",
+      "name": "Garba",
+      "description": "Attiéké servi avec du thon frit, piment, oignon et tomate.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "CI",
+        "BF"
+      ],
+      "priceXaf": 1000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "alloco",
+      "name": "Alloco",
+      "description": "Bananes plantains mûres coupées en dés et frites, servies avec piment.",
+      "category": "Accompagnements",
+      "group": "afrique-ouest",
+      "countries": [
+        "CI",
+        "BF",
+        "CM",
+        "TG",
+        "BJ",
+        "GA",
+        "CG"
+      ],
+      "priceXaf": 500,
+      "image": "alloco.webp",
+      "credit": {
+        "author": "Saudarh2",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Fried_plantain_alloco.jpg"
+      }
+    },
+    {
+      "id": "kedjenou",
+      "name": "Kédjénou de poulet",
+      "description": "Poulet mijoté à l'étouffée avec légumes et épices, servi avec attiéké ou riz.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "CI",
+        "BF"
+      ],
+      "priceXaf": 3000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "riz-jollof",
+      "name": "Riz jollof",
+      "description": "Riz cuit dans une sauce tomate épicée au poivron et à l'oignon.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "NG",
+        "GH",
+        "SN",
+        "GM",
+        "SL",
+        "LR",
+        "CM"
+      ],
+      "priceXaf": 2000,
+      "image": "riz-jollof.webp",
+      "credit": {
+        "author": "Umuhiera",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Jollof_rice1.jpg"
+      }
+    },
+    {
+      "id": "suya",
+      "name": "Suya",
+      "description": "Brochettes de bœuf grillées au piment et à la poudre d'arachide yaji.",
+      "category": "Grillades",
+      "group": "afrique-ouest",
+      "countries": [
+        "NG",
+        "GH",
+        "NE",
+        "CM",
+        "TD"
+      ],
+      "priceXaf": 1000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "fufu-light-soup",
+      "name": "Fufu et light soup",
+      "description": "Fufu de manioc et plantain servi avec une soupe légère tomate-piment à la viande.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "GH",
+        "CI",
+        "TG"
+      ],
+      "priceXaf": 2500,
+      "image": "fufu-light-soup.webp",
+      "credit": {
+        "author": "Umuhiera",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Yam_Fufu_with_light_soup_and_meat.jpg"
+      }
+    },
+    {
+      "id": "to",
+      "name": "Tô sauce feuilles",
+      "description": "Pâte de mil ou de maïs servie avec une sauce gluante de feuilles ou de gombo.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "BF",
+        "ML",
+        "NE",
+        "TG",
+        "BJ",
+        "TD"
+      ],
+      "priceXaf": 1000,
+      "image": "to.webp",
+      "credit": {
+        "author": "Vineke",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:T%C3%B4_de_petit_mil_avec_sauce_baobab_sec.jpg"
+      }
+    },
+    {
+      "id": "riz-sauce-arachide",
+      "name": "Riz sauce arachide",
+      "description": "Riz blanc servi avec une sauce d'arachide à la viande ou au poisson.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "ML",
+        "BF",
+        "SN",
+        "GN",
+        "CI",
+        "TD"
+      ],
+      "priceXaf": 1000,
+      "image": "riz-sauce-arachide.webp",
+      "credit": {
+        "author": "Umuhiera",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Plain_Rice_with_groundnut.jpg"
+      }
+    },
+    {
+      "id": "pastels",
+      "name": "Pastels",
+      "description": "Chaussons frits farcis au poisson épicé, servis avec une sauce tomate.",
+      "category": "Entrées",
+      "group": "afrique-ouest",
+      "countries": [
+        "SN",
+        "GM",
+        "MR",
+        "ML",
+        "CI"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "fataya",
+      "name": "Fataya",
+      "description": "Beignets en chausson farcis à la viande hachée, servis avec sauce oignon.",
+      "category": "Entrées",
+      "group": "afrique-ouest",
+      "countries": [
+        "SN",
+        "GM",
+        "MR"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "foutou-sauce-graine",
+      "name": "Foutou banane sauce graine",
+      "description": "Foutou de banane plantain pilée servi avec une sauce à la graine de palme.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "CI",
+        "GH"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "egusi",
+      "name": "Soupe egusi",
+      "description": "Soupe de graines de courge moulues aux légumes-feuilles et à la viande.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "NG",
+        "GH",
+        "CM",
+        "BJ"
+      ],
+      "priceXaf": 2500,
+      "image": "egusi.webp",
+      "credit": {
+        "author": "Micheal chidubem",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Egusi_Soup_and_Fufu.jpg"
+      }
+    },
+    {
+      "id": "waakye",
+      "name": "Waakye",
+      "description": "Riz et haricots cuits ensemble, servis avec sauce piment, œuf et spaghetti.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "GH",
+        "TG",
+        "BJ"
+      ],
+      "priceXaf": 1500,
+      "image": "waakye.webp",
+      "credit": {
+        "author": "Umuhiera",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Rice_and_beans_1.jpg"
+      }
+    },
+    {
+      "id": "amiwo",
+      "name": "Pâte rouge (amiwo)",
+      "description": "Pâte de maïs cuite dans une sauce tomate, servie avec poulet ou poisson.",
+      "category": "Plats",
+      "group": "afrique-ouest",
+      "countries": [
+        "BJ",
+        "TG"
+      ],
+      "priceXaf": 1500,
+      "image": "amiwo.webp",
+      "credit": {
+        "author": "PlumeEbene",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Plat_de_la_p%C3%A2te_de_farine_de_manioc.jpg"
+      }
+    },
+    {
+      "id": "moin-moin",
+      "name": "Moin-moin",
+      "description": "Gâteau de haricots mixés au poivron et à l'oignon, cuit à la vapeur.",
+      "category": "Entrées",
+      "group": "afrique-ouest",
+      "countries": [
+        "NG",
+        "GH",
+        "BJ"
+      ],
+      "priceXaf": 500,
+      "image": "moin-moin.webp",
+      "credit": {
+        "author": "ProVeg International",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Moin-Moin-good.jpg"
+      }
+    },
+    {
+      "id": "dibi",
+      "name": "Dibi",
+      "description": "Viande de mouton grillée coupée en morceaux, servie avec oignon, moutarde et pain.",
+      "category": "Grillades",
+      "group": "afrique-ouest",
+      "countries": [
+        "SN",
+        "GM",
+        "MR"
+      ],
+      "priceXaf": 3000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "couscous",
+      "name": "Couscous à l'agneau",
+      "description": "Semoule de blé cuite à la vapeur, servie avec agneau, légumes et bouillon.",
+      "category": "Plats",
+      "group": "afrique-nord",
+      "countries": [
+        "MA",
+        "DZ",
+        "TN",
+        "LY",
+        "MR"
+      ],
+      "priceXaf": 3500,
+      "image": "couscous.webp",
+      "credit": {
+        "author": "Diane bora",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Un_plat_de_couscous_marocain.jpg"
+      }
+    },
+    {
+      "id": "tajine-poulet",
+      "name": "Tajine de poulet",
+      "description": "Poulet mijoté aux olives et au citron confit, cuit dans un plat en terre.",
+      "category": "Plats",
+      "group": "afrique-nord",
+      "countries": [
+        "MA",
+        "DZ",
+        "TN"
+      ],
+      "priceXaf": 3500,
+      "image": "tajine-poulet.webp",
+      "credit": {
+        "author": "Benoît Prieur",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Tajine_de_poulet_au_citron_confit_(mars_2022).JPG"
+      }
+    },
+    {
+      "id": "chakchouka",
+      "name": "Chakchouka",
+      "description": "Œufs pochés dans une sauce de tomates, poivrons et oignons épicés.",
+      "category": "Entrées",
+      "group": "afrique-nord",
+      "countries": [
+        "TN",
+        "DZ",
+        "MA",
+        "LY"
+      ],
+      "priceXaf": 1500,
+      "image": "chakchouka.webp",
+      "credit": {
+        "author": "Jarosław Ceborski jarson",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Shakshuka_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "harira",
+      "name": "Harira",
+      "description": "Soupe de tomate aux lentilles, pois chiches, viande et herbes fraîches.",
+      "category": "Entrées",
+      "group": "afrique-nord",
+      "countries": [
+        "MA",
+        "DZ"
+      ],
+      "priceXaf": 1000,
+      "image": "harira.webp",
+      "credit": {
+        "author": "Miansari66",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Harira..JPG"
+      }
+    },
+    {
+      "id": "pastilla",
+      "name": "Pastilla",
+      "description": "Feuilleté de brick au poulet, amandes et épices, saupoudré de cannelle.",
+      "category": "Plats",
+      "group": "afrique-nord",
+      "countries": [
+        "MA",
+        "DZ"
+      ],
+      "priceXaf": 3500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "kefta",
+      "name": "Kefta grillée",
+      "description": "Boulettes ou brochettes de viande hachée aux épices, grillées.",
+      "category": "Grillades",
+      "group": "afrique-nord",
+      "countries": [
+        "MA",
+        "DZ",
+        "TN",
+        "EG"
+      ],
+      "priceXaf": 2500,
+      "image": "kefta.webp",
+      "credit": {
+        "author": "Daderot",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Kafta_shish_kebab_and_grilled_vegetables_on_salad_-_Cambridge,_MA.jpg"
+      }
+    },
+    {
+      "id": "brik",
+      "name": "Brik à l'œuf",
+      "description": "Feuille de brick frite farcie à l'œuf, au thon et au persil.",
+      "category": "Entrées",
+      "group": "afrique-nord",
+      "countries": [
+        "TN",
+        "DZ"
+      ],
+      "priceXaf": 1000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "khobz",
+      "name": "Pain maghrébin (khobz)",
+      "description": "Pain rond à la semoule ou à la farine, cuit au four.",
+      "category": "Accompagnements",
+      "group": "afrique-nord",
+      "countries": [
+        "MA",
+        "DZ",
+        "TN"
+      ],
+      "priceXaf": 200,
+      "image": "khobz.webp",
+      "credit": {
+        "author": "Ajale",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Arabic_Bread_Pita.jpg"
+      }
+    },
+    {
+      "id": "injera-doro-wat",
+      "name": "Injera et doro wat",
+      "description": "Galette de teff servie avec un ragoût de poulet épicé au berbéré et à l'œuf.",
+      "category": "Plats",
+      "group": "afrique-est-sud",
+      "countries": [
+        "ET",
+        "ER"
+      ],
+      "priceXaf": 3500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "nyama-choma",
+      "name": "Nyama choma",
+      "description": "Viande de chèvre ou de bœuf grillée, servie avec kachumbari.",
+      "category": "Grillades",
+      "group": "afrique-est-sud",
+      "countries": [
+        "KE",
+        "TZ",
+        "UG"
+      ],
+      "priceXaf": 3000,
+      "image": "nyama-choma.webp",
+      "credit": {
+        "author": "safaritravelplus",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Nyama_choma_barbeque.jpg"
+      }
+    },
+    {
+      "id": "ugali-sukuma",
+      "name": "Ugali et sukuma wiki",
+      "description": "Pâte de maïs servie avec du chou vert sauté à la tomate et à l'oignon.",
+      "category": "Plats",
+      "group": "afrique-est-sud",
+      "countries": [
+        "KE",
+        "TZ",
+        "UG"
+      ],
+      "priceXaf": 1000,
+      "image": "ugali-sukuma.webp",
+      "credit": {
+        "author": "Queen Asali",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Plate_of_ugali_with_creamed_spinach.jpg"
+      }
+    },
+    {
+      "id": "pilau",
+      "name": "Pilau",
+      "description": "Riz parfumé aux épices cuit avec de la viande, à la mode swahilie.",
+      "category": "Plats",
+      "group": "afrique-est-sud",
+      "countries": [
+        "KE",
+        "TZ",
+        "UG"
+      ],
+      "priceXaf": 2000,
+      "image": "pilau.webp",
+      "credit": {
+        "author": "Dadiesto",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:African_pilau_dish.jpg"
+      }
+    },
+    {
+      "id": "samosa",
+      "name": "Samoussas",
+      "description": "Chaussons triangulaires frits farcis à la viande hachée ou aux légumes.",
+      "category": "Entrées",
+      "group": "afrique-est-sud",
+      "countries": [
+        "KE",
+        "TZ",
+        "UG",
+        "ET",
+        "SO",
+        "DJ",
+        "MG",
+        "MU",
+        "SN",
+        "TD"
+      ],
+      "priceXaf": 500,
+      "image": "samosa.webp",
+      "credit": {
+        "author": "Benoît Prieur",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Rizpai_(Lyon)_-_samoussas_(2).jpg"
+      }
+    },
+    {
+      "id": "bunny-chow",
+      "name": "Bunny chow",
+      "description": "Demi-pain de mie évidé et garni d'un curry de viande ou de haricots.",
+      "category": "Plats",
+      "group": "afrique-est-sud",
+      "countries": [
+        "ZA"
+      ],
+      "priceXaf": 2500,
+      "image": "bunny-chow.webp",
+      "credit": {
+        "author": "Andy Li",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Bunny_Chow_with_Lamb_%26_Potato_-_African_Chow_2023-07-27.jpg"
+      }
+    },
+    {
+      "id": "sosatie",
+      "name": "Sosaties",
+      "description": "Brochettes de viande marinée au curry et aux abricots, grillées.",
+      "category": "Grillades",
+      "group": "afrique-est-sud",
+      "countries": [
+        "ZA",
+        "NA"
+      ],
+      "priceXaf": 2000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "bobotie",
+      "name": "Bobotie",
+      "description": "Viande hachée épicée au curry, gratinée sous une crème aux œufs.",
+      "category": "Plats",
+      "group": "afrique-est-sud",
+      "countries": [
+        "ZA"
+      ],
+      "priceXaf": 3000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "chapati",
+      "name": "Chapati",
+      "description": "Galette de farine de blé feuilletée, cuite à la poêle.",
+      "category": "Accompagnements",
+      "group": "afrique-est-sud",
+      "countries": [
+        "KE",
+        "TZ",
+        "UG",
+        "RW",
+        "BI",
+        "MW",
+        "ZM"
+      ],
+      "priceXaf": 300,
+      "image": "chapati.webp",
+      "credit": {
+        "author": "safaritravelplus",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Chapati_kenya.jpg"
+      }
+    },
+    {
+      "id": "burger",
+      "name": "Burger",
+      "description": "Pain rond garni d'un steak haché, salade, tomate, oignon et sauce.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 3000,
+      "image": "burger.webp",
+      "credit": {
+        "author": "Len Rizzi (photographer)",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:NCI_Visuals_Food_Hamburger.jpg"
+      }
+    },
+    {
+      "id": "cheeseburger",
+      "name": "Cheeseburger",
+      "description": "Burger au steak haché garni de fromage fondu, cornichons et sauce.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 3500,
+      "image": "cheeseburger.webp",
+      "credit": {
+        "author": "Kurtkaiser",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Cheeseburger_2.jpg"
+      }
+    },
+    {
+      "id": "shawarma",
+      "name": "Shawarma",
+      "description": "Pain roulé garni de viande grillée émincée, crudités et sauce à l'ail.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 2000,
+      "image": "shawarma.webp",
+      "credit": {
+        "author": "Miansari66",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Shawerma_Roll.JPG"
+      }
+    },
+    {
+      "id": "pizza",
+      "name": "Pizza",
+      "description": "Pâte fine garnie de sauce tomate, fromage fondu et garniture au choix.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 5000,
+      "image": "pizza.webp",
+      "credit": {
+        "author": "Swathi sri srinivasa raghavan",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Margherita_pizza_55.jpg"
+      }
+    },
+    {
+      "id": "frites",
+      "name": "Frites",
+      "description": "Bâtonnets de pomme de terre frits et salés.",
+      "category": "Accompagnements",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1000,
+      "image": "frites.webp",
+      "credit": {
+        "author": "StockSnap",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:French_Fries.JPG"
+      }
+    },
+    {
+      "id": "sandwich",
+      "name": "Sandwich viande",
+      "description": "Pain baguette garni de viande, crudités, oignon et sauce.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1500,
+      "image": "sandwich.webp",
+      "credit": {
+        "author": "Daderot",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Steak_sandwich_with_onions_and_cheese_on_a_toasted_baguette_-_Massachusetts.jpg"
+      }
+    },
+    {
+      "id": "poulet-frit",
+      "name": "Poulet frit",
+      "description": "Morceaux de poulet panés et frits, croustillants.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 3000,
+      "image": "poulet-frit.webp",
+      "credit": {
+        "author": "Brian Chan tigerrulezzz",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Fried_Chicken_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "nuggets",
+      "name": "Nuggets de poulet",
+      "description": "Bouchées de poulet panées et frites, servies avec une sauce.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 2500,
+      "image": "nuggets.webp",
+      "credit": {
+        "author": "Jiafei Slay Queen",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Chicken_nuggets_on_a_plate.jpg"
+      }
+    },
+    {
+      "id": "spaghetti-bolognaise",
+      "name": "Spaghetti bolognaise",
+      "description": "Spaghetti servis avec une sauce tomate à la viande hachée.",
+      "category": "Plats",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 3000,
+      "image": "spaghetti-bolognaise.webp",
+      "credit": {
+        "author": "No machine-readable author provided. Chingon assumed (based on copyright claims)",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:Spaghetti_Bolognese.jpg"
+      }
+    },
+    {
+      "id": "omelette",
+      "name": "Omelette garnie",
+      "description": "Omelette aux oignons, tomates et poivrons, servie avec du pain.",
+      "category": "Plats",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1500,
+      "image": "omelette.webp",
+      "credit": {
+        "author": "Renee Comet (photographer)",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:FoodOmelete.jpg"
+      }
+    },
+    {
+      "id": "salade-composee",
+      "name": "Salade composée",
+      "description": "Salade verte, tomate, concombre, œuf, thon et vinaigrette.",
+      "category": "Entrées",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 2000,
+      "image": "salade-composee.webp",
+      "credit": {
+        "author": "MIA20102",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Salade_compos%C3%A9e.jpg"
+      }
+    },
+    {
+      "id": "riz-cantonais",
+      "name": "Riz cantonais",
+      "description": "Riz sauté aux œufs, petits pois, dés de jambon ou de poulet.",
+      "category": "Plats",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 2500,
+      "image": "riz-cantonais.webp",
+      "credit": {
+        "author": "Andy Li",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Chicken_fried_rice_-_Stir_Fry_by_CK_2023-12-02.jpg"
+      }
+    },
+    {
+      "id": "nems",
+      "name": "Nems",
+      "description": "Rouleaux frits farcis de viande, vermicelles et légumes.",
+      "category": "Entrées",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 2000,
+      "image": "nems.webp",
+      "credit": {
+        "author": "Benoît Prieur",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Restaurant_Th%C3%A9_Vert_(Lyon),_nems_au_crabe.jpg"
+      }
+    },
+    {
+      "id": "hot-dog",
+      "name": "Hot-dog",
+      "description": "Pain long garni d'une saucisse chaude, moutarde et ketchup.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1500,
+      "image": "hot-dog.webp",
+      "credit": {
+        "author": "LG2 (talk) (Transfered by Diádoco/Original uploaded by LG2)",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:Flint_coney_island.jpg"
+      }
+    },
+    {
+      "id": "tacos",
+      "name": "Tacos",
+      "description": "Galette de blé garnie de viande, frites, fromage fondu et sauce, pliée et grillée.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 2500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "club-sandwich",
+      "name": "Club sandwich",
+      "description": "Pain de mie grillé en étages avec poulet, œuf, tomate, salade et mayonnaise.",
+      "category": "Fast-food",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 3000,
+      "image": "club-sandwich.webp",
+      "credit": {
+        "author": "Anton Porsche",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Club-sandwich2.jpg"
+      }
+    },
+    {
+      "id": "grillade-mixte",
+      "name": "Grillade mixte",
+      "description": "Assortiment de viandes grillées (bœuf, poulet, saucisse) avec frites.",
+      "category": "Grillades",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 6000,
+      "image": "grillade-mixte.webp",
+      "credit": {
+        "author": "Делфина",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:%D0%9C%D0%B0%D0%BA%D0%B5%D0%B4%D0%BE%D0%BD%D1%81%D0%BA%D0%B0_%D0%BC%D0%B5%D1%88%D0%B0%D0%BD%D0%B0_%D1%81%D0%BA%D0%B0%D1%80%D0%B0_%D1%81%D0%BE_%D0%BF%D0%BE%D0%BC%D1%84%D1%80%D0%B8%D1%82.jpg"
+      }
+    },
+    {
+      "id": "steak-frites",
+      "name": "Steak frites",
+      "description": "Pièce de bœuf grillée servie avec frites et sauce.",
+      "category": "Grillades",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 4500,
+      "image": "steak-frites.webp",
+      "credit": {
+        "author": "Daderot",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Steak_frites_-_Boston,_Massachusetts.jpg"
+      }
+    },
+    {
+      "id": "spaghetti-omelette",
+      "name": "Spaghetti omelette",
+      "description": "Spaghetti sautés à la tomate et à l'oignon avec une omelette.",
+      "category": "Plats",
+      "group": "monde",
+      "countries": [
+        "CI",
+        "BF",
+        "SN",
+        "ML",
+        "TG",
+        "BJ",
+        "CM",
+        "TD",
+        "NE",
+        "GN"
+      ],
+      "priceXaf": 1000,
+      "image": "spaghetti-omelette.webp",
+      "credit": {
+        "author": "Umuhiera",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Spaghetti_with_scrambled_eggs_and_sausage_chunks.jpg"
+      }
+    },
+    {
+      "id": "pates-carbonara",
+      "name": "Pâtes carbonara",
+      "description": "Pâtes à la crème, aux lardons ou au bœuf fumé et au fromage.",
+      "category": "Plats",
+      "group": "monde",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 3500,
+      "image": "pates-carbonara.webp",
+      "credit": {
+        "author": "Mattes Boch (Mboch on English Wikipedia)",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:Spaghetti_alla_Carbonara.jpg"
+      }
+    },
+    {
+      "id": "jus-bissap",
+      "name": "Jus de bissap (karkandji)",
+      "description": "Infusion sucrée de fleurs d'hibiscus, servie bien fraîche.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "TD",
+        "SN",
+        "ML",
+        "BF",
+        "NE",
+        "CI",
+        "CM",
+        "GN",
+        "NG",
+        "SD"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "jus-gingembre",
+      "name": "Jus de gingembre",
+      "description": "Boisson fraîche de gingembre pressé, citron et sucre.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "TD",
+        "SN",
+        "CI",
+        "ML",
+        "BF",
+        "CM",
+        "NE",
+        "GN"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "jus-bouye",
+      "name": "Jus de baobab (bouye)",
+      "description": "Boisson onctueuse de pulpe de fruit de baobab, lait et sucre.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "SN",
+        "ML",
+        "BF",
+        "TD",
+        "NE",
+        "GM"
+      ],
+      "priceXaf": 500,
+      "image": "jus-bouye.webp",
+      "credit": {
+        "author": "Ghada Elajb",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:%D8%B9%D8%B5%D9%8A%D8%B1_%D8%A7%D9%84%D8%AA%D8%A8%D9%84%D8%AF%D9%8A_%D8%AC%D8%A7%D9%87%D8%B2.jpg"
+      }
+    },
+    {
+      "id": "jus-tamarin",
+      "name": "Jus de tamarin",
+      "description": "Boisson acidulée de pulpe de tamarin sucrée, servie fraîche.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "TD",
+        "SN",
+        "ML",
+        "BF",
+        "NE",
+        "SD"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "citronnade",
+      "name": "Citronnade",
+      "description": "Jus de citron frais allongé d'eau et légèrement sucré.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 500,
+      "image": "citronnade.webp",
+      "credit": {
+        "author": "Grandmaster Huon",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Lemonade_pitcher_and_glass.jpg"
+      }
+    },
+    {
+      "id": "cafe-touba",
+      "name": "Café Touba",
+      "description": "Café torréfié au poivre de Guinée (djar), servi sucré.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "SN",
+        "GM",
+        "ML",
+        "MR",
+        "GN"
+      ],
+      "priceXaf": 200,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "the-menthe",
+      "name": "Thé à la menthe",
+      "description": "Thé vert infusé avec menthe fraîche et sucre, servi en petits verres.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "MA",
+        "DZ",
+        "TN",
+        "MR",
+        "SN",
+        "ML",
+        "NE",
+        "TD",
+        "SD"
+      ],
+      "priceXaf": 300,
+      "image": "the-menthe.webp",
+      "credit": {
+        "author": "Marwa Siddig Aljally Altaueb",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:%D9%85%D8%B4%D8%B1%D9%88%D8%A8_%D8%B4%D8%A7%D9%89_%D8%A7%D9%84%D9%86%D8%B9%D9%86%D8%A7%D8%B9.jpg"
+      }
+    },
+    {
+      "id": "eau-minerale",
+      "name": "Eau minérale",
+      "description": "Bouteille d'eau minérale plate de 50 cl.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 500,
+      "image": "eau-minerale.webp",
+      "credit": {
+        "author": "Jiafei Slay Queen",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Bottle_of_Water.jpg"
+      }
+    },
+    {
+      "id": "soda",
+      "name": "Soda",
+      "description": "Boisson gazeuse sucrée en bouteille ou en canette, servie fraîche.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 500,
+      "image": "soda.webp",
+      "credit": {
+        "author": "pic_p_ter",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:Glass_cola.jpg"
+      }
+    },
+    {
+      "id": "jus-orange",
+      "name": "Jus d'orange pressé",
+      "description": "Oranges fraîches pressées à la commande.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1000,
+      "image": "jus-orange.webp",
+      "credit": {
+        "author": "Agency of the United States Department of Agriculture Edited Version by: Arad",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:Orange_juice_1_edit1.jpg"
+      }
+    },
+    {
+      "id": "lait-caille",
+      "name": "Lait caillé",
+      "description": "Lait fermenté sucré, servi frais en bol ou en sachet.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "SN",
+        "ML",
+        "BF",
+        "NE",
+        "TD",
+        "MR",
+        "GN",
+        "CM",
+        "SD"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "biere-locale",
+      "name": "Bière locale",
+      "description": "Bouteille de bière blonde brassée localement, servie fraîche.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1000,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "bili-bili",
+      "name": "Bili-bili",
+      "description": "Bière traditionnelle de mil ou de sorgho, servie en calebasse.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "TD",
+        "CM",
+        "CF"
+      ],
+      "priceXaf": 300,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "cafe",
+      "name": "Café",
+      "description": "Café noir ou au lait, servi chaud.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 500,
+      "image": "cafe.webp",
+      "credit": {
+        "author": "Ross Parmly rparmly",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Black_coffee_cup_(Unsplash).jpg"
+      }
+    },
+    {
+      "id": "the",
+      "name": "Thé",
+      "description": "Thé noir ou vert infusé, servi chaud avec du sucre.",
+      "category": "Boissons",
+      "group": "boissons",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 300,
+      "image": "the.webp",
+      "credit": {
+        "author": "Ultratomio",
+        "license": "Public domain",
+        "source": "https://commons.wikimedia.org/wiki/File:Black-tea.jpg"
+      }
+    },
+    {
+      "id": "degue",
+      "name": "Dégué",
+      "description": "Granulés de mil mélangés à du lait caillé ou du yaourt sucré.",
+      "category": "Desserts",
+      "group": "desserts",
+      "countries": [
+        "BF",
+        "ML",
+        "CI",
+        "NE",
+        "SN",
+        "TD"
+      ],
+      "priceXaf": 500,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "beignets",
+      "name": "Beignets",
+      "description": "Boules de pâte sucrée frites, servies chaudes le matin.",
+      "category": "Petit-déjeuner",
+      "group": "desserts",
+      "countries": [
+        "TD",
+        "CM",
+        "CF",
+        "CG",
+        "CD",
+        "GA",
+        "NG",
+        "GH",
+        "CI",
+        "SN",
+        "ML",
+        "BF",
+        "NE",
+        "BJ",
+        "TG"
+      ],
+      "priceXaf": 300,
+      "image": null,
+      "credit": null
+    },
+    {
+      "id": "crepes",
+      "name": "Crêpes",
+      "description": "Fines crêpes de froment servies au sucre, au miel ou au chocolat.",
+      "category": "Desserts",
+      "group": "desserts",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1000,
+      "image": "crepes.webp",
+      "credit": {
+        "author": "Ocdp",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Cr%C3%A9pe_Suzette_001.jpg"
+      }
+    },
+    {
+      "id": "salade-fruits",
+      "name": "Salade de fruits",
+      "description": "Fruits frais de saison coupés en dés : mangue, ananas, papaye, banane.",
+      "category": "Desserts",
+      "group": "desserts",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1000,
+      "image": "salade-fruits.webp",
+      "credit": {
+        "author": "Shoodho",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Fruit_Salad_dessert.jpg"
+      }
+    },
+    {
+      "id": "bouillie-mais",
+      "name": "Bouillie de maïs (koko)",
+      "description": "Bouillie fermentée de maïs épicée au gingembre, servie sucrée.",
+      "category": "Petit-déjeuner",
+      "group": "desserts",
+      "countries": [
+        "GH",
+        "NG",
+        "CM",
+        "TG",
+        "BJ",
+        "CI"
+      ],
+      "priceXaf": 300,
+      "image": "bouillie-mais.webp",
+      "credit": {
+        "author": "Bembety",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Millet_pap_02.jpg"
+      }
+    },
+    {
+      "id": "pain-beurre",
+      "name": "Pain beurre",
+      "description": "Baguette fraîche beurrée, servie avec café ou thé.",
+      "category": "Petit-déjeuner",
+      "group": "desserts",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 300,
+      "image": "pain-beurre.webp",
+      "credit": {
+        "author": "Daderot",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Toasted_baguette_with_butter_-_Massachusetts.jpg"
+      }
+    },
+    {
+      "id": "yaourt",
+      "name": "Yaourt",
+      "description": "Yaourt nature ou sucré, servi frais.",
+      "category": "Desserts",
+      "group": "desserts",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 500,
+      "image": "yaourt.webp",
+      "credit": {
+        "author": "Julikalucky",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Yoghurt_and_spoon.jpg"
+      }
+    },
+    {
+      "id": "gateau",
+      "name": "Part de gâteau",
+      "description": "Part de gâteau moelleux maison : vanille, chocolat ou marbré.",
+      "category": "Desserts",
+      "group": "desserts",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1000,
+      "image": "gateau.webp",
+      "credit": {
+        "author": "Daria YakovlevaMinor edits made by Subsidiary account",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Piece_of_chocolate_cake_on_a_white_plate_decorated_with_chocolate_sauce.jpg"
+      }
+    },
+    {
+      "id": "glace",
+      "name": "Glace",
+      "description": "Coupe de crème glacée, deux boules au choix.",
+      "category": "Desserts",
+      "group": "desserts",
+      "countries": [
+        "*"
+      ],
+      "priceXaf": 1000,
+      "image": "glace.webp",
+      "credit": {
+        "author": "RegionVisitor90",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Port_Broughton_Hotel_20260127-123706.jpg"
+      }
+    },
+    {
+      "id": "thiakry",
+      "name": "Thiakry",
+      "description": "Semoule de mil mélangée à du lait caillé sucré, parfumée à la muscade.",
+      "category": "Desserts",
+      "group": "desserts",
+      "countries": [
+        "SN",
+        "GM",
+        "ML",
+        "MR"
+      ],
+      "priceXaf": 500,
+      "image": "thiakry.webp",
+      "credit": {
+        "author": "Yvonneberthe",
+        "license": "CC0",
+        "source": "https://commons.wikimedia.org/wiki/File:Thiakry_pour_un_tour_de_famille_au_S%C3%A9n%C3%A9gal.jpg"
+      }
+    }
   ]
 }
