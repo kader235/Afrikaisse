@@ -1,4 +1,4 @@
-import { AppError, generateToken, uuidv7, type QrList } from '@afrikaisse/core';
+import { AppError, generateToken, isLocalNetworkHost, uuidv7, type QrList } from '@afrikaisse/core';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { writeAudit } from '../lib/journal.ts';
@@ -25,9 +25,17 @@ export async function revokeQrCodes(trx: Db, ctx: AppContext, tableId: string, h
   }
 }
 
-/** Adresse publique des QR : configurée, sinon l'origine de l'écran qui la demande, sinon le Cloud. */
-export function menuBaseUrl(ctx: AppContext, origin: string | undefined): string {
-  const base = ctx.config.publicUrl ?? (origin && /^https?:\/\//.test(origin) ? origin : 'https://app.afrikaisse.com');
+/**
+ * Adresse écrite dans les QR. Le client scanne avec ses données mobiles, sans rejoindre aucun Wi-Fi :
+ * l'adresse doit être joignable depuis Internet. Ordre : AFK_PUBLIC_URL ; sur un serveur local relié,
+ * l'adresse du Cloud (qui prend les commandes et les fait redescendre) ; l'origine de l'écran ; le Cloud.
+ */
+export async function menuBaseUrl(ctx: AppContext, origin: string | undefined): Promise<string> {
+  let base = ctx.config.publicUrl;
+  if (!base && ctx.config.profile === 'local') {
+    base = (await ctx.db.selectFrom('node_state').select('value').where('key', '=', 'sync_cloud_url').executeTakeFirst())?.value;
+  }
+  base ??= origin && /^https?:\/\//.test(origin) ? origin : 'https://app.afrikaisse.com';
   return base.replace(/\/+$/, '');
 }
 
@@ -63,12 +71,13 @@ export async function listQrCodes(ctx: AppContext, scope: TenantScope, locationI
     rows = await load();
   }
 
-  const base = menuBaseUrl(ctx, origin);
+  const base = await menuBaseUrl(ctx, origin);
   const collator = new Intl.Collator('fr', { numeric: true });
   return {
     locationName: location.name,
     organizationName: location.tenant_name,
     menuBaseUrl: `${base}/m/`,
+    reachableFromInternet: !isLocalNetworkHost(new URL(base).hostname),
     codes: rows
       .sort((a, b) => a.zone_sort - b.zone_sort || collator.compare(a.label, b.label))
       .map((r) => ({ tableId: r.id, tableLabel: r.label, zoneName: r.zone_name, token: r.token!, url: `${base}/m/${r.token}`, createdAt: r.created_at! })),

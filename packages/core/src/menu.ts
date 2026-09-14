@@ -255,6 +255,8 @@ export const qrListSchema = z.object({
   locationName: z.string(),
   organizationName: z.string(),
   menuBaseUrl: z.string(),
+  /** Faux : l'adresse n'est joignable que depuis le réseau du restaurant (le client devrait rejoindre son Wi-Fi). */
+  reachableFromInternet: z.boolean(),
   codes: z.array(qrCodeSchema),
 });
 export type QrList = z.infer<typeof qrListSchema>;

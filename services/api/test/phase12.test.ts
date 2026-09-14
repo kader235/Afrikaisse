@@ -74,7 +74,11 @@ describe.each(ENGINES)('Phase 12 — synchronisation serveur local ↔ Cloud (%s
     expect(localLogin.statusCode).toBe(200);
     const lo = as(local, localLogin.json().accessToken);
     expect((await lo.get(`/api/locations/${locationId}/menu`)).json().products.map((p: { name: string }) => p.name)).toEqual(['Jus']);
-    expect((await lo.get(`/api/locations/${locationId}/qr-codes`)).json().codes).toHaveLength(2);
+    const localQr = (await lo.get(`/api/locations/${locationId}/qr-codes`)).json();
+    expect(localQr.codes).toHaveLength(2);
+    // Les QR imprimés sur place mènent au Cloud : le client scanne avec ses données mobiles, sans Wi-Fi.
+    expect(localQr.codes[0].url).toMatch(/^https:\/\/cloud\.test\/m\/[A-Za-z0-9_-]+$/);
+    expect(localQr.reachableFromInternet).toBe(true);
 
     // Une vente locale remonte : commande, paiement, caisse.
     await lo.post(`/api/locations/${locationId}/cash-sessions`, { openingFloat: 0 });

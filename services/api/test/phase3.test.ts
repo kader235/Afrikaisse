@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { inspectImage } from '../src/lib/images.ts';
-import { ENGINES, addMember, as, login, registerOrg, startApp, type TestApp } from './helpers.ts';
+import { ENGINES, addMember, as, bearer, login, registerOrg, startApp, type TestApp } from './helpers.ts';
 
 /** En-tête PNG minimal (signature + IHDR) complété d'octets : le serveur ne lit que l'en-tête. */
 function png(width: number, height: number, padding = 0): Buffer {
@@ -263,5 +263,40 @@ describe.each(ENGINES)('Phase 3 — %s', (engine) => {
     expect((await other.owner.post(`/api/products/${plat.id}/availability`, { isAvailable: false })).statusCode).toBe(404);
     expect((await other.owner.get(`/api/locations/${locationId}/qr-codes`)).statusCode).toBe(404);
     expect((await other.owner.post(`/api/tables/${table.id}/qr/regenerate`)).statusCode).toBe(404);
+  });
+});
+
+describe.each(ENGINES)('Adresse des QR — %s', (engine) => {
+  async function firstQrList(t: TestApp, label: string, origin: string) {
+    const org = await registerOrg(t, label);
+    const owner = as(t, org.token);
+    const locationId = org.me.locations[0].id as string;
+    const zone = (await owner.post(`/api/locations/${locationId}/zones`, { name: 'Terrasse' })).json();
+    expect((await owner.post(`/api/zones/${zone.id}/tables`, { label: 'T1' })).statusCode).toBe(201);
+    const res = await t.app.inject({ method: 'GET', url: `/api/locations/${locationId}/qr-codes`, headers: { ...bearer(org.token), origin } });
+    expect(res.statusCode).toBe(200);
+    return res.json();
+  }
+
+  it("Cloud : l'adresse publique, joignable depuis Internet, quel que soit l'écran qui imprime", async () => {
+    const t = await startApp(engine, { AFK_PUBLIC_URL: 'https://app.afrikaisse.td/' });
+    try {
+      const list = await firstQrList(t, 'QrCloud', 'http://192.168.1.20:5173');
+      expect(list.codes[0].url).toMatch(/^https:\/\/app\.afrikaisse\.td\/m\/[A-Za-z0-9_-]+$/);
+      expect(list.reachableFromInternet).toBe(true);
+    } finally {
+      await t.close();
+    }
+  });
+
+  it('serveur local non relié au Cloud : adresse du réseau du restaurant, signalée comme telle', async () => {
+    const t = await startApp(engine, { AFK_PROFILE: 'local' });
+    try {
+      const list = await firstQrList(t, 'QrLocal', 'http://192.168.1.20:7300');
+      expect(list.codes[0].url).toMatch(/^http:\/\/192\.168\.1\.20:7300\/m\//);
+      expect(list.reachableFromInternet).toBe(false);
+    } finally {
+      await t.close();
+    }
   });
 });

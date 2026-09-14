@@ -134,6 +134,10 @@ Chaque table du plan de salle a son QR.
 - **Régénérer le QR** si une photo du QR circule ou si l'étiquette est abîmée : l'ancien cesse
   aussitôt de fonctionner, il faut coller le nouveau.
 - Une table archivée n'ouvre plus de menu.
+- **Le client n'a besoin d'aucun Wi-Fi** : le QR mène à AfriKaisse Cloud, il scanne avec les données
+  mobiles de son téléphone. C'est vrai aussi pour les QR imprimés depuis le PC du restaurant, dès que
+  ce serveur local est relié au Cloud. Un serveur local **non relié** ne peut produire que des QR du
+  réseau du restaurant : l'écran le signale en orange avant l'impression.
 
 ## Le menu client (QR)
 

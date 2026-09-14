@@ -87,6 +87,12 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
         <ErrorMessage error={error} />
         {notice && !error && <OkMessage>{notice}</OkMessage>}
         <p className="muted">{isNativeApp() ? `${t('qr.hint')} ${t('qr.printNative')}` : t('qr.hint')}</p>
+        {list && !list.reachableFromInternet && (
+          <div className="msg msg-warn">
+            Ces QR mènent à <strong>{list.menuBaseUrl}</strong>, une adresse du réseau du restaurant : un client devrait d'abord rejoindre son Wi-Fi. Pour qu'il scanne et commande
+            avec ses données mobiles, créez l'établissement dans AfriKaisse Cloud et reliez-y ce serveur local avant d'imprimer les QR.
+          </div>
+        )}
       </div>
       <div className="grid-wrap" style={{ marginTop: 10 }}>
         <table className="grid">
