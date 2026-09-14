@@ -39,6 +39,12 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
   const [renaming, setRenaming] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
+  // Les abonnements ne concernent que le Cloud : un serveur local ne contrôle ni n'affiche aucune offre.
+  const [isCloud, setIsCloud] = useState(false);
+  useEffect(() => {
+    api<{ profile: string }>('GET', '/health').then((h) => setIsCloud(h.profile === 'cloud'), () => undefined);
+  }, []);
+
   const load = useCallback(() => api<TenantDetails>('GET', '/tenant').then(setTenant, setError), []);
   useEffect(() => {
     void load();
@@ -75,7 +81,7 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
           <label>{t('org.locations')}</label>
           <input readOnly value={tenant ? String(tenant.locations.length) : ''} />
         </div>
-        {tenant && <SubscriptionPanel subscription={tenant.subscription} />}
+        {tenant && isCloud && <SubscriptionPanel subscription={tenant.subscription} />}
         {me.permissions.includes('settings.manage') && <SyncPanel />}
         {me.permissions.includes('settings.manage') && <BackupsPanel />}
       </Window>
