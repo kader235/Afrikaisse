@@ -40,7 +40,7 @@ export function BackupsPanel() {
   }
 
   return (
-    <fieldset className="group" style={{ maxWidth: 720, marginTop: 14 }}>
+    <fieldset className="group">
       <legend>Sauvegardes de ce serveur</legend>
       <p>
         Une copie vérifiée de la base est faite au démarrage puis toutes les heures : les 24 dernières, et une par jour sur 30 jours, dans <code>{data.dir}</code>.

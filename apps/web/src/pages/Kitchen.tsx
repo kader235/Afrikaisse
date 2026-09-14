@@ -166,6 +166,7 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
                 return (
                   <article key={order.id} className={`kds-card kds-${state}${late}`}>
                     <header>
+                      <span className="kds-label">Commande</span>
                       <strong className="kds-num">n°{order.number}</strong>
                       <span>
                         {order.tableLabel ? `Table ${order.tableLabel}` : SERVICE_TYPE_LABELS[order.serviceType]}
@@ -191,12 +192,12 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
                     <footer>
                       {state === 'queued' && (
                         <button className="btn" disabled={!!busy} onClick={() => act(order, 'START')}>
-                          {pending('START') ? '…' : 'Commencer'}
+                          {pending('START') ? '…' : 'En préparation'}
                         </button>
                       )}
                       {state !== 'ready' && (
                         <button className="btn btn-primary" disabled={!!busy} onClick={() => act(order, 'READY')}>
-                          {pending('READY') ? '…' : 'Prêt'}
+                          {pending('READY') ? '…' : 'Prête'}
                         </button>
                       )}
                       {state === 'ready' &&

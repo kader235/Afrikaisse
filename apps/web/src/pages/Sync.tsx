@@ -39,7 +39,7 @@ export function SyncPanel() {
   }
 
   return (
-    <fieldset className="group" style={{ maxWidth: 720, marginTop: 14 }}>
+    <fieldset className="group">
       <legend>Liaison avec AfriKaisse Cloud</legend>
       {!status.paired ? (
         <p className="muted">

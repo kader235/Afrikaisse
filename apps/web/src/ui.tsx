@@ -56,6 +56,13 @@ const ICONS = {
   chart: 'M2 14h12M4 12V8M7 12V4M10 12V6.5M13 12V9',
   start: 'M3 8.5l3 3 7-7',
   box: 'M2 5l6-3 6 3v6l-6 3-6-3zM2 5l6 3 6-3M8 8v6',
+  ticket: 'M3.5 1.5h9v13l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1-1.5 1zM6 5h4M6 7.5h4M6 10h2.5',
+  table: 'M1.5 5h13v2h-13zM3.5 7v7M12.5 7v7M3.5 10.5h9',
+  gear: 'M8 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4',
+  bell: 'M4 11.5V7a4 4 0 0 1 8 0v4.5l1.5 1.5h-11zM6.5 14.5h3',
+  list: 'M2.5 4h11M2.5 8h11M2.5 12h11',
+  close: 'M4 4l8 8M12 4l-8 8',
+  chevron: 'M4 6l4 4 4-4',
 } as const;
 export type IconName = keyof typeof ICONS;
 
@@ -165,16 +172,21 @@ export function MoneyInput({
   );
 }
 
-/** Fenêtre de travail : titre, barre d'outils, contenu. */
-export function Window({ title, count, toolbar, children, bodyless }: { title: string; count?: string; toolbar?: ReactNode; children: ReactNode; bodyless?: boolean }) {
+/**
+ * Page de travail, même structure partout : en-tête (titre et informations à gauche, actions à droite),
+ * puis une seule carte. `plain` : pas de carte englobante, le contenu pose ses propres cartes.
+ */
+export function Window({ title, count, toolbar, children, bodyless, plain }: { title: string; count?: string; toolbar?: ReactNode; children: ReactNode; bodyless?: boolean; plain?: boolean }) {
   return (
-    <section className="window">
-      <div className="window-title">
-        <h1>{title}</h1>
-        {count && <span className="count">{count}</span>}
-      </div>
-      {toolbar && <div className="toolbar">{toolbar}</div>}
-      {bodyless ? children : <div className="window-body">{children}</div>}
+    <section className="page">
+      <header className="page-head">
+        <div className="page-title">
+          <h1>{title}</h1>
+          {count && <p className="page-meta">{count}</p>}
+        </div>
+        {toolbar && <div className="page-actions">{toolbar}</div>}
+      </header>
+      {plain ? children : <div className="page-card">{bodyless ? children : <div className="window-body">{children}</div>}</div>}
     </section>
   );
 }
@@ -195,7 +207,7 @@ export function Dialog({ title, onClose, children, footer, wide }: { title: stri
           <span>{title}</span>
           {onClose && (
             <button type="button" aria-label={t('common.close')} onClick={onClose}>
-              ✕
+              <Icon name="close" />
             </button>
           )}
         </div>

@@ -7,19 +7,24 @@ import {
   moneyToInput,
   shiftDate,
   type LocationDetails,
+  type Me,
+  type Order,
   type SalesReport,
 } from '@afrikaisse/core';
+import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { ORDER_SOURCE_LABELS } from '../labels.ts';
 import { isNativeApp } from '../platform.ts';
 import { ErrorMessage, Icon, Window } from '../ui.tsx';
 
 /**
- * Tableau de bord du gérant : ventes d'une période de journées d'exploitation.
+ * Tableau de bord du gérant : les ventes de la période, comparées à la période précédente,
+ * et ce qui se passe en ce moment dans l'établissement (commandes, cuisine, tables, stock).
  * Graphiques en simples barres CSS : lisibles sur la vieille WebView d'une tablette, sans bibliothèque.
  */
 
 type Preset = 'today' | 'yesterday' | 'week' | 'month' | 'thisMonth' | 'custom';
+type Target = 'orders' | 'kitchen' | 'floor' | 'stock';
 
 const PRESETS: [Preset, string][] = [
   ['today', "Aujourd'hui"],
@@ -48,13 +53,15 @@ function presetRange(preset: Preset, day: string): { from: string; to: string } 
 
 const shortDate = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 const pct = (part: number, total: number) => (total > 0 ? Math.round((part * 100) / total) : 0);
+const spanDays = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
 
-export function ReportsPage() {
+export function ReportsPage({ me, feed, onNavigate }: { me: Me; feed?: ActivityFeed; onNavigate: (target: Target) => void }) {
   const [locations, setLocations] = useState<LocationDetails[] | null>(null);
   const [locationId, setLocationId] = useState<string | null>(null);
   const [preset, setPreset] = useState<Preset>('today');
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
   const [report, setReport] = useState<SalesReport | null>(null);
+  const [previous, setPrevious] = useState<SalesReport | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
 
@@ -76,8 +83,14 @@ export function ReportsPage() {
     if (!locationId || !range) return;
     setLoading(true);
     setError(null);
+    // Période précédente de même durée, pour situer les chiffres (« +12 % »).
+    const days = spanDays(range.from, range.to);
+    const before = { from: shiftDate(range.from, -days), to: shiftDate(range.from, -1) };
+    const url = (r: { from: string; to: string }) => `/locations/${locationId}/reports/sales?from=${r.from}&to=${r.to}`;
     try {
-      setReport(await api<SalesReport>('GET', `/locations/${locationId}/reports/sales?from=${range.from}&to=${range.to}`));
+      const [current, earlier] = await Promise.all([api<SalesReport>('GET', url(range)), api<SalesReport>('GET', url(before)).catch(() => null)]);
+      setReport(current);
+      setPrevious(earlier);
     } catch (err) {
       setError(err);
     } finally {
@@ -89,12 +102,15 @@ export function ReportsPage() {
   }, [load]);
 
   const money = (v: number) => (report ? formatMoney(v, report.currency) : '');
+  const period = report ? (report.from === report.to ? `Journée du ${shortDate(report.from)}` : `Du ${shortDate(report.from)} au ${shortDate(report.to)}`) : null;
+  const live = !!report && !!today && report.to === today && !!locationId;
+  const compareLabel = preset === 'today' ? "par rapport à hier" : preset === 'yesterday' ? 'par rapport à avant-hier' : report ? `par rapport aux ${spanDays(report.from, report.to)} jours précédents` : '';
 
   return (
     <Window
-      title={location ? `Tableau de bord — ${location.name}` : 'Tableau de bord'}
-      count={report ? (report.from === report.to ? `Journée du ${shortDate(report.from)}` : `Du ${shortDate(report.from)} au ${shortDate(report.to)}`) : undefined}
-      bodyless
+      title="Tableau de bord"
+      count={[location?.name, period].filter(Boolean).join(' · ') || undefined}
+      plain
       toolbar={
         <>
           {locations && locations.length > 1 && (
@@ -113,7 +129,6 @@ export function ReportsPage() {
               </button>
             ))}
           </span>
-          <span className="sep" />
           <label className="report-date">
             Du
             <input
@@ -148,33 +163,49 @@ export function ReportsPage() {
           {!isNativeApp() && (
             <button className="btn" disabled={!report} onClick={() => report && exportCsv(report, location?.name ?? 'afrikaisse')}>
               <Icon name="save" />
-              Exporter (CSV)
+              Exporter
             </button>
           )}
         </>
       }
     >
-      <div className="window-body">
+      <div className="report-page">
         <ErrorMessage error={error} />
         {!report && !error && <p className="muted">Chargement…</p>}
         {report && (
           <>
-            <div className="kpis">
-              <Kpi label="Chiffre d'affaires" value={money(report.totals.revenue)} strong />
-              <Kpi label="Encaissé" value={money(report.totals.collected)} />
-              <Kpi label="Commandes" value={String(report.totals.orders)} />
-              <Kpi label="Ticket moyen" value={money(report.totals.averageTicket)} />
-              <Kpi label="Articles vendus" value={String(report.totals.itemsSold)} />
-              <Kpi label="Remises" value={money(report.totals.discounts)} />
-              <Kpi label="Annulées" value={`${report.totals.cancelledCount} · ${money(report.totals.cancelledAmount)}`} />
+            <div className={live ? 'dash-top' : 'dash-top single'}>
+              <div className="dash-main">
+                <section className="summary" aria-label="Ventes de la période">
+                  <dl className="summary-figures">
+                    <Figure label="Chiffre d'affaires" value={money(report.totals.revenue)} now={report.totals.revenue} before={previous?.totals.revenue} />
+                    <Figure label="Encaissé" value={money(report.totals.collected)} now={report.totals.collected} before={previous?.totals.collected} />
+                    <Figure label="Commandes" value={String(report.totals.orders)} now={report.totals.orders} before={previous?.totals.orders} />
+                    <Figure label="Ticket moyen" value={money(report.totals.averageTicket)} now={report.totals.averageTicket} before={previous?.totals.averageTicket} />
+                  </dl>
+                  <div className="summary-foot">
+                    <span>
+                      Articles vendus <strong className="num">{report.totals.itemsSold}</strong>
+                    </span>
+                    <span>
+                      Remises <strong className="num">{money(report.totals.discounts)}</strong>
+                    </span>
+                    <span>
+                      Annulées <strong className="num">{report.totals.cancelledCount}</strong>
+                      {report.totals.cancelledCount > 0 && ` (${money(report.totals.cancelledAmount)})`}
+                    </span>
+                    {previous && <span className="summary-compare">Évolution {compareLabel}</span>}
+                  </div>
+                </section>
+                <fieldset className="group">
+                  <legend>{report.from === report.to ? 'Ventes du jour' : 'Ventes par jour'}</legend>
+                  <DayBars report={report} money={money} />
+                </fieldset>
+              </div>
+              {live && <NowPanel me={me} feed={feed} locationId={locationId!} onNavigate={onNavigate} />}
             </div>
 
             <div className="report-grid">
-              <fieldset className="group">
-                <legend>Ventes par jour</legend>
-                <DayBars report={report} money={money} />
-              </fieldset>
-
               <fieldset className="group">
                 <legend>Modes de paiement</legend>
                 {report.byMethod.length === 0 ? (
@@ -244,12 +275,78 @@ export function ReportsPage() {
   );
 }
 
-function Kpi({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Figure({ label, value, now, before }: { label: string; value: string; now: number; before: number | undefined }) {
   return (
-    <div className={strong ? 'kpi kpi-main' : 'kpi'}>
-      <span>{label}</span>
-      <strong>{value}</strong>
+    <div className="summary-figure">
+      <dt>{label}</dt>
+      <dd>
+        <strong className="fig-value">{value}</strong>
+        <Delta now={now} before={before} />
+      </dd>
     </div>
+  );
+}
+
+function Delta({ now, before }: { now: number; before: number | undefined }) {
+  if (before === undefined) return null;
+  if (before === 0) return <span className="fig-delta">{now === 0 ? 'Stable' : 'Aucune vente avant'}</span>;
+  const change = Math.round(((now - before) * 1000) / before) / 10;
+  if (change === 0) return <span className="fig-delta">Stable</span>;
+  const text = `${change > 0 ? '+' : '−'}${Math.abs(change).toLocaleString('fr-FR')} %`;
+  return <span className={change > 0 ? 'fig-delta up' : 'fig-delta down'}>{text}</span>;
+}
+
+/** En ce moment : ce qui demande une action, avec un accès direct à l'écran concerné. */
+function NowPanel({ me, feed, locationId, onNavigate }: { me: Me; feed?: ActivityFeed; locationId: string; onNavigate: (target: Target) => void }) {
+  const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
+  const canTables = can('tables.read');
+  const canStock = can('inventory.read');
+  const canKitchen = can('kitchen.use') || can('bar.use');
+  const [tablesTotal, setTablesTotal] = useState<number | null>(null);
+  const [lowStock, setLowStock] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (canTables) api<{ tables: unknown[] }>('GET', `/locations/${locationId}/floor`).then((f) => setTablesTotal(f.tables.length), () => setTablesTotal(null));
+    if (canStock) api<{ name: string; state: string }[]>('GET', `/locations/${locationId}/inventory`).then((list) => setLowStock(list.filter((i) => i.state !== 'OK').map((i) => i.name)), () => setLowStock(null));
+  }, [locationId, canTables, canStock]);
+
+  const orders = feed?.orders ?? [];
+  const count = (...statuses: Order['status'][]) => orders.filter((o) => statuses.includes(o.status)).length;
+  const pending = count('PENDING');
+  const cooking = count('CONFIRMED', 'PREPARING');
+  const ready = count('READY');
+  const occupied = new Set(orders.map((o) => o.tableId).filter(Boolean)).size;
+
+  return (
+    <fieldset className="group now-panel">
+      <legend>En ce moment</legend>
+      <ul className="now-list">
+        {feed && <NowRow label="Commandes à confirmer" value={pending} tone={pending > 0 ? 'warn' : undefined} onOpen={() => onNavigate('orders')} />}
+        {feed && <NowRow label="En cuisine" value={cooking} onOpen={canKitchen ? () => onNavigate('kitchen') : () => onNavigate('orders')} />}
+        {feed && <NowRow label="Prêtes à servir" value={ready} tone={ready > 0 ? 'ok' : undefined} onOpen={() => onNavigate('orders')} />}
+        {feed && <NowRow label="Demandes des tables" value={feed.requests.length} tone={feed.requests.length > 0 ? 'warn' : undefined} onOpen={() => onNavigate('orders')} />}
+        {tablesTotal !== null && <NowRow label="Tables occupées" value={`${occupied} / ${tablesTotal}`} onOpen={() => onNavigate('floor')} />}
+        {lowStock !== null && (
+          <NowRow label="Stock faible" detail={lowStock.slice(0, 3).join(', ')} value={lowStock.length} tone={lowStock.length > 0 ? 'danger' : undefined} onOpen={() => onNavigate('stock')} />
+        )}
+      </ul>
+      {feed && !feed.online && <p className="muted">Liaison interrompue, nouvelle tentative…</p>}
+    </fieldset>
+  );
+}
+
+function NowRow({ label, detail, value, tone, onOpen }: { label: string; detail?: string; value: number | string; tone?: 'warn' | 'ok' | 'danger'; onOpen: () => void }) {
+  return (
+    <li className="now-row">
+      <span className="now-label">
+        {label}
+        {detail && <small>{detail}</small>}
+      </span>
+      <strong className={tone ? `now-value ${tone}` : 'now-value'}>{value}</strong>
+      <button className="btn now-open" onClick={onOpen}>
+        Voir
+      </button>
+    </li>
   );
 }
 

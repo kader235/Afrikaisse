@@ -693,12 +693,18 @@ function PlanCanvas({
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const measure = () => setCell(clamp(Math.floor((el.clientWidth - 2) / zone.planWidth), 14, 64));
+    // Elle suit aussi la hauteur de la fenêtre : le plan entier reste visible sans faire défiler la page.
+    const measure = () =>
+      setCell(clamp(Math.min(Math.floor((el.clientWidth - 2) / zone.planWidth), Math.floor((window.innerHeight - 330) / zone.planHeight)), 14, 64));
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [zone.planWidth]);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [zone.planWidth, zone.planHeight]);
 
   return (
     <div className="plan-wrap" ref={wrapRef}>
@@ -747,6 +753,7 @@ function PlanCanvas({
           >
             <strong>{table.label}</strong>
             <span>{info?.check ? `${minutesSince(info.check.openedAt)} min` : `${table.capacity} ${t('floor.seatsShort')}`}</span>
+            {info && <span className="plan-state">{LIVE_LABELS[info.state]}</span>}
             {info?.badge && <em className="plan-badge">{info.badge}</em>}
           </button>
           );

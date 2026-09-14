@@ -118,7 +118,7 @@ interface Health {
   lanUrls?: string[];
 }
 
-/** Barre d'état : uniquement des informations réelles, rafraîchies toutes les 30 s. */
+/** État de la liaison : uniquement des informations réelles, rafraîchies toutes les 30 s. */
 function useHealth() {
   const [health, setHealth] = useState<Health | null>(null);
   const [online, setOnline] = useState(true);
@@ -139,6 +139,30 @@ function useHealth() {
   return { health, online };
 }
 
+type NavGroup = 'home' | 'sale' | 'restaurant' | 'manage' | 'admin';
+type NavItem = { id: Section; label: string; icon: IconName; visible: boolean; badge?: number; group: NavGroup };
+
+/** Rubriques de la navigation, dans l'ordre d'une journée de service. */
+const NAV_GROUPS: [NavGroup, string][] = [
+  ['home', ''],
+  ['sale', 'Vente'],
+  ['restaurant', 'Restaurant'],
+  ['manage', 'Gestion'],
+  ['admin', 'Administration'],
+];
+
+/** Accès rapides du téléphone (barre du bas), par métier : chacun ouvre son outil. */
+const TAB_PRIORITY: Record<Role, Section[]> = {
+  OWNER: ['reports', 'orders', 'pos', 'menu'],
+  ADMIN: ['reports', 'orders', 'pos', 'menu'],
+  MANAGER: ['orders', 'pos', 'floor', 'menu'],
+  CASHIER: ['pos', 'orders'],
+  WAITER: ['floor', 'orders'],
+  KITCHEN: ['kitchen'],
+  BAR: ['kitchen'],
+  STOCK_MANAGER: ['stock', 'menu'],
+};
+
 function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => void; onSession: (s: SessionResponse) => void; onLogout: () => void }) {
   const { t, lang } = useI18n();
   const [error, setError] = useState<unknown>(null);
@@ -150,29 +174,29 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
 
   const sections: NavItem[] = [
-    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read'), group: 'service' },
-    { id: 'orders', label: t('nav.orders'), icon: 'journal', visible: can('orders.read'), badge: waiting, group: 'service' },
-    { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect'), group: 'service' },
-    { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read'), group: 'service' },
-    { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use'), group: 'service' },
-    { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read'), group: 'service' },
-    { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read'), group: 'service' },
-    { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read'), group: 'admin' },
-    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'admin' },
+    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read'), group: 'home' },
+    { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect'), group: 'sale' },
+    { id: 'orders', label: t('nav.orders'), icon: 'ticket', visible: can('orders.read'), badge: waiting, group: 'sale' },
+    { id: 'floor', label: t('nav.floor'), icon: 'table', visible: can('tables.read'), group: 'sale' },
+    { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use'), group: 'restaurant' },
+    { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read'), group: 'restaurant' },
+    { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read'), group: 'manage' },
+    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'manage' },
     { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read'), group: 'admin' },
+    { id: 'organization', label: t('nav.organization'), icon: 'gear', visible: can('tenant.read'), group: 'admin' },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin, group: 'admin' },
-    { id: 'account', label: t('nav.account'), icon: 'user', visible: true, group: 'account' },
   ];
   const visible = sections.filter((s) => s.visible);
-  // Quatre onglets au plus, choisis selon le métier ; tout le reste est rangé dans « Plus ».
-  const wanted = TAB_PRIORITY[me.role ?? 'OWNER'];
-  const tabs = wanted.map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s).slice(0, 4);
-  if (tabs.length === 0) tabs.push(visible[0]!);
-  const others = visible.filter((s) => !tabs.includes(s));
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [section, setSection] = useState<Section>(() => tabs[0]!.id);
-  const current = visible.some((s) => s.id === section) ? section : visible[0]!.id;
+  const quick = TAB_PRIORITY[me.role ?? 'OWNER']
+    .map((id) => visible.find((s) => s.id === id))
+    .filter((s): s is NavItem => !!s)
+    .slice(0, 4);
+  if (quick.length === 0 && visible[0]) quick.push(visible[0]);
+  const [panel, setPanel] = useState<'account' | 'nav' | null>(null);
+  const [section, setSection] = useState<Section>(() => quick[0]?.id ?? 'account');
+  const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
+  const roleLabel = me.role ? ROLE_LABELS[lang][me.role] : '';
 
   async function switchTo(tenantId: string) {
     setError(null);
@@ -183,6 +207,10 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     }
   }
   const reloadMe = () => api<Me>('GET', '/auth/me').then(onMe, setError);
+  const open = (id: Section) => {
+    setSection(id);
+    setPanel(null);
+  };
 
   // Pas d'organisation utilisable : choix ou explication, jamais un écran vide.
   if (me.tenantAccess !== 'OK' && !(me.user.isPlatformAdmin && me.memberships.length === 0)) {
@@ -217,50 +245,51 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   return (
     <div className="app">
       <header className="topbar">
+        <button className="topbar-menu" aria-label="Menu" aria-haspopup="dialog" onClick={() => setPanel('nav')}>
+          <Icon name="list" />
+        </button>
         <div className="topbar-brand">
           <LogoAfrikaisse />
-          <div>
-            <strong>{me.tenant?.name ?? 'AfriKaisse'}</strong>
-            {me.locations.length === 1 && <span>{me.locations[0]!.name}</span>}
-          </div>
+          <span className="topbar-product">
+            Afri<span>Kaisse</span>
+          </span>
         </div>
-        <nav className="tabs" aria-label="Navigation">
-          {tabs.map((s) => (
-            <button key={s.id} className="tab" aria-current={current === s.id ? 'page' : undefined} onClick={() => setSection(s.id)}>
-              <Icon name={s.icon} />
-              <span className="tab-label">{s.label}</span>
-              {!!s.badge && <span className="badge-count">{s.badge}</span>}
-            </button>
-          ))}
-          {others.length > 0 && (
-            <button className="tab" aria-haspopup="dialog" aria-expanded={moreOpen} aria-current={others.some((s) => s.id === current) ? 'page' : undefined} onClick={() => setMoreOpen(true)}>
-              <Icon name="more" />
-              <span className="tab-label">{others.some((s) => s.id === current) ? others.find((s) => s.id === current)!.label : 'Plus'}</span>
-              {others.some((s) => !!s.badge) && <span className="badge-count">{others.reduce((n, s) => n + (s.badge ?? 0), 0)}</span>}
+        <div className="topbar-context">
+          <strong>{me.tenant?.name ?? 'AfriKaisse'}</strong>
+          {me.locations.length === 1 && <span>{me.locations[0]!.name}</span>}
+        </div>
+        <div className="topbar-side">
+          {waiting > 0 && can('orders.read') && current !== 'orders' && (
+            <button className="topbar-alert" onClick={() => open('orders')}>
+              <Icon name="bell" />
+              {waiting} à traiter
             </button>
           )}
-        </nav>
-        <div className="topbar-side">
           <span className={online ? 'topbar-status' : 'topbar-status off'}>
             <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
             {online ? 'En ligne' : 'Hors ligne'}
           </span>
-          <button className="topbar-user" onClick={() => setMoreOpen(true)} aria-label="Mon compte et réglages">
+          <button className="topbar-user" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
             <span className="topbar-name">
               <strong>{me.user.displayName}</strong>
-              <span>{me.role ? ROLE_LABELS[lang][me.role] : ''}</span>
+              <span>{roleLabel}</span>
             </span>
+            <Icon name="chevron" />
           </button>
         </div>
       </header>
 
+      <nav className="sidebar" aria-label="Navigation">
+        <NavList items={visible} current={current} onPick={open} />
+      </nav>
+
       <main className="workspace">
-        {can('tenant.read') && <SubscriptionBanner me={me} onOpen={() => setSection('organization')} />}
+        {can('tenant.read') && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
         {!!error && <ErrorMessage error={error} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'pos' && <PosPage me={me} />}
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
-        {current === 'reports' && <ReportsPage />}
+        {current === 'reports' && <ReportsPage me={me} feed={can('orders.read') ? feed : undefined} onNavigate={open} />}
         {current === 'stock' && <StockPage me={me} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
@@ -272,45 +301,69 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'platform' && <PlatformPage />}
       </main>
 
-      {moreOpen && (
-        <MoreSheet
+      <nav className="bottombar" aria-label="Accès rapide">
+        {quick.map((s) => (
+          <NavButton key={s.id} item={s} current={current} onPick={open} />
+        ))}
+        <button className="nav-item" aria-haspopup="dialog" onClick={() => setPanel('nav')}>
+          <Icon name="list" />
+          <span className="nav-label">Plus</span>
+        </button>
+      </nav>
+
+      {panel && (
+        <SidePanel
+          mode={panel}
           me={me}
-          items={others}
+          roleLabel={roleLabel}
+          items={visible}
           current={current}
           health={health}
           online={online}
-          onSelect={(id) => {
-            setSection(id);
-            setMoreOpen(false);
-          }}
+          onSelect={open}
           onSwitch={switchTo}
           onLogout={onLogout}
-          onClose={() => setMoreOpen(false)}
+          onClose={() => setPanel(null)}
         />
       )}
     </div>
   );
 }
 
-type NavItem = { id: Section; label: string; icon: IconName; visible: boolean; badge?: number; group: 'service' | 'admin' | 'account' };
+function NavButton({ item, current, onPick }: { item: NavItem; current: Section; onPick: (id: Section) => void }) {
+  return (
+    <button className="nav-item" aria-current={current === item.id ? 'page' : undefined} onClick={() => onPick(item.id)}>
+      <Icon name={item.icon} />
+      <span className="nav-label">{item.label}</span>
+      {!!item.badge && <span className="badge-count">{item.badge}</span>}
+    </button>
+  );
+}
 
-/** Onglets affichés d'abord, par métier : chacun ouvre son outil. */
-const TAB_PRIORITY: Record<Role, Section[]> = {
-  OWNER: ['reports', 'orders', 'pos', 'menu'],
-  ADMIN: ['reports', 'orders', 'pos', 'menu'],
-  MANAGER: ['orders', 'pos', 'floor', 'menu'],
-  CASHIER: ['pos', 'orders'],
-  WAITER: ['floor', 'orders'],
-  KITCHEN: ['kitchen'],
-  BAR: ['kitchen'],
-  STOCK_MANAGER: ['stock', 'menu'],
-};
+function NavList({ items, current, onPick }: { items: NavItem[]; current: Section; onPick: (id: Section) => void }) {
+  return (
+    <>
+      {NAV_GROUPS.map(([group, title]) => {
+        const list = items.filter((i) => i.group === group);
+        if (list.length === 0) return null;
+        return (
+          <div key={group} className="nav-group">
+            {title && <h2 className="nav-title">{title}</h2>}
+            {list.map((item) => (
+              <NavButton key={item.id} item={item} current={current} onPick={onPick} />
+            ))}
+          </div>
+        );
+      })}
+    </>
+  );
+}
 
-const GROUP_TITLES: Record<NavItem['group'], string> = { service: 'Service', admin: 'Administration', account: 'Compte' };
-
-/** « Plus » : tout ce qui n'a pas sa place dans les onglets, en grandes tuiles, avec les réglages et la déconnexion. */
-function MoreSheet({
+/** Panneau latéral : compte et réglages ; sur téléphone (« Menu »), toute la navigation en plus. */
+function SidePanel({
+  mode,
   me,
+  roleLabel,
   items,
   current,
   health,
@@ -320,7 +373,9 @@ function MoreSheet({
   onLogout,
   onClose,
 }: {
+  mode: 'account' | 'nav';
   me: Me;
+  roleLabel: string;
   items: NavItem[];
   current: Section;
   health: Health | null;
@@ -330,30 +385,35 @@ function MoreSheet({
   onLogout: () => void;
   onClose: () => void;
 }) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return (
-    <div className="sheet-overlay" role="presentation" onClick={onClose}>
-      <aside className="sheet" role="dialog" aria-modal="true" aria-label="Plus" onClick={(e) => e.stopPropagation()}>
-        <div className="sheet-head">
-          <div className="sheet-who">
+    <div className="panel-overlay" role="presentation" onClick={onClose}>
+      <aside className="side-panel" role="dialog" aria-modal="true" aria-label={mode === 'nav' ? 'Menu' : t('nav.account')} onClick={(e) => e.stopPropagation()}>
+        <div className="panel-head">
+          <div className="panel-who">
             <strong>{me.user.displayName}</strong>
             <span>
-              {me.role ? ROLE_LABELS[lang][me.role] : ''}
+              {roleLabel}
               {me.tenant ? ` · ${me.tenant.name}` : ''}
             </span>
           </div>
-          <button className="icon-btn" aria-label="Fermer" onClick={onClose}>
-            ✕
+          <button className="icon-btn" aria-label={t('common.close')} onClick={onClose}>
+            <Icon name="close" />
           </button>
         </div>
+        {mode === 'nav' && (
+          <div className="panel-section panel-nav">
+            <NavList items={items} current={current} onPick={onSelect} />
+          </div>
+        )}
         {me.tenant && me.memberships.length > 1 && (
-          <label className="sheet-field">
-            <span>{t('shell.switchOrg')}</span>
+          <label className="panel-section">
+            <h2>{t('shell.switchOrg')}</h2>
             <select value={me.tenant.id} onChange={(e) => onSwitch(e.target.value)}>
               {me.memberships.map((m) => (
                 <option key={m.membershipId} value={m.tenantId}>
@@ -363,31 +423,18 @@ function MoreSheet({
             </select>
           </label>
         )}
-        {(['service', 'admin', 'account'] as const).map((group) => {
-          const list = items.filter((i) => i.group === group);
-          if (list.length === 0) return null;
-          return (
-            <section key={group} className="sheet-group">
-              <h2>{GROUP_TITLES[group]}</h2>
-              <div className="sheet-tiles">
-                {list.map((i) => (
-                  <button key={i.id} className="sheet-tile" aria-current={current === i.id ? 'page' : undefined} onClick={() => onSelect(i.id)}>
-                    <Icon name={i.icon} />
-                    <span>{i.label}</span>
-                    {!!i.badge && <span className="badge-count">{i.badge}</span>}
-                  </button>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-        <section className="sheet-group">
+        <div className="panel-section">
+          <h2>Compte</h2>
+          <button className="nav-item" aria-current={current === 'account' ? 'page' : undefined} onClick={() => onSelect('account')}>
+            <Icon name="user" />
+            <span className="nav-label">{t('nav.account')}</span>
+          </button>
+        </div>
+        <div className="panel-section panel-prefs">
           <h2>Affichage</h2>
-          <div className="sheet-prefs">
-            <Preferences />
-          </div>
-        </section>
-        <div className="sheet-info">
+          <Preferences />
+        </div>
+        <div className="panel-info">
           <span>
             <span className={online ? 'dot dot-ok' : 'dot dot-off'} />
             {online ? t('status.connected') : t('status.offline')}
@@ -398,7 +445,7 @@ function MoreSheet({
             GLOBALTECH BUSINESS TD · {t('status.version')} {health?.version ?? APP_VERSION}
           </span>
         </div>
-        <button className="btn sheet-logout" onClick={onLogout}>
+        <button className="btn panel-logout" onClick={onLogout}>
           <Icon name="logout" />
           {t('common.logout')}
         </button>

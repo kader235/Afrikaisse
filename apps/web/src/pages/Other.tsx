@@ -71,7 +71,10 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
       >
         <ErrorMessage error={error} />
         {tenant?.isDemo && <div className="msg msg-warn">{t('org.demo')}</div>}
-        <div className="form" style={{ maxWidth: 560 }}>
+        <div className="org-layout">
+        <fieldset className="group">
+        <legend>Organisation</legend>
+        <div className="form">
           <label>{t('auth.organizationName')}</label>
           <input readOnly value={tenant?.name ?? ''} />
           <label>{t('org.status')}</label>
@@ -81,9 +84,13 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
           <label>{t('org.locations')}</label>
           <input readOnly value={tenant ? String(tenant.locations.length) : ''} />
         </div>
+        </fieldset>
+        <div className="org-side">
         {tenant && isCloud && <SubscriptionPanel subscription={tenant.subscription} />}
         {me.permissions.includes('settings.manage') && <SyncPanel />}
         {me.permissions.includes('settings.manage') && <BackupsPanel />}
+        </div>
+        </div>
       </Window>
 
       {renaming && tenant && (
@@ -412,7 +419,7 @@ function ExpiryState({ plan, expiresAt }: { plan: string; expiresAt: number | nu
 function SubscriptionPanel({ subscription: s }: { subscription: Subscription }) {
   const tone = s.state === 'EXPIRED' ? 'st st-cancelled' : s.state === 'GRACE' ? 'st st-pending' : 'st st-ready';
   return (
-    <fieldset className="group" style={{ maxWidth: 720, marginTop: 14 }}>
+    <fieldset className="group">
       <legend>Abonnement AfriKaisse</legend>
       <dl className="kv">
         <dt>Offre</dt>
@@ -463,7 +470,7 @@ function SubscriptionPanel({ subscription: s }: { subscription: Subscription }) 
         À l'échéance, le service continue : caisse, cuisine, commandes et synchronisation ne s'arrêtent jamais. Après {GRACE_DAYS} jours de grâce, seuls les ajouts d'établissements, de membres et
         de serveurs locaux sont suspendus.
       </p>
-      <table className="grid plan-table">
+      <table className="grid offers-table">
         <thead>
           <tr>
             <th>Offre</th>

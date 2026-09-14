@@ -15,24 +15,32 @@
 
 ## Se repérer dans l'application
 
-- En haut : le nom du restaurant, **quatre onglets au plus**, choisis selon votre métier, et votre avatar.
+- **En haut** : le restaurant et l'établissement ouverts, les commandes **à traiter** (un clic ouvre
+  Commandes), l'état de la liaison, et votre nom : il ouvre votre compte, le changement
+  d'organisation, la langue, le thème **clair ou sombre** et **Se déconnecter**.
+- **À gauche**, les rubriques regroupées par activité (seules celles de votre rôle s'affichent) :
+  - **Tableau de bord** ;
+  - **Vente** : Caisse, Commandes, Tables ;
+  - **Restaurant** : Cuisine, Menu ;
+  - **Gestion** : Stock, Établissements ;
+  - **Administration** : Personnel, Paramètres (organisation, abonnement, synchronisation,
+    sauvegardes), Journal.
+- Sur tablette, la colonne se resserre : l'icône au-dessus du nom de la rubrique.
+- Sur téléphone, une barre en bas donne les écrans de votre métier et **Plus** ouvre toutes les
+  rubriques :
   - Propriétaire et administrateur : Tableau de bord, Commandes, Caisse, Menu.
-  - Gérant : Commandes, Caisse, Plan de salle, Menu.
-  - Caissier : Caisse, Commandes. Serveur : Plan de salle, Commandes. Cuisine et bar : Écran cuisine.
-- **Plus** (ou votre avatar) ouvre un panneau de grandes tuiles : le reste du service (plan de salle,
-  cuisine, stock…), l'administration (organisation, établissements, équipe, journal), votre compte, la
-  langue, le thème **clair ou sombre**, et **Se déconnecter**.
-- Sur téléphone, les onglets passent en barre en bas de l'écran.
+  - Gérant : Commandes, Caisse, Tables, Menu.
+  - Caissier : Caisse, Commandes. Serveur : Tables, Commandes. Cuisine et bar : Cuisine.
 
-Pour démarrer vite : **Menu → Importer des plats** (voir plus bas), puis **Plus → Plan de salle** pour
-les tables et leurs QR.
+Pour démarrer vite : **Menu → Importer des plats** (voir plus bas), puis **Tables** pour les tables et
+leurs QR.
 
 ## Se connecter
 
 Adresse e-mail et mot de passe. Après 5 erreurs de suite, la connexion est bloquée 15 minutes.
 
 Si vous travaillez pour plusieurs organisations, AfriKaisse vous demande laquelle ouvrir. Vous
-pouvez changer à tout moment depuis le sélecteur sous le nom de l'organisation.
+pouvez changer à tout moment : cliquez sur votre nom, en haut à droite.
 
 ## La tablette
 
@@ -63,11 +71,11 @@ Menu **Établissements** (propriétaire, administrateur).
   - *Serveur local* : le PC du restaurant fait tourner AfriKaisse, qui continue sans Internet.
 - **Archiver** : l'établissement disparaît des écrans de travail, son historique est gardé, et on peut
   le **réactiver**. Impossible pour le dernier établissement actif, ou si des membres ne travaillent
-  que là (réaffectez-les d'abord depuis **Équipe**).
+  que là (réaffectez-les d'abord depuis **Personnel**).
 
-## Le plan de salle
+## Les tables (plan de salle)
 
-Menu **Plan de salle**. Pensé pour la tablette : tout se fait au doigt.
+Menu **Tables**. Pensé pour la tablette : tout se fait au doigt.
 
 1. **Nouvelle zone** : Salle, Terrasse, VIP… avec la taille du plan en cases (24 × 16 par défaut ;
    une table de 2 à 4 personnes occupe 2 × 2 cases).
@@ -337,10 +345,10 @@ Ensuite, la synchronisation est automatique, toutes les 5 secondes :
 - les changements faits en ligne (prix, carte, équipe) descendent au PC.
 
 Sans Internet, le restaurant travaille normalement ; tout part au retour de la connexion. Le menu
-**Organisation** montre l'état de la liaison et propose **Synchroniser maintenant**.
+**Paramètres** montre l'état de la liaison et propose **Synchroniser maintenant**.
 
 **Sauvegardes** : AfriKaisse copie et vérifie sa base au démarrage puis toutes les heures, dans
-`C:\ProgramData\AfriKaisse\sauvegardes`. Le menu **Organisation** montre les dernières copies, avec
+`C:\ProgramData\AfriKaisse\sauvegardes`. Le menu **Paramètres** montre les dernières copies, avec
 **Sauvegarder maintenant**. Copiez ce dossier chaque semaine sur une clé USB : une panne du disque
 emporterait aussi les copies. Pour revenir à une copie :
 1. quitter AfriKaisse ;
@@ -349,7 +357,7 @@ emporterait aussi les copies. Pour revenir à une copie :
 
 ## L'abonnement
 
-**Administration → Organisation** montre votre offre, son échéance, et ce que vous utilisez face à
+**Administration → Paramètres** montre votre offre, son échéance, et ce que vous utilisez face à
 ce qu'elle inclut.
 
 | Offre | Prix | Établissements | Membres | Serveurs locaux |
@@ -368,19 +376,19 @@ ce qu'elle inclut.
 
 ### Un PC du restaurant volé ou remplacé
 
-**Administration → Établissements**, sélectionnez l'établissement, **Serveurs reliés**, puis
+**Gestion → Établissements**, sélectionnez l'établissement, **Serveurs reliés**, puis
 **Révoquer** : ce PC ne peut plus rien envoyer ni recevoir. **Relier un serveur local** donne
 ensuite le code du PC de remplacement.
 
-## L'équipe
+## Le personnel
 
-Menu **Équipe** (propriétaire, administrateur, gérant).
+Menu **Personnel** (propriétaire, administrateur, gérant).
 
 | Rôle | Peut |
 |---|---|
 | Propriétaire | Tout, y compris l'abonnement |
 | Administrateur | Tout sauf l'abonnement |
-| Gérant | Équipe (rôles inférieurs), menu, tables, commandes, remises, caisse, stock, rapports |
+| Gérant | Personnel (rôles inférieurs), menu, tables, commandes, remises, caisse, stock, rapports |
 | Caissier | Caisse, commandes, encaissement |
 | Serveur | Tables et prise de commande |
 | Cuisine / Bar | Écran de préparation de sa station |
