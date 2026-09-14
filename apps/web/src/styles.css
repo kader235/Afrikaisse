@@ -4580,3 +4580,324 @@ table.grid td.empty {
 table.grid td.empty {
   white-space: normal;
 }
+
+/* === QR codes : chevalets de table ======================================= */
+/* Le chevalet est un objet imprimé : couleurs fixes dans les deux thèmes, tailles en em (même dessin à toute échelle). */
+.table-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  aspect-ratio: 105 / 148;
+  overflow: hidden;
+  border: 1px solid #dce1e7;
+  border-radius: 0.9em;
+  background: #ffffff;
+  color: #111a27;
+  font-size: 7.5px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.table-card-head {
+  flex: none;
+  padding: 1.7em 1.2em 1.5em;
+  background: #0f2a4a;
+  color: #ffffff;
+}
+
+.table-card-name {
+  display: block;
+  font-size: 1.95em;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.table-card-place {
+  display: block;
+  margin-top: 0.35em;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 1.15em;
+}
+
+.table-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 1.2em 1.4em 0.4em;
+}
+
+.table-card-qr {
+  width: 62%;
+  padding: 0.9em;
+  border: 0.2em solid #dce1e7;
+  border-radius: 1em;
+  background: #ffffff;
+}
+
+.table-card-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.table-card-call {
+  margin-top: 1em;
+  font-size: 1.4em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.table-card-table {
+  margin-top: 0.8em;
+}
+
+.table-card-table span {
+  display: block;
+  color: #647184;
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.table-card-table strong {
+  display: block;
+  color: #0f2a4a;
+  font-size: 3.3em;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.table-card-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 1.4em;
+  padding: 0.9em 0 1.1em;
+  border-top: 1px solid #e9edf1;
+  color: #647184;
+  font-size: 0.95em;
+}
+
+.table-card-brand {
+  display: inline-flex;
+  align-items: center;
+  color: #0f2a4a;
+  font-weight: 700;
+}
+
+.table-card-brand svg {
+  width: 1.7em;
+  height: 1.7em;
+  margin-inline-end: 0.4em;
+}
+
+.qr-messages > .msg {
+  margin-bottom: 0;
+}
+
+.qr-board {
+  padding: 20px;
+}
+
+.qr-zone + .qr-zone {
+  margin-top: 28px;
+}
+
+.qr-zone-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-gap: 18px;
+}
+
+.qr-tile {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qr-tile .table-card {
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.qr-tile:hover .table-card,
+.qr-tile:focus-visible .table-card {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.qr-tile:focus-visible {
+  outline: none;
+}
+
+/* Affichage en grand : la carte occupe la hauteur disponible sans dépasser la largeur. */
+.qr-presenter {
+  --card-h: min(calc(100vh - 170px), calc((100vw - 190px) * 148 / 105));
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.qr-presenter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68px;
+  padding: 8px 14px 8px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.qr-presenter-title strong {
+  display: block;
+  font-size: 19px;
+}
+
+.qr-presenter-title span {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.qr-presenter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.qr-presenter-actions > * {
+  margin: 4px;
+}
+
+.qr-presenter-actions .btn + .btn {
+  margin: 4px;
+}
+
+.qr-presenter-stage {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 16px;
+}
+
+.qr-presenter-card {
+  flex: none;
+  width: calc(var(--card-h) * 105 / 148);
+  margin: 0 20px;
+}
+
+.qr-presenter-card .table-card {
+  font-size: calc(var(--card-h) / 40);
+  border-radius: 0.7em;
+  box-shadow: 0 10px 32px rgba(16, 28, 44, 0.16);
+}
+
+.qr-nav {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.qr-nav .ico {
+  width: 26px;
+  height: 26px;
+}
+
+.qr-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.qr-presenter-link {
+  padding: 0 24px 14px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.qr-presenter-link a {
+  color: inherit;
+}
+
+/* Planche A4 : quatre chevalets de 95 × 138 mm avec traits de coupe (marges d'impression de 10 mm). */
+.qr-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 95mm);
+  grid-auto-rows: 138mm;
+  justify-content: center;
+}
+
+.qr-sheet-cell {
+  border: 0.2mm dashed #b8c1cb;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.qr-sheet-cell .table-card {
+  height: 100%;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  font-size: 3.55mm;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+@media (max-width: 760px) {
+  .qr-presenter {
+    --card-h: min(calc(100vh - 210px), calc((100vw - 110px) * 148 / 105));
+  }
+
+  .qr-presenter-card {
+    margin: 0 8px;
+  }
+
+  .qr-nav {
+    width: 44px;
+    height: 44px;
+  }
+
+  .qr-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-gap: 12px;
+  }
+}

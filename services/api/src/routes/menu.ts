@@ -121,9 +121,13 @@ export function menuRoutes(ctx: AppContext): FastifyPluginAsyncZod {
     );
 
     // QR des tables
-    app.get('/locations/:locationId/qr-codes', { schema: { tags: ['floor'], summary: 'QR codes des tables actives', security, params: params.location, response: { 200: qrListSchema } } }, async (request) =>
-      listQrCodes(ctx, requireTenant(request.auth, 'tables.read'), request.params.locationId, request.headers.origin),
-    );
+    app.get('/locations/:locationId/qr-codes', { schema: { tags: ['floor'], summary: 'QR codes des tables actives', security, params: params.location, response: { 200: qrListSchema } } }, async (request) => {
+      // L'application tablette a pour origine « http://localhost » : un QR vers cette adresse ne mène nulle part.
+      // On retient alors l'adresse du serveur qu'elle appelle, celle que les téléphones des clients joindront.
+      const origin = request.headers.origin;
+      const fromApp = !origin || /^(capacitor|https?):\/\/localhost(:\d+)?$/.test(origin);
+      return listQrCodes(ctx, requireTenant(request.auth, 'tables.read'), request.params.locationId, fromApp ? `${request.protocol}://${request.host}` : origin);
+    });
     app.post('/tables/:tableId/qr/regenerate', { schema: { tags: ['floor'], summary: "Régénérer le QR d'une table (l'ancien cesse de fonctionner)", security, params: params.table } }, async (request, reply) => {
       await regenerateQrCode(ctx, requireTenant(request.auth, 'tables.manage'), request.params.tableId, requestMeta(request));
       return reply.code(204).send();

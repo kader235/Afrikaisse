@@ -289,6 +289,22 @@ describe.each(ENGINES)('Adresse des QR — %s', (engine) => {
     }
   });
 
+  it("application tablette (origine http://localhost) : l'adresse du serveur appelé, jamais localhost", async () => {
+    const t = await startApp(engine);
+    try {
+      const org = await registerOrg(t, 'QrTablette');
+      const owner = as(t, org.token);
+      const locationId = org.me.locations[0].id as string;
+      const zone = (await owner.post(`/api/locations/${locationId}/zones`, { name: 'Salle' })).json();
+      expect((await owner.post(`/api/zones/${zone.id}/tables`, { label: 'T1' })).statusCode).toBe(201);
+      const res = await t.app.inject({ method: 'GET', url: `/api/locations/${locationId}/qr-codes`, headers: { ...bearer(org.token), origin: 'http://localhost', host: 'caisse.exemple.td' } });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().codes[0].url).toMatch(/^http:\/\/caisse\.exemple\.td\/m\/[A-Za-z0-9_-]+$/);
+    } finally {
+      await t.close();
+    }
+  });
+
   it('serveur local non relié au Cloud : adresse du réseau du restaurant, signalée comme telle', async () => {
     const t = await startApp(engine, { AFK_PROFILE: 'local' });
     try {
