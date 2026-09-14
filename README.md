@@ -19,7 +19,8 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | 4-5 | Commande client par QR (panier, options, suivi, appel serveur/addition), écran Commandes du personnel en temps réel (confirmation, avancement, annulation motivée, tables à libérer), numéros par journée d'exploitation | ✅ 104 tests ; essai croisé téléphone ↔ tablette |
 | 6 | Caisse tablette : vente au doigt, sur place/à emporter, remises motivées, encaissement espèces/mobile money/carte, addition partagée, reçu 80 mm, transfert et regroupement de tables, sessions de caisse (fond, entrées/sorties, rapport X, clôture Z avec écart) | ✅ 128 tests ; essai complet dans le navigateur |
 | 7 | Postes de préparation (Cuisine, Bar, Grill…), écran cuisine sombre à trois colonnes avec minuteurs et signal, avancement par poste, commande prête quand tous les postes ont fini | ✅ 138 tests ; essai cuisine ↔ bar dans le navigateur |
-| 8 | Serveurs : plan de salle vivant, prise de commande à table, addition | À venir |
+| 8 | Plan de salle vivant pour les serveurs (libre, occupée, prête, appel/addition/QR, réglée), fiche de service, commande à table en plein écran ; scénario complet du cahier des charges (QR → cuisine → service → paiement → table libérée → Z) | ✅ 140 tests |
+| 9 | Impression tickets cuisine et reçus (ESC/POS), agent d'impression | À venir |
 
 ## Démarrer
 

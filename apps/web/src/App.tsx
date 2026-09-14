@@ -163,6 +163,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const [section, setSection] = useState<Section>(() => {
     if (me.role === 'CASHIER') return 'pos';
     if (me.role === 'KITCHEN' || me.role === 'BAR') return 'kitchen';
+    if (me.role === 'WAITER') return 'floor';
     if (can('orders.read')) return 'orders';
     if (can('tables.read')) return 'floor';
     if (can('menu.availability')) return 'menu';
@@ -262,7 +263,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
-        {current === 'floor' && <FloorPage me={me} />}
+        {current === 'floor' && <FloorPage me={me} feed={feed} />}
         {current === 'menu' && <MenuPage me={me} />}
         {current === 'team' && <TeamPage me={me} />}
         {current === 'audit' && <AuditPage />}

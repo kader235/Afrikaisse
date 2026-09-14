@@ -324,12 +324,14 @@ export function PosPage({ me }: { me: Me }) {
 
 // --- Vente ------------------------------------------------------------------
 
-function SaleTab({
+/** Prise de commande au doigt. `fixedTableId` : commande pour une table précise (plan de salle du serveur). */
+export function SaleTab({
   locationId,
   menu,
   floor,
   currency,
   canCollect,
+  fixedTableId,
   onSent,
   onError,
 }: {
@@ -338,6 +340,7 @@ function SaleTab({
   floor: Floor | null;
   currency: CurrencyCode;
   canCollect: boolean;
+  fixedTableId?: string;
   onSent: (order: Order, payNow: boolean) => void;
   onError: (err: unknown) => void;
 }) {
@@ -345,7 +348,7 @@ function SaleTab({
   const [query, setQuery] = useState('');
   const [lines, setLines] = useState<TicketLine[]>([]);
   const [serviceType, setServiceType] = useState<'DINE_IN' | 'TAKEAWAY'>('DINE_IN');
-  const [tableId, setTableId] = useState('');
+  const [tableId, setTableId] = useState(fixedTableId ?? '');
   const [customerName, setCustomerName] = useState('');
   const [note, setNote] = useState('');
   const [options, setOptions] = useState<PricingProduct | null>(null);
@@ -395,7 +398,7 @@ function SaleTab({
       setLines([]);
       setNote('');
       setCustomerName('');
-      setTableId('');
+      setTableId(fixedTableId ?? '');
       onSent(order, payNow);
     } catch (err) {
       onError(err);
@@ -447,6 +450,10 @@ function SaleTab({
 
       <aside className="pos-ticket">
         <div className="pos-dest">
+          {fixedTableId ? (
+            <strong className="pos-fixed">Table {floor?.tables.find((t) => t.id === fixedTableId)?.label}</strong>
+          ) : (
+          <>
           <span className="segmented">
             {(['DINE_IN', 'TAKEAWAY'] as const).map((s) => (
               <button key={s} className="btn" aria-pressed={serviceType === s} onClick={() => setServiceType(s)}>
@@ -472,6 +479,8 @@ function SaleTab({
             </select>
           ) : (
             <input placeholder="Nom du client (facultatif)" maxLength={60} value={customerName} onChange={(e) => setCustomerName(e.target.value)} aria-label="Nom du client" />
+          )}
+          </>
           )}
         </div>
 
@@ -832,7 +841,7 @@ function CheckoutTab({
   );
 }
 
-function PayDialog({ locationId, check, drawerOpen, onDone, onClose }: { locationId: string; check: Check; drawerOpen: boolean; onDone: (r: Receipt) => void; onClose: () => void }) {
+export function PayDialog({ locationId, check, drawerOpen, onDone, onClose }: { locationId: string; check: Check; drawerOpen: boolean; onDone: (r: Receipt) => void; onClose: () => void }) {
   const currency = check.currency;
   const [method, setMethod] = useState<PaymentMethod>('CASH');
   const [amount, setAmount] = useState<number | null>(check.remaining);
@@ -1076,7 +1085,7 @@ function DiscountDialog({ order, onDone, onClose }: { order: Order; onDone: (o: 
   );
 }
 
-function TransferDialog({ check, floor, occupied, onDone, onClose }: { check: Check; floor: Floor | null; occupied: Set<string>; onDone: (label: string, merged: boolean) => void; onClose: () => void }) {
+export function TransferDialog({ check, floor, occupied, onDone, onClose }: { check: Check; floor: Floor | null; occupied: Set<string>; onDone: (label: string, merged: boolean) => void; onClose: () => void }) {
   const [tableId, setTableId] = useState('');
   const { busy, error, run } = useAction();
   const tables = (floor?.tables ?? []).filter((t) => t.id !== check.tableId).sort((a, b) => a.label.localeCompare(b.label, 'fr', { numeric: true }));
@@ -1597,7 +1606,7 @@ function OrderLines({ order }: { order: Order }) {
   );
 }
 
-function ReceiptTicket({ receipt }: { receipt: Receipt }) {
+export function ReceiptTicket({ receipt }: { receipt: Receipt }) {
   const { payment, location } = receipt;
   const money = (v: number) => formatMoney(v, location.currency);
   const total = receipt.orders.reduce((s, o) => s + o.total, 0);
@@ -1634,7 +1643,7 @@ function ReceiptTicket({ receipt }: { receipt: Receipt }) {
   );
 }
 
-function BillTicket({ check, locationName }: { check: Check; locationName: string }) {
+export function BillTicket({ check, locationName }: { check: Check; locationName: string }) {
   const money = (v: number) => formatMoney(v, check.currency);
   return (
     <div className="ticket">

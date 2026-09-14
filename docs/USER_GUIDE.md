@@ -68,6 +68,23 @@ Menu **Plan de salle**. Pensé pour la tablette : tout se fait au doigt.
 
 Les serveurs et caissiers consultent le plan sans pouvoir le modifier.
 
+### Le plan en service
+Hors mode « Disposer », le plan est **vivant**. Il se met à jour tout seul, et les serveurs arrivent directement dessus.
+
+| Couleur | Signification |
+|---|---|
+| Gris | Table libre |
+| Bleu | Table occupée (minutes depuis l'arrivée) |
+| Vert | Une commande est **prête** en cuisine (badge « Prêt ») |
+| Orange, qui pulse | Appel serveur, **addition demandée** ou commande **QR à confirmer** (badge) |
+| Pointillés verts | Tout est réglé, les clients sont encore là |
+
+Toucher une table ouvre sa **fiche de service** :
+- **Confirmer** une commande QR, **Servie** pour une commande prête, **Traité** pour un appel ;
+- l'addition en cours : commandes, total, déjà payé, reste ;
+- **Nouvelle commande** : la prise de commande s'ouvre en plein écran pour cette table, puis **Envoyer la commande** ;
+- **Encaisser** (caissier, responsable), **Imprimer l'addition**, **Changer de table**, **Libérer la table**.
+
 ## Le menu
 
 Menu **Menu**, trois onglets.

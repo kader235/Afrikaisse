@@ -127,6 +127,27 @@ npm run verify        # types + tests + bundle API + build web
 - Cuisine « Prêt » → « Annoncée en salle », commande « Prête » (historique Confirmée → En préparation → Prête) ;
 - minuteur rouge sur une commande de 48 min.
 
+## Phase 8 et scénario du cahier des charges (140 tests au total)
+
+La phase 8 est un écran : elle réutilise les routes des phases 4 à 7. Elle ajoute le **scénario §76**
+(`services/api/test/scenario.test.ts`), joué de bout en bout avec les vrais rôles, sur les deux moteurs :
+
+1. le client scanne le QR de la table 12, commande un burger + fromage et 2 jus (en attente, 7 500) ;
+2. le serveur voit la note sur la table et confirme ;
+3. la cuisine commence, le bar termine sa part, la cuisine termine → commande prête ;
+4. le serveur sert ; le téléphone du client affiche « servie » ;
+5. le client demande l'addition, le serveur ajoute un jus (même note), le bar le prépare, il est servi ;
+6. le serveur ne peut pas encaisser (403) ; le caissier ouvre sa caisse, voit la note à 8 500 avec 2 commandes, encaisse 10 000 en espèces (rendu 1 500, reçu n°1) ;
+7. les deux commandes sont terminées, **la table est libérée**, la demande d'addition est close, le client voit « terminée » ;
+8. clôture Z : 13 500 attendus, 13 500 comptés, écart 0 ;
+9. traçabilité : 2 `ORDER_PLACED`, 1 `PAYMENT_RECORDED`, journal (commande QR, ouverture et clôture de caisse).
+
+**Essai du plan vivant dans le navigateur** (tablette 1280 × 800) :
+- T1 réglée (pointillés), T2 « Prêt » (vert, badge), compteur « Occupées 2 » ;
+- fiche de T2 : commande n°3 prête, addition 8 700 ;
+- « Servie » → T2 repasse en occupée ;
+- T3 libre → « Nouvelle commande » en plein écran « Table T3 », sans encaissement pour ce parcours → envoyée ; T3 devient occupée.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

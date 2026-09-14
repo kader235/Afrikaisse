@@ -1,19 +1,32 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
+  ORDER_STATUS_LABELS,
   PLAN,
+  SERVICE_REQUEST_LABELS,
   TABLE_SHAPES,
   findLayoutIssues,
+  formatMoney,
+  type AdminMenu,
+  type CashSession,
+  type Check,
   type DiningTable,
   type Floor,
   type LocationDetails,
   type Me,
+  type Order,
+  type Receipt,
+  type ServiceRequest,
   type TableShape,
   type Zone,
 } from '@afrikaisse/core';
+import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { SHAPE_LABELS } from '../labels.ts';
+import { isNativeApp } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
+import { BillTicket, PayDialog, ReceiptTicket, SaleTab, TransferDialog } from './Pos.tsx';
 
 /**
  * Plan de salle, pensé pour la tablette : on touche une table pour la sélectionner ;
@@ -32,14 +45,35 @@ type DialogState =
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
+/** État d'une table en service, calculé depuis les notes ouvertes et le flux d'activité. */
+type TableLive = {
+  state: 'free' | 'occupied' | 'ready' | 'call' | 'settled';
+  check: Check | null;
+  pending: Order[];
+  ready: Order[];
+  requests: ServiceRequest[];
+  badge: string | null;
+};
+
+const minutesSince = (ms: number) => Math.max(0, Math.floor((Date.now() - ms) / 60000));
+
 function nextLabel(tables: DiningTable[]) {
   const numbers = tables.map((x) => /^T(\d+)$/i.exec(x.label)).filter((m): m is RegExpExecArray => m !== null).map((m) => Number(m[1]));
   return `T${(numbers.length ? Math.max(...numbers) : 0) + 1}`;
 }
 
-export function FloorPage({ me }: { me: Me }) {
+export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
   const { t } = useI18n();
   const canManage = me.permissions.includes('tables.manage');
+  const [checks, setChecks] = useState<Check[]>([]);
+  const [menu, setMenu] = useState<AdminMenu | null>(null);
+  const [entry, setEntry] = useState<DiningTable | null>(null);
+  const [entryError, setEntryError] = useState<unknown>(null);
+  const [paying, setPaying] = useState<{ check: Check; drawerOpen: boolean } | null>(null);
+  const [transfer, setTransfer] = useState<Check | null>(null);
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [printing, setPrinting] = useState<ReactNode>(null);
+  const [, setMinute] = useState(0);
   const [locations, setLocations] = useState<LocationDetails[] | null>(null);
   const [locationId, setLocationId] = useState<string | null>(null);
   const [floor, setFloor] = useState<Floor | null>(null);
@@ -72,6 +106,37 @@ export function FloorPage({ me }: { me: Me }) {
     if (locationId) void loadFloor(locationId);
   }, [locationId, loadFloor]);
 
+  // En service : occupation des tables, relue régulièrement (commandes QR, autres serveurs, caisse).
+  const live = !!feed && me.permissions.includes('orders.read');
+  const loadChecks = useCallback(async () => {
+    if (!locationId || !live) return;
+    try {
+      setChecks(await api<Check[]>('GET', `/locations/${locationId}/checks`));
+    } catch {
+      /* le flux d'activité signale déjà la coupure */
+    }
+  }, [locationId, live]);
+  useEffect(() => {
+    void loadChecks();
+    const poll = setInterval(() => {
+      if (!document.hidden) void loadChecks();
+    }, 5000);
+    const minute = setInterval(() => setMinute((n) => n + 1), 30_000);
+    return () => {
+      clearInterval(poll);
+      clearInterval(minute);
+    };
+  }, [loadChecks]);
+
+  useEffect(() => {
+    if (!printing) return;
+    const timer = setTimeout(() => {
+      window.print();
+      setPrinting(null);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [printing]);
+
   const zone = floor?.zones.find((z) => z.id === zoneId) ?? null;
   const tables = useMemo(() => (floor?.tables ?? []).filter((x) => x.zoneId === zoneId).map((x) => ({ ...x, ...draft[x.id] })), [floor, zoneId, draft]);
   const issues = useMemo(() => (zone ? findLayoutIssues(tables, zone.planWidth, zone.planHeight) : { outOfBounds: [], overlaps: [] }), [tables, zone]);
@@ -79,6 +144,75 @@ export function FloorPage({ me }: { me: Me }) {
   const dirty = Object.keys(draft).length > 0;
   const selected = tables.find((x) => x.id === selectedId) ?? null;
   const seats = tables.reduce((sum, x) => sum + x.capacity, 0);
+
+  function liveFor(table: DiningTable): TableLive | null {
+    if (!feed || !live) return null;
+    const check = checks.find((c) => c.kind === 'session' && c.tableId === table.id) ?? null;
+    const atTable = feed.orders.filter((o) => o.tableId === table.id);
+    const pending = atTable.filter((o) => o.status === 'PENDING');
+    const ready = atTable.filter((o) => o.status === 'READY');
+    const requests = feed.requests.filter((r) => r.tableId === table.id);
+    let state: TableLive['state'] = check || atTable.length > 0 ? (check && check.orders.length > 0 && check.remaining === 0 ? 'settled' : 'occupied') : 'free';
+    if (ready.length > 0) state = 'ready';
+    if (requests.length > 0 || pending.length > 0) state = 'call';
+    const badge = pending.length > 0 ? 'QR' : requests.some((r) => r.kind === 'BILL') ? 'Addition' : requests.length > 0 ? 'Appel' : ready.length > 0 ? 'Prêt' : null;
+    return { state, check, pending, ready, requests, badge };
+  }
+
+  async function openEntry(table: DiningTable) {
+    if (!locationId) return;
+    setEntryError(null);
+    try {
+      // Menu relu à chaque commande : les articles épuisés entre-temps sont à jour.
+      setMenu(await api<AdminMenu>('GET', `/locations/${locationId}/menu`));
+      setEntry(table);
+    } catch (err) {
+      setError(err);
+    }
+  }
+
+  async function moveOrder(order: Order, status: 'CONFIRMED' | 'SERVED') {
+    setError(null);
+    try {
+      const updated = await api<Order>('POST', `/orders/${order.id}/status`, { status });
+      feed?.applyOrder(updated);
+      setNotice(`Commande n°${order.number} : ${ORDER_STATUS_LABELS[updated.status]}.`);
+      void loadChecks();
+    } catch (err) {
+      setError(err);
+    }
+  }
+
+  async function resolveRequest(request: ServiceRequest) {
+    setError(null);
+    try {
+      feed?.applyRequest(await api<ServiceRequest>('POST', `/requests/${request.id}/resolve`));
+    } catch (err) {
+      setError(err);
+    }
+  }
+
+  async function startPayment(check: Check) {
+    setError(null);
+    try {
+      const { session } = await api<{ session: CashSession | null }>('GET', `/locations/${locationId}/cash-session`);
+      setPaying({ check, drawerOpen: !!session });
+    } catch (err) {
+      setError(err);
+    }
+  }
+
+  async function freeTable(check: Check) {
+    setError(null);
+    try {
+      await api('POST', `/table-sessions/${check.id}/close`);
+      setNotice(`Table ${check.tableLabel} libérée.`);
+      void loadChecks();
+      feed?.refresh();
+    } catch (err) {
+      setError(err);
+    }
+  }
 
   function place(table: DiningTable, patch: Partial<Rect>) {
     setDraft((d) => ({ ...d, [table.id]: { x: table.x, y: table.y, w: table.w, h: table.h, ...d[table.id], ...patch } }));
@@ -275,7 +409,32 @@ export function FloorPage({ me }: { me: Me }) {
                 onSelect={pick}
                 onMove={(table, x, y) => place(table, { x, y })}
                 onOpen={(table) => canManage && setDialog({ kind: 'table', table })}
+                live={editing ? undefined : liveFor}
               />
+            )}
+            {zone && live && !editing && (
+              <div className="plan-legend">
+                <span>
+                  <i className="l-free" />
+                  Libre
+                </span>
+                <span>
+                  <i className="l-occupied" />
+                  Occupée
+                </span>
+                <span>
+                  <i className="l-ready" />
+                  Commande prête
+                </span>
+                <span>
+                  <i className="l-call" />
+                  Appel, addition ou QR à confirmer
+                </span>
+                <span>
+                  <i className="l-settled" />
+                  Réglée
+                </span>
+              </div>
             )}
           </div>
 
@@ -290,13 +449,32 @@ export function FloorPage({ me }: { me: Me }) {
                   <dd className="num">{tables.length}</dd>
                   <dt>{t('floor.seats')}</dt>
                   <dd className="num">{seats}</dd>
+                  {live && !editing && (
+                    <>
+                      <dt>Occupées</dt>
+                      <dd className="num">{tables.filter((x) => liveFor(x)?.state !== 'free').length}</dd>
+                    </>
+                  )}
                   <dt>{t('floor.planSize')}</dt>
                   <dd className="num">
                     {zone.planWidth} × {zone.planHeight}
                   </dd>
                 </dl>
               </fieldset>
-              {selected ? (
+              {selected && !editing && live ? (
+                <ServicePanel
+                  table={selected}
+                  info={liveFor(selected)!}
+                  me={me}
+                  onNewOrder={() => openEntry(selected)}
+                  onMove={moveOrder}
+                  onResolve={resolveRequest}
+                  onPay={startPayment}
+                  onPrint={isNativeApp() ? null : (check) => setPrinting(<BillTicket check={check} locationName={floor?.location.name ?? ''} />)}
+                  onTransfer={setTransfer}
+                  onFree={freeTable}
+                />
+              ) : selected ? (
                 <fieldset className="group">
                   <legend>
                     {t('floor.table')} {selected.label}
@@ -377,6 +555,92 @@ export function FloorPage({ me }: { me: Me }) {
           }}
         />
       )}
+      {entry && menu && floor && locationId && (
+        <div className="entry-overlay" role="dialog" aria-modal="true" aria-label={`Nouvelle commande — Table ${entry.label}`}>
+          <div className="entry-head">
+            <strong>Nouvelle commande — Table {entry.label}</strong>
+            <button className="btn" onClick={() => setEntry(null)}>
+              Fermer
+            </button>
+          </div>
+          {!!entryError && (
+            <div className="entry-error">
+              <ErrorMessage error={entryError} />
+            </div>
+          )}
+          <SaleTab
+            locationId={locationId}
+            menu={menu}
+            floor={floor}
+            currency={menu.location.currency}
+            canCollect={false}
+            fixedTableId={entry.id}
+            onSent={(order) => {
+              setEntry(null);
+              setEntryError(null);
+              setError(null);
+              setNotice(`Commande n°${order.number} envoyée · table ${entry.label}.`);
+              feed?.applyOrder(order);
+              void loadChecks();
+            }}
+            onError={setEntryError}
+          />
+        </div>
+      )}
+      {paying && locationId && (
+        <PayDialog
+          locationId={locationId}
+          check={paying.check}
+          drawerOpen={paying.drawerOpen}
+          onClose={() => setPaying(null)}
+          onDone={(r) => {
+            setPaying(null);
+            setReceipt(r);
+            setNotice(`Reçu n°${r.payment.receiptNumber} enregistré.`);
+            void loadChecks();
+            feed?.refresh();
+          }}
+        />
+      )}
+      {transfer && (
+        <TransferDialog
+          check={transfer}
+          floor={floor}
+          occupied={new Set(checks.filter((c) => c.kind === 'session').map((c) => c.tableId!))}
+          onClose={() => setTransfer(null)}
+          onDone={(label, merged) => {
+            setTransfer(null);
+            setSelectedId(null);
+            setNotice(merged ? `Additions regroupées sur la table ${label}.` : `Clients installés à la table ${label}.`);
+            void loadChecks();
+            feed?.refresh();
+          }}
+        />
+      )}
+      {receipt && (
+        <Dialog
+          title={`Reçu n°${receipt.payment.receiptNumber}`}
+          onClose={() => setReceipt(null)}
+          footer={
+            <>
+              {!isNativeApp() && (
+                <button className="btn btn-primary" onClick={() => setPrinting(<ReceiptTicket receipt={receipt} />)}>
+                  <Icon name="print" />
+                  Imprimer
+                </button>
+              )}
+              <button className="btn" onClick={() => setReceipt(null)}>
+                Fermer
+              </button>
+            </>
+          }
+        >
+          <div className="ticket-preview">
+            <ReceiptTicket receipt={receipt} />
+          </div>
+        </Dialog>
+      )}
+      {printing && createPortal(<div className="print-sheet print-ticket">{printing}</div>, document.body)}
       {(dialog?.kind === 'archiveTable' || dialog?.kind === 'archiveZone') && (
         <Dialog
           title={dialog.kind === 'archiveTable' ? `${t('floor.archiveTable')} — ${dialog.table.label}` : `${t('floor.archiveZone')} — ${dialog.zone.name}`}
@@ -408,6 +672,7 @@ function PlanCanvas({
   onSelect,
   onMove,
   onOpen,
+  live,
 }: {
   zone: Zone;
   tables: DiningTable[];
@@ -417,6 +682,7 @@ function PlanCanvas({
   onSelect: (id: string | null) => void;
   onMove: (table: DiningTable, x: number, y: number) => void;
   onOpen: (table: DiningTable) => void;
+  live?: (table: DiningTable) => TableLive | null;
 }) {
   const { t } = useI18n();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -443,11 +709,13 @@ function PlanCanvas({
           if (e.target === e.currentTarget) onSelect(null);
         }}
       >
-        {tables.map((table) => (
+        {tables.map((table) => {
+          const info = live ? live(table) : null;
+          return (
           <button
             key={table.id}
             type="button"
-            className={`plan-table shape-${table.shape.toLowerCase()}${conflicts.has(table.id) ? ' conflict' : ''}`}
+            className={`plan-table shape-${table.shape.toLowerCase()}${conflicts.has(table.id) ? ' conflict' : ''}${info ? ` live-${info.state}` : ''}`}
             aria-pressed={table.id === selectedId}
             style={{
               left: table.x * cell,
@@ -478,13 +746,159 @@ function PlanCanvas({
             onDoubleClick={() => !editing && onOpen(table)}
           >
             <strong>{table.label}</strong>
-            <span>
-              {table.capacity} {t('floor.seatsShort')}
-            </span>
+            <span>{info?.check ? `${minutesSince(info.check.openedAt)} min` : `${table.capacity} ${t('floor.seatsShort')}`}</span>
+            {info?.badge && <em className="plan-badge">{info.badge}</em>}
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
+  );
+}
+
+const LIVE_LABELS: Record<TableLive['state'], string> = {
+  free: 'Libre',
+  occupied: 'Occupée',
+  ready: 'Commande prête',
+  call: 'Demande en attente',
+  settled: 'Réglée',
+};
+
+/** Fiche d'une table en service : tout ce qu'un serveur fait sans quitter le plan. */
+function ServicePanel({
+  table,
+  info,
+  me,
+  onNewOrder,
+  onMove,
+  onResolve,
+  onPay,
+  onPrint,
+  onTransfer,
+  onFree,
+}: {
+  table: DiningTable;
+  info: TableLive;
+  me: Me;
+  onNewOrder: () => void;
+  onMove: (order: Order, status: 'CONFIRMED' | 'SERVED') => void;
+  onResolve: (request: ServiceRequest) => void;
+  onPay: (check: Check) => void;
+  onPrint: ((check: Check) => void) | null;
+  onTransfer: (check: Check) => void;
+  onFree: (check: Check) => void;
+}) {
+  const has = (p: Me['permissions'][number]) => me.permissions.includes(p);
+  const { check } = info;
+  return (
+    <fieldset className="group service-panel">
+      <legend>
+        Table {table.label} · {LIVE_LABELS[info.state]}
+      </legend>
+      <p className="muted">
+        {table.capacity} places
+        {check && ` · occupée depuis ${minutesSince(check.openedAt)} min`}
+      </p>
+
+      {info.requests.map((r) => (
+        <div className="service-row service-warn" key={r.id}>
+          <span>
+            <strong>{SERVICE_REQUEST_LABELS[r.kind]}</strong> <small className="muted">il y a {minutesSince(r.createdAt)} min</small>
+          </span>
+          {has('orders.create') && (
+            <button className="btn" onClick={() => onResolve(r)}>
+              Traité
+            </button>
+          )}
+        </div>
+      ))}
+      {info.pending.map((o) => (
+        <div className="service-row service-warn" key={o.id}>
+          <span>
+            <strong>QR n°{o.number} à confirmer</strong> <small className="muted">{o.items.map((i) => `${i.quantity} ${i.name}`).join(', ')}</small>
+          </span>
+          {has('orders.create') && (
+            <button className="btn btn-primary" onClick={() => onMove(o, 'CONFIRMED')}>
+              Confirmer
+            </button>
+          )}
+        </div>
+      ))}
+      {info.ready.map((o) => (
+        <div className="service-row service-ok" key={o.id}>
+          <span>
+            <strong>n°{o.number} prête</strong> <small className="muted">{o.items.map((i) => `${i.quantity} ${i.name}`).join(', ')}</small>
+          </span>
+          {has('orders.create') && (
+            <button className="btn btn-primary" onClick={() => onMove(o, 'SERVED')}>
+              Servie
+            </button>
+          )}
+        </div>
+      ))}
+
+      {check && check.orders.length > 0 && (
+        <>
+          <ul className="order-lines">
+            {check.orders.map((o) => (
+              <li key={o.id}>
+                <div className="order-line-head">
+                  <span>
+                    n°{o.number} · {ORDER_STATUS_LABELS[o.status]}
+                  </span>
+                  <span className="num">{formatMoney(o.total, o.currency)}</span>
+                </div>
+                <div className="muted">{o.items.map((i) => `${i.quantity} × ${i.name}`).join(', ')}</div>
+              </li>
+            ))}
+          </ul>
+          <div className="order-total">
+            <span>Total</span>
+            <strong>{formatMoney(check.total, check.currency)}</strong>
+          </div>
+          {check.paid > 0 && (
+            <div className="order-line-head">
+              <span>Déjà payé</span>
+              <span className="num">{formatMoney(check.paid, check.currency)}</span>
+            </div>
+          )}
+          <div className="order-total big">
+            <span>Reste à payer</span>
+            <strong>{formatMoney(check.remaining, check.currency)}</strong>
+          </div>
+        </>
+      )}
+
+      <div className="order-actions">
+        {has('orders.create') && (
+          <button className="btn btn-primary" onClick={onNewOrder}>
+            <Icon name="add" />
+            Nouvelle commande
+          </button>
+        )}
+        {check && check.remaining > 0 && has('payments.collect') && (
+          <button className="btn" onClick={() => onPay(check)}>
+            Encaisser
+          </button>
+        )}
+        {check && check.orders.length > 0 && onPrint && (
+          <button className="btn" onClick={() => onPrint(check)}>
+            <Icon name="print" />
+            Imprimer l'addition
+          </button>
+        )}
+        {check && has('orders.create') && (
+          <button className="btn" onClick={() => onTransfer(check)}>
+            Changer de table
+          </button>
+        )}
+        {check && info.state === 'settled' && has('orders.create') && (
+          <button className="btn" onClick={() => onFree(check)}>
+            Libérer la table
+          </button>
+        )}
+      </div>
+    </fieldset>
   );
 }
 

@@ -1894,6 +1894,152 @@ input[aria-invalid='true'] {
   }
 }
 
+/* --- Plan de salle en service ---------------------------------------------- */
+.plan-table.live-occupied {
+  border-color: var(--accent);
+  background: var(--select);
+}
+
+.plan-table.live-ready {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.plan-table.live-call {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+  animation: call-pulse 1.6s ease-in-out infinite;
+}
+
+.plan-table.live-settled {
+  border-style: dashed;
+  border-color: var(--ok);
+}
+
+@keyframes call-pulse {
+  50% {
+    box-shadow: 0 0 0 4px var(--warn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-table.live-call {
+    animation: none;
+  }
+}
+
+.plan-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 15px;
+}
+
+.plan-table.live-ready .plan-badge {
+  background: var(--ok);
+}
+
+.plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 8px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.plan-legend i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-inline-end: 5px;
+  border: 2px solid var(--border-strong);
+  border-radius: 2px;
+  background: var(--band);
+  vertical-align: -2px;
+}
+
+.plan-legend .l-occupied {
+  border-color: var(--accent);
+  background: var(--select);
+}
+
+.plan-legend .l-ready {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.plan-legend .l-call {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.plan-legend .l-settled {
+  border-style: dashed;
+  border-color: var(--ok);
+}
+
+.service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 3px;
+}
+
+.service-warn {
+  background: var(--warn-bg);
+}
+
+.service-ok {
+  background: var(--ok-bg);
+}
+
+.entry-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: var(--window);
+}
+
+.entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--appbar);
+  color: var(--appbar-text);
+}
+
+.entry-overlay .pos-sale {
+  flex: 1;
+  overflow: auto;
+}
+
+.entry-overlay .pos-ticket {
+  max-height: calc(100vh - 52px);
+}
+
+.entry-error {
+  padding: 8px 12px 0;
+}
+
+.pos-fixed {
+  padding: 8px 0;
+  font-size: 18px;
+}
+
 /* --- Écran cuisine (sombre quel que soit le thème : lisible à distance) ------ */
 .kds {
   display: flex;
