@@ -14,13 +14,12 @@ import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { ORDER_SOURCE_LABELS, sinceText } from '../labels.ts';
-import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
+import { Dialog, ErrorMessage, Icon, OkMessage } from '../ui.tsx';
 
 /**
  * Commandes en cours, pour la tablette de salle ou de caisse.
  * Les commandes QR à confirmer passent devant ; les appels des tables sont toujours visibles.
  */
-type Filter = 'pending' | 'active' | 'ready';
 
 const ACTION_LABELS: Partial<Record<OrderStatus, string>> = {
   CONFIRMED: 'Confirmer',
@@ -43,7 +42,6 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
 export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const { t } = useI18n();
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
-  const [filter, setFilter] = useState<Filter>('pending');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [cancel, setCancel] = useState<Order | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -56,15 +54,15 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
     return () => clearInterval(id);
   }, []);
 
-  const pending = feed.orders.filter((o) => o.status === 'PENDING');
-  const ready = feed.orders.filter((o) => o.status === 'READY');
-  const visible = (filter === 'pending' ? pending : filter === 'ready' ? ready : feed.orders).slice().sort((a, b) => a.createdAt - b.createdAt);
+  const byAge = (list: Order[]) => list.slice().sort((a, b) => a.createdAt - b.createdAt);
+  // Une colonne par étape du service, de gauche à droite.
+  const columns: { id: string; title: string; tone: 'wait' | 'cook' | 'ready' | 'served'; orders: Order[]; empty: string }[] = [
+    { id: 'pending', title: t('orders.pending'), tone: 'wait', orders: byAge(feed.orders.filter((o) => o.status === 'PENDING')), empty: 'Aucune commande à confirmer.' },
+    { id: 'kitchen', title: 'En cuisine', tone: 'cook', orders: byAge(feed.orders.filter((o) => o.status === 'CONFIRMED' || o.status === 'PREPARING')), empty: 'Rien en préparation.' },
+    { id: 'ready', title: t('orders.ready'), tone: 'ready', orders: byAge(feed.orders.filter((o) => o.status === 'READY')), empty: 'Rien à servir.' },
+    { id: 'served', title: 'Servies · à encaisser', tone: 'served', orders: byAge(feed.orders.filter((o) => o.status === 'SERVED')), empty: 'Rien à encaisser.' },
+  ];
   const selected = feed.orders.find((o) => o.id === selectedId) ?? feed.closed.find((o) => o.id === selectedId) ?? null;
-
-  // Filtre « À confirmer » vide : on montre les commandes en cours plutôt qu'un écran vide.
-  useEffect(() => {
-    if (feed.loaded && filter === 'pending' && pending.length === 0 && feed.orders.length > 0) setFilter('active');
-  }, [feed.loaded, filter, pending.length, feed.orders.length]);
 
   // « Terminer » n'apparaît qu'une fois la commande encaissée (sinon le serveur refuserait).
   const allowed = (order: Order) =>
@@ -99,213 +97,204 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
     }
   }
 
-  const filters: [Filter, string, number][] = [
-    ['pending', t('orders.pending'), pending.length],
-    ['active', t('orders.active'), feed.orders.length],
-    ['ready', t('orders.ready'), ready.length],
-  ];
+  const primaryAction = (order: Order) => allowed(order).find((to) => to !== 'CANCELLED');
+  const where = (order: Order) => (order.tableLabel ? `${t('qr.colTable')} ${order.tableLabel}` : order.serviceType === 'TAKEAWAY' ? 'À emporter' : 'Comptoir');
 
   return (
     <>
-      <Window
-        title={t('orders.title')}
-        count={feed.online ? `${feed.orders.length} ${t('orders.inProgress')}` : t('status.offline')}
-        bodyless
-        toolbar={
-          <>
-            <span className="segmented">
-              {filters.map(([id, label, n]) => (
-                <button key={id} className="btn" aria-pressed={filter === id} onClick={() => setFilter(id)}>
-                  {label}
-                  <span className="count-pill">{n}</span>
-                </button>
-              ))}
-            </span>
-            <span className="sep" />
-            <button className="btn" onClick={feed.refresh}>
-              <Icon name="refresh" />
-              {t('common.refresh')}
-            </button>
-          </>
-        }
-      >
-        {(!!error || notice || !feed.online) && (
-          <div className="window-body" style={{ paddingBottom: 0 }}>
-            {!feed.online && <div className="msg msg-warn">{t('orders.offline')}</div>}
-            <ErrorMessage error={error} />
-            {notice && !error && <OkMessage>{notice}</OkMessage>}
-          </div>
-        )}
-
-        <div className="floor">
-          <div className="grid-wrap">
-            <table className="grid">
-              <thead>
-                <tr>
-                  <th>N°</th>
-                  <th>{t('qr.colTable')}</th>
-                  <th>{t('orders.since')}</th>
-                  <th>{t('orders.items')}</th>
-                  <th>{t('menu.colPrice')}</th>
-                  <th>{t('team.status')}</th>
-                  <th>{t('orders.source')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!feed.loaded && (
-                  <tr>
-                    <td className="empty" colSpan={7}>
-                      {t('common.loading')}
-                    </td>
-                  </tr>
-                )}
-                {feed.loaded && visible.length === 0 && (
-                  <tr>
-                    <td className="empty" colSpan={7}>
-                      {filter === 'pending' ? t('orders.nonePending') : t('orders.none')}
-                    </td>
-                  </tr>
-                )}
-                {visible.map((o) => (
-                  <tr key={o.id} className="selectable" aria-selected={o.id === selectedId} onClick={() => setSelectedId(o.id)}>
-                    <td className="num">
-                      <strong>{o.number}</strong>
-                    </td>
-                    <td>{o.tableLabel ?? '—'}</td>
-                    <td className="num">{sinceText(o.createdAt)}</td>
-                    <td className="num">{o.itemCount}</td>
-                    <td className="num">{formatMoney(o.total, o.currency)}</td>
-                    <td>
-                      <span className={STATUS_CLASS[o.status]}>{ORDER_STATUS_LABELS[o.status]}</span>
-                    </td>
-                    <td>{ORDER_SOURCE_LABELS[o.source]}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <aside className="floor-side">
-            {feed.requests.length > 0 && (
-              <fieldset className="group requests">
-                <legend>{t('orders.requests')}</legend>
-                {feed.requests
-                  .slice()
-                  .sort((a, b) => a.createdAt - b.createdAt)
-                  .map((r) => (
-                    <div className="request-row" key={r.id}>
-                      <div>
-                        <strong>
-                          {t('qr.colTable')} {r.tableLabel}
-                        </strong>
-                        <div className="muted">
-                          {SERVICE_REQUEST_LABELS[r.kind]} · {sinceText(r.createdAt)}
-                        </div>
-                      </div>
-                      {can('orders.create') && (
-                        <button
-                          className="btn"
-                          onClick={async () => {
-                            try {
-                              feed.applyRequest(await api('POST', `/requests/${r.id}/resolve`));
-                            } catch (err) {
-                              setError(err);
-                            }
-                          }}
-                        >
-                          {t('orders.handled')}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-              </fieldset>
-            )}
-
-            {freeable.length > 0 && can('orders.create') && (
-              <fieldset className="group">
-                <legend>{t('orders.freeTables')}</legend>
-                {freeable.map((o) => (
-                  <div className="request-row" key={o.sessionId}>
-                    <strong>
-                      {t('qr.colTable')} {o.tableLabel}
-                    </strong>
-                    <button className="btn" onClick={() => freeTable(o)}>
-                      {t('orders.freeTable')}
-                    </button>
-                  </div>
-                ))}
-              </fieldset>
-            )}
-
-            {selected ? (
-              <fieldset className="group order-detail">
-                <legend>
-                  {t('orders.order')} n°{selected.number}
-                  {selected.tableLabel && ` · ${t('qr.colTable')} ${selected.tableLabel}`}
-                </legend>
-                <p className="muted">
-                  <span className={STATUS_CLASS[selected.status]}>{ORDER_STATUS_LABELS[selected.status]}</span> · {sinceText(selected.createdAt)}
-                </p>
-                <ul className="order-lines">
-                  {selected.items.map((i) => (
-                    <li key={i.id}>
-                      <div className="order-line-head">
-                        <strong>
-                          {i.quantity} × {i.name}
-                          {i.variantName && ` (${i.variantName})`}
-                        </strong>
-                        <span className="num">{formatMoney(i.total, selected.currency)}</span>
-                      </div>
-                      {i.modifiers.length > 0 && <div className="muted">{i.modifiers.map((m) => m.name).join(', ')}</div>}
-                      {i.note && <div className="order-note">« {i.note} »</div>}
-                    </li>
-                  ))}
-                </ul>
-                {selected.note && <div className="msg msg-warn">{selected.note}</div>}
-                <div className="order-total">
-                  <span>{t('orders.total')}</span>
-                  <strong>{formatMoney(selected.total, selected.currency)}</strong>
-                </div>
-                <p className="muted" style={{ marginBottom: 8 }}>
-                  {PAYMENT_STATUS_LABELS[selected.paymentStatus]}
-                  {selected.paid > 0 && selected.paymentStatus !== 'PAID' && ` · ${formatMoney(selected.paid, selected.currency)} payés`}
-                  {selected.discount > 0 && ` · remise ${formatMoney(selected.discount, selected.currency)}`}
-                </p>
-                <div className="order-actions">
-                  {allowed(selected)
-                    .filter((to) => to !== 'CANCELLED')
-                    .map((to, index) => (
-                      <button key={to} className={index === 0 ? 'btn btn-primary' : 'btn'} onClick={() => move(selected, to)}>
-                        {ACTION_LABELS[to]}
-                      </button>
-                    ))}
-                  {allowed(selected).includes('CANCELLED') && (
-                    <button className="btn btn-danger" onClick={() => (selected.status === 'PENDING' ? move(selected, 'CANCELLED') : setCancel(selected))}>
-                      {selected.status === 'PENDING' ? t('orders.reject') : t('orders.cancel')}
-                    </button>
-                  )}
-                </div>
-                <details className="order-history">
-                  <summary>{t('orders.history')}</summary>
-                  <ul>
-                    {selected.history.map((h, i) => (
-                      <li key={i}>
-                        {new Date(h.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} — {ORDER_STATUS_LABELS[h.to]}
-                        {h.by && ` · ${h.by}`}
-                        {h.reason && ` · « ${h.reason} »`}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              </fieldset>
-            ) : (
-              <p className="muted">{t('orders.selectHint')}</p>
-            )}
-          </aside>
+      <div className="page-head">
+        <div>
+          <h1>{t('orders.title')}</h1>
+          <p className="muted">{feed.online ? `${feed.orders.length} ${t('orders.inProgress')}` : t('status.offline')}</p>
         </div>
-      </Window>
+        <button className="btn" onClick={feed.refresh}>
+          <Icon name="refresh" />
+          {t('common.refresh')}
+        </button>
+      </div>
 
-      {cancel && <CancelDialog order={cancel} onClose={() => setCancel(null)} onConfirm={async (reason) => { await move(cancel, 'CANCELLED', reason); setCancel(null); }} />}
+      {!feed.online && <div className="msg msg-warn">{t('orders.offline')}</div>}
+      <ErrorMessage error={error} />
+      {notice && !error && <OkMessage>{notice}</OkMessage>}
+
+      {(feed.requests.length > 0 || (freeable.length > 0 && can('orders.create'))) && (
+        <div className="alerts-strip">
+          {feed.requests
+            .slice()
+            .sort((a, b) => a.createdAt - b.createdAt)
+            .map((r) => (
+              <div className="alert-card" key={r.id}>
+                <span className="alert-dot" aria-hidden="true" />
+                <div className="alert-text">
+                  <strong>
+                    {t('qr.colTable')} {r.tableLabel}
+                  </strong>
+                  <span>
+                    {SERVICE_REQUEST_LABELS[r.kind]} · {sinceText(r.createdAt)}
+                  </span>
+                </div>
+                {can('orders.create') && (
+                  <button
+                    className="btn"
+                    onClick={async () => {
+                      try {
+                        feed.applyRequest(await api('POST', `/requests/${r.id}/resolve`));
+                      } catch (err) {
+                        setError(err);
+                      }
+                    }}
+                  >
+                    {t('orders.handled')}
+                  </button>
+                )}
+              </div>
+            ))}
+          {can('orders.create') &&
+            freeable.map((o) => (
+              <div className="alert-card alert-card-ok" key={o.sessionId}>
+                <span className="alert-dot" aria-hidden="true" />
+                <div className="alert-text">
+                  <strong>
+                    {t('qr.colTable')} {o.tableLabel}
+                  </strong>
+                  <span>{t('orders.freeTables')}</span>
+                </div>
+                <button className="btn" onClick={() => freeTable(o)}>
+                  {t('orders.freeTable')}
+                </button>
+              </div>
+            ))}
+        </div>
+      )}
+
+      <div className="board">
+        {columns.map((col) => (
+          <section key={col.id} className={`board-col board-${col.tone}`} aria-label={col.title}>
+            <header className="board-head">
+              <span className="board-dot" aria-hidden="true" />
+              <h2>{col.title}</h2>
+              <span className="count-pill">{col.orders.length}</span>
+            </header>
+            <div className="board-list">
+              {!feed.loaded && <p className="board-empty">{t('common.loading')}</p>}
+              {feed.loaded && col.orders.length === 0 && <p className="board-empty">{col.empty}</p>}
+              {col.orders.map((o) => {
+                const next = primaryAction(o);
+                const minutes = Math.floor((Date.now() - o.createdAt) / 60_000);
+                const late = (o.status === 'PENDING' && minutes >= 5) || ((o.status === 'CONFIRMED' || o.status === 'PREPARING') && minutes >= 20);
+                return (
+                  <article key={o.id} className="order-card">
+                    <button className="order-card-body" onClick={() => setSelectedId(o.id)}>
+                      <span className="order-card-top">
+                        <span className="order-card-no">{o.number}</span>
+                        <span className="order-card-where">{where(o)}</span>
+                        <span className={late ? 'order-card-time late' : 'order-card-time'}>{sinceText(o.createdAt)}</span>
+                      </span>
+                      <span className="order-card-origin">
+                        {ORDER_SOURCE_LABELS[o.source]} · {formatMoney(o.total, o.currency)}
+                      </span>
+                      <span className="order-card-items">
+                        {o.items.slice(0, 4).map((i) => (
+                          <span key={i.id}>
+                            {i.quantity} × {i.name}
+                            {i.variantName && ` (${i.variantName})`}
+                          </span>
+                        ))}
+                        {o.items.length > 4 && <span className="muted">+ {o.items.length - 4} autre(s)</span>}
+                      </span>
+                    </button>
+                    {next && (
+                      <button className={`btn order-card-action action-${col.tone}`} onClick={() => move(o, next)}>
+                        {ACTION_LABELS[next]}
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      {selected && (
+        <Dialog
+          title={`${t('orders.order')} n°${selected.number} · ${where(selected)}`}
+          onClose={() => setSelectedId(null)}
+          footer={
+            <button className="btn" onClick={() => setSelectedId(null)}>
+              Fermer
+            </button>
+          }
+        >
+          <div className="dialog-body order-detail">
+            <p className="muted">
+              <span className={STATUS_CLASS[selected.status]}>{ORDER_STATUS_LABELS[selected.status]}</span> · {sinceText(selected.createdAt)} · {ORDER_SOURCE_LABELS[selected.source]}
+            </p>
+            <ul className="order-lines">
+              {selected.items.map((i) => (
+                <li key={i.id}>
+                  <div className="order-line-head">
+                    <strong>
+                      {i.quantity} × {i.name}
+                      {i.variantName && ` (${i.variantName})`}
+                    </strong>
+                    <span className="num">{formatMoney(i.total, selected.currency)}</span>
+                  </div>
+                  {i.modifiers.length > 0 && <div className="muted">{i.modifiers.map((m) => m.name).join(', ')}</div>}
+                  {i.note && <div className="order-note">« {i.note} »</div>}
+                </li>
+              ))}
+            </ul>
+            {selected.note && <div className="msg msg-warn">{selected.note}</div>}
+            <div className="order-total">
+              <span>{t('orders.total')}</span>
+              <strong>{formatMoney(selected.total, selected.currency)}</strong>
+            </div>
+            <p className="muted" style={{ marginBottom: 8 }}>
+              {PAYMENT_STATUS_LABELS[selected.paymentStatus]}
+              {selected.paid > 0 && selected.paymentStatus !== 'PAID' && ` · ${formatMoney(selected.paid, selected.currency)} payés`}
+              {selected.discount > 0 && ` · remise ${formatMoney(selected.discount, selected.currency)}`}
+            </p>
+            <div className="order-actions">
+              {allowed(selected)
+                .filter((to) => to !== 'CANCELLED')
+                .map((to, index) => (
+                  <button key={to} className={index === 0 ? 'btn btn-primary' : 'btn'} onClick={() => move(selected, to)}>
+                    {ACTION_LABELS[to]}
+                  </button>
+                ))}
+              {allowed(selected).includes('CANCELLED') && (
+                <button className="btn btn-danger" onClick={() => (selected.status === 'PENDING' ? move(selected, 'CANCELLED') : setCancel(selected))}>
+                  {selected.status === 'PENDING' ? t('orders.reject') : t('orders.cancel')}
+                </button>
+              )}
+            </div>
+            <details className="order-history">
+              <summary>{t('orders.history')}</summary>
+              <ul>
+                {selected.history.map((h, i) => (
+                  <li key={i}>
+                    {new Date(h.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} — {ORDER_STATUS_LABELS[h.to]}
+                    {h.by && ` · ${h.by}`}
+                    {h.reason && ` · « ${h.reason} »`}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </div>
+        </Dialog>
+      )}
+
+      {cancel && (
+        <CancelDialog
+          order={cancel}
+          onClose={() => setCancel(null)}
+          onConfirm={async (reason) => {
+            await move(cancel, 'CANCELLED', reason);
+            setCancel(null);
+          }}
+        />
+      )}
     </>
   );
 }

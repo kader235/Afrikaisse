@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { GRACE_DAYS, subscriptionState, type Me, type SessionResponse } from '@afrikaisse/core';
+import { LogoAfrikaisse } from './logo.tsx';
+import { useEffect, useState } from 'react';
+import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse } from '@afrikaisse/core';
 import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
 import { useI18n } from './i18n.tsx';
 import { ROLE_LABELS } from './labels.ts';
@@ -13,14 +14,12 @@ import { OrdersPage } from './pages/Orders.tsx';
 import { PosPage } from './pages/Pos.tsx';
 import { KitchenPage } from './pages/Kitchen.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
-import { StartPage } from './pages/Start.tsx';
 import { StockPage } from './pages/Stock.tsx';
-import type { SetupStatus } from '@afrikaisse/core';
 import { useActivityFeed } from './activity.ts';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
 import type { ServerSwitch } from './pages/Auth.tsx';
-import { APP_VERSION, Brand, ErrorMessage, Icon, Preferences, usePreferences, type IconName } from './ui.tsx';
+import { APP_VERSION, ErrorMessage, Icon, Preferences, usePreferences, type IconName } from './ui.tsx';
 
 type State =
   | { kind: 'loading' }
@@ -29,7 +28,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'start' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -144,58 +143,36 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const { t, lang } = useI18n();
   const [error, setError] = useState<unknown>(null);
   const { health, online } = useHealth();
-  // Établissement pas encore prêt à servir : « Bien démarrer » s'affiche et s'ouvre en premier.
-  const [setupDone, setSetupDone] = useState<boolean | null>(null);
-  // Une fois affichée, la page reste dans le menu jusqu'au rechargement (pas de disparition sous le doigt).
-  const onSetupStatus = useCallback((s: SetupStatus) => setSetupDone((prev) => (prev === false ? false : s.complete)), []);
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
   // Un seul flux d'activité pour toute l'application : pastille et signal sonore sur tous les écrans.
   // Le signal des commandes QR et des appels de table concerne la salle, pas la cuisine.
   const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK', can('orders.create'));
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
 
-  const sections: { id: Section; label: string; icon: IconName; visible: boolean; badge?: number; group?: 'admin' }[] = [
-    { id: 'start', label: t('nav.start'), icon: 'start', visible: can('menu.manage') && setupDone === false },
-    { id: 'orders', label: t('nav.orders'), icon: 'journal', visible: can('orders.read'), badge: waiting },
-    { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect') },
-    { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use') },
-    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read') },
-    { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read') },
-    { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
-    { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read') },
+  const sections: NavItem[] = [
+    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read'), group: 'service' },
+    { id: 'orders', label: t('nav.orders'), icon: 'journal', visible: can('orders.read'), badge: waiting, group: 'service' },
+    { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect'), group: 'service' },
+    { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read'), group: 'service' },
+    { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use'), group: 'service' },
+    { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read'), group: 'service' },
+    { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read'), group: 'service' },
     { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read'), group: 'admin' },
     { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'admin' },
     { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read'), group: 'admin' },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
-    { id: 'account', label: t('nav.account'), icon: 'user', visible: true, group: 'admin' },
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin, group: 'admin' },
+    { id: 'account', label: t('nav.account'), icon: 'user', visible: true, group: 'account' },
   ];
   const visible = sections.filter((s) => s.visible);
-  // Chacun ouvre son outil : les commandes pour le service, le menu pour qui gère les épuisés.
-  const [section, setSection] = useState<Section>(() => {
-    if (me.role === 'CASHIER') return 'pos';
-    if (me.role === 'KITCHEN' || me.role === 'BAR') return 'kitchen';
-    if (me.role === 'WAITER') return 'floor';
-    if (me.role === 'STOCK_MANAGER') return 'stock';
-    if (can('orders.read')) return 'orders';
-    if (can('tables.read')) return 'floor';
-    if (can('menu.availability')) return 'menu';
-    return visible[0]!.id;
-  });
+  // Quatre onglets au plus, choisis selon le métier ; tout le reste est rangé dans « Plus ».
+  const wanted = TAB_PRIORITY[me.role ?? 'OWNER'];
+  const tabs = wanted.map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s).slice(0, 4);
+  if (tabs.length === 0) tabs.push(visible[0]!);
+  const others = visible.filter((s) => !tabs.includes(s));
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [section, setSection] = useState<Section>(() => tabs[0]!.id);
   const current = visible.some((s) => s.id === section) ? section : visible[0]!.id;
-
-  useEffect(() => {
-    const locationId = me.locations[0]?.id;
-    if (!locationId || !can('menu.manage') || me.tenantAccess !== 'OK') return;
-    api<SetupStatus>('GET', `/locations/${locationId}/setup`).then(
-      (s) => {
-        setSetupDone(s.complete);
-        if (!s.complete) setSection('start');
-      },
-      () => setSetupDone(true),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [me.locations[0]?.id]);
 
   async function switchTo(tenantId: string) {
     setError(null);
@@ -239,54 +216,43 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
 
   return (
     <div className="app">
-      <header className="appbar">
-        <Brand />
-        <div className="org">
-          {me.tenant && me.memberships.length > 1 ? (
-            <select aria-label={t('shell.switchOrg')} value={me.tenant.id} onChange={(e) => switchTo(e.target.value)}>
-              {me.memberships.map((m) => (
-                <option key={m.membershipId} value={m.tenantId}>
-                  {m.tenantName}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span>{me.tenant?.name}</span>
-          )}
-          {me.locations.length === 1 && (
-            <>
-              <span className="sep">|</span>
-              <span>{me.locations[0]!.name}</span>
-            </>
-          )}
+      <header className="topbar">
+        <div className="topbar-brand">
+          <LogoAfrikaisse />
+          <div>
+            <strong>{me.tenant?.name ?? 'AfriKaisse'}</strong>
+            {me.locations.length === 1 && <span>{me.locations[0]!.name}</span>}
+          </div>
         </div>
-        <div className="user">
-          <span>
-            {me.user.displayName}
-            {me.role && ` · ${ROLE_LABELS[lang][me.role]}`}
+        <nav className="tabs" aria-label="Navigation">
+          {tabs.map((s) => (
+            <button key={s.id} className="tab" aria-current={current === s.id ? 'page' : undefined} onClick={() => setSection(s.id)}>
+              <Icon name={s.icon} />
+              <span className="tab-label">{s.label}</span>
+              {!!s.badge && <span className="badge-count">{s.badge}</span>}
+            </button>
+          ))}
+          {others.length > 0 && (
+            <button className="tab" aria-haspopup="dialog" aria-expanded={moreOpen} aria-current={others.some((s) => s.id === current) ? 'page' : undefined} onClick={() => setMoreOpen(true)}>
+              <Icon name="more" />
+              <span className="tab-label">{others.some((s) => s.id === current) ? others.find((s) => s.id === current)!.label : 'Plus'}</span>
+              {others.some((s) => !!s.badge) && <span className="badge-count">{others.reduce((n, s) => n + (s.badge ?? 0), 0)}</span>}
+            </button>
+          )}
+        </nav>
+        <button className="topbar-user" onClick={() => setMoreOpen(true)} aria-label="Mon compte et réglages">
+          <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
+          <span className="topbar-name">
+            <strong>{me.user.displayName}</strong>
+            <span>{me.role ? ROLE_LABELS[lang][me.role] : ''}</span>
           </span>
-          <button className="btn" onClick={onLogout}>
-            <Icon name="logout" />
-            {t('common.logout')}
-          </button>
-        </div>
+          <span className="avatar">{initials(me.user.displayName)}</span>
+        </button>
       </header>
-
-      <nav className="menubar">
-        {visible.filter((s) => !s.group).map((s) => (
-          <button key={s.id} aria-current={current === s.id ? 'page' : undefined} onClick={() => setSection(s.id)}>
-            <Icon name={s.icon} />
-            {s.label}
-            {!!s.badge && <span className="badge-count">{s.badge}</span>}
-          </button>
-        ))}
-        <AdminMenu label={t('nav.admin')} items={visible.filter((s) => s.group === 'admin')} current={current} onSelect={setSection} />
-      </nav>
 
       <main className="workspace">
         {can('tenant.read') && <SubscriptionBanner me={me} onOpen={() => setSection('organization')} />}
         {!!error && <ErrorMessage error={error} />}
-        {current === 'start' && <StartPage me={me} onGo={(target) => setSection(target)} onStatus={onSetupStatus} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'pos' && <PosPage me={me} />}
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
@@ -302,81 +268,147 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'platform' && <PlatformPage />}
       </main>
 
-      <footer className="statusbar">
-        <span>
-          <span className={online ? 'dot dot-ok' : 'dot dot-off'} />
-          {online ? t('status.connected') : t('status.offline')}
-        </span>
-        {health && (
-          <span>
-            {health.profile === 'cloud' ? t('status.cloud') : t('status.local')} · {health.database === 'postgres' ? 'PostgreSQL' : 'SQLite'}
-          </span>
-        )}
-        {health?.profile === 'local' && !!health.lanUrls?.length && <span>Adresse pour les tablettes : {health.lanUrls.map((u) => u.replace(/^http:\/\//, '')).join(' · ')}</span>}
-        {me.tenant && <span>{me.tenant.name}</span>}
-        <span>
-          {t('status.version')} {health?.version ?? APP_VERSION}
-        </span>
-        <span className="push">
-          <Preferences />
-        </span>
-      </footer>
+      {moreOpen && (
+        <MoreSheet
+          me={me}
+          items={others}
+          current={current}
+          health={health}
+          online={online}
+          onSelect={(id) => {
+            setSection(id);
+            setMoreOpen(false);
+          }}
+          onSwitch={switchTo}
+          onLogout={onLogout}
+          onClose={() => setMoreOpen(false)}
+        />
+      )}
     </div>
   );
 }
 
-/** Administration regroupée : la barre tient sur une tablette en portrait. */
-function AdminMenu({ label, items, current, onSelect }: { label: string; items: { id: Section; label: string; icon: IconName }[]; current: Section; onSelect: (id: Section) => void }) {
-  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+type NavItem = { id: Section; label: string; icon: IconName; visible: boolean; badge?: number; group: 'service' | 'admin' | 'account' };
+
+/** Onglets affichés d'abord, par métier : chacun ouvre son outil. */
+const TAB_PRIORITY: Record<Role, Section[]> = {
+  OWNER: ['reports', 'orders', 'pos', 'menu'],
+  ADMIN: ['reports', 'orders', 'pos', 'menu'],
+  MANAGER: ['orders', 'pos', 'floor', 'menu'],
+  CASHIER: ['pos', 'orders'],
+  WAITER: ['floor', 'orders'],
+  KITCHEN: ['kitchen'],
+  BAR: ['kitchen'],
+  STOCK_MANAGER: ['stock', 'menu'],
+};
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join('');
+
+const GROUP_TITLES: Record<NavItem['group'], string> = { service: 'Service', admin: 'Administration', account: 'Compte' };
+
+/** « Plus » : tout ce qui n'a pas sa place dans les onglets, en grandes tuiles, avec les réglages et la déconnexion. */
+function MoreSheet({
+  me,
+  items,
+  current,
+  health,
+  online,
+  onSelect,
+  onSwitch,
+  onLogout,
+  onClose,
+}: {
+  me: Me;
+  items: NavItem[];
+  current: Section;
+  health: Health | null;
+  online: boolean;
+  onSelect: (id: Section) => void;
+  onSwitch: (tenantId: string) => void;
+  onLogout: () => void;
+  onClose: () => void;
+}) {
+  const { t, lang } = useI18n();
   useEffect(() => {
-    if (!anchor) return;
-    const close = () => setAnchor(null);
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
-    window.addEventListener('pointerdown', close);
-    window.addEventListener('resize', close);
-    window.addEventListener('scroll', close, true);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('pointerdown', close);
-      window.removeEventListener('resize', close);
-      window.removeEventListener('scroll', close, true);
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [anchor]);
-  if (items.length === 0) return null;
-  const active = items.find((s) => s.id === current);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
   return (
-    <>
-      <button
-        aria-haspopup="menu"
-        aria-expanded={!!anchor}
-        aria-current={active ? 'page' : undefined}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => setAnchor(anchor ? null : e.currentTarget.getBoundingClientRect())}
-      >
-        <Icon name={active?.icon ?? 'building'} />
-        {active ? `${label} · ${active.label}` : label}
-        <span className="caret" aria-hidden="true" />
-      </button>
-      {anchor && (
-        <div className="menu-popup" role="menu" style={{ top: anchor.bottom, left: anchor.left }} onPointerDown={(e) => e.stopPropagation()}>
-          {items.map((s) => (
-            <button
-              key={s.id}
-              role="menuitem"
-              aria-current={s.id === current ? 'page' : undefined}
-              onClick={() => {
-                onSelect(s.id);
-                setAnchor(null);
-              }}
-            >
-              <Icon name={s.icon} />
-              {s.label}
-            </button>
-          ))}
+    <div className="sheet-overlay" role="presentation" onClick={onClose}>
+      <aside className="sheet" role="dialog" aria-modal="true" aria-label="Plus" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-head">
+          <span className="avatar avatar-lg">{initials(me.user.displayName)}</span>
+          <div className="sheet-who">
+            <strong>{me.user.displayName}</strong>
+            <span>
+              {me.role ? ROLE_LABELS[lang][me.role] : ''}
+              {me.tenant ? ` · ${me.tenant.name}` : ''}
+            </span>
+          </div>
+          <button className="icon-btn" aria-label="Fermer" onClick={onClose}>
+            ✕
+          </button>
         </div>
-      )}
-    </>
+        {me.tenant && me.memberships.length > 1 && (
+          <label className="sheet-field">
+            <span>{t('shell.switchOrg')}</span>
+            <select value={me.tenant.id} onChange={(e) => onSwitch(e.target.value)}>
+              {me.memberships.map((m) => (
+                <option key={m.membershipId} value={m.tenantId}>
+                  {m.tenantName}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {(['service', 'admin', 'account'] as const).map((group) => {
+          const list = items.filter((i) => i.group === group);
+          if (list.length === 0) return null;
+          return (
+            <section key={group} className="sheet-group">
+              <h2>{GROUP_TITLES[group]}</h2>
+              <div className="sheet-tiles">
+                {list.map((i) => (
+                  <button key={i.id} className="sheet-tile" aria-current={current === i.id ? 'page' : undefined} onClick={() => onSelect(i.id)}>
+                    <Icon name={i.icon} />
+                    <span>{i.label}</span>
+                    {!!i.badge && <span className="badge-count">{i.badge}</span>}
+                  </button>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+        <section className="sheet-group">
+          <h2>Affichage</h2>
+          <div className="sheet-prefs">
+            <Preferences />
+          </div>
+        </section>
+        <div className="sheet-info">
+          <span>
+            <span className={online ? 'dot dot-ok' : 'dot dot-off'} />
+            {online ? t('status.connected') : t('status.offline')}
+            {health && ` · ${health.profile === 'cloud' ? t('status.cloud') : t('status.local')}`}
+          </span>
+          {health?.profile === 'local' && !!health.lanUrls?.length && <span>Adresse pour les tablettes : {health.lanUrls.map((u) => u.replace(/^http:\/\//, '')).join(' · ')}</span>}
+          <span>
+            GLOBALTECH BUSINESS TD · {t('status.version')} {health?.version ?? APP_VERSION}
+          </span>
+        </div>
+        <button className="btn sheet-logout" onClick={onLogout}>
+          <Icon name="logout" />
+          {t('common.logout')}
+        </button>
+      </aside>
+    </div>
   );
 }
 

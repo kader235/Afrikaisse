@@ -28,7 +28,7 @@ import {
   type Receipt,
 } from '@afrikaisse/core';
 import { api } from '../api.ts';
-import { isNativeApp } from '../platform.ts';
+import { isNativeApp, mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
 
 /**
@@ -459,6 +459,13 @@ export function SaleTab({
             const hasOptions = p.variants.length > 0 || p.modifierGroupIds.length > 0;
             return (
               <button key={p.id} className="pos-tile" disabled={!p.isAvailable} onClick={() => tap(p)}>
+                {p.photoUrl ? (
+                  <img className="pos-tile-photo" src={mediaSrc(p.photoUrl)} alt="" loading="lazy" />
+                ) : (
+                  <span className="pos-tile-photo pos-tile-initial" aria-hidden="true">
+                    {p.name.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
                 <span className="pos-tile-name">{p.name}</span>
                 <span className="pos-tile-foot">
                   <span className="pos-tile-price">{formatMoney(p.promoPrice ?? p.price, currency)}</span>
