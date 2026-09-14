@@ -24,7 +24,7 @@ const OFFLINE_MS = 6000;
  * arrière-plan). Un seul flux pour toute l'application : la pastille de l'onglet
  * Commandes et le signal sonore marchent quel que soit l'écran ouvert.
  */
-export function useActivityFeed(locationId: string | null, enabled: boolean): ActivityFeed {
+export function useActivityFeed(locationId: string | null, enabled: boolean, alertStaff = true): ActivityFeed {
   const [orders, setOrders] = useState<Map<string, Order>>(new Map());
   const [requests, setRequests] = useState<Map<string, ServiceRequest>>(new Map());
   const [closed, setClosed] = useState<Order[]>([]);
@@ -33,6 +33,8 @@ export function useActivityFeed(locationId: string | null, enabled: boolean): Ac
   const cursor = useRef(0);
   const known = useRef<Set<string>>(new Set());
   const wake = useRef<() => void>(() => undefined);
+  const alertRef = useRef(alertStaff);
+  alertRef.current = alertStaff;
 
   useEffect(() => {
     const unlock = () => unlockSound();
@@ -71,7 +73,7 @@ export function useActivityFeed(locationId: string | null, enabled: boolean): Ac
       }
       return next;
     });
-    if (alert) beep(3);
+    if (alert && alertRef.current) beep(3);
   }, []);
 
   useEffect(() => {

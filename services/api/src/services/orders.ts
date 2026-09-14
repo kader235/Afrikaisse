@@ -248,6 +248,8 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
         total: i.total,
         note: i.note,
         modifiers: modifiers.filter((m) => m.order_item_id === i.id).map((m) => ({ groupName: m.group_name, name: m.name, priceDelta: m.price_delta })),
+        stationId: i.station_id,
+        kdsStatus: i.kds_status,
       })),
       createdAt: o.created_at,
       statusChangedAt: o.status_changed_at,
@@ -360,6 +362,7 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
 
 export async function insertItems(trx: Db, ctx: AppContext, order: { id: string; tenant_id: string; location_id: string }, priced: Priced[]) {
   const now = ctx.now();
+  const stationOf = await resolveItemStations(trx, order.location_id, priced.map((p) => p.productId));
   for (const [sort, p] of priced.entries()) {
     const itemId = uuidv7();
     await trx
@@ -379,6 +382,9 @@ export async function insertItems(trx: Db, ctx: AppContext, order: { id: string;
         note: p.note,
         sort,
         created_at: now,
+        station_id: stationOf.get(p.productId) ?? null,
+        kds_status: 'QUEUED',
+        kds_updated_at: null,
       })
       .execute();
     for (const m of p.line.modifiers) {
@@ -398,6 +404,21 @@ export async function insertItems(trx: Db, ctx: AppContext, order: { id: string;
         .execute();
     }
   }
+}
+
+/** Poste de chaque produit ; sans poste (ou poste archivé) : le premier poste Cuisine de l'établissement. */
+export async function resolveItemStations(db: Db, locationId: string, productIds: string[]): Promise<Map<string, string | null>> {
+  const ids = [...new Set(productIds)];
+  const products = ids.length
+    ? await db
+        .selectFrom('products as p')
+        .leftJoin('stations as s', (join) => join.onRef('s.id', '=', 'p.station_id').on('s.status', '=', 'ACTIVE'))
+        .select(['p.id', 's.id as station_id'])
+        .where('p.id', 'in', ids)
+        .execute()
+    : [];
+  const fallback = await db.selectFrom('stations').select('id').where('location_id', '=', locationId).where('status', '=', 'ACTIVE').where('kind', '=', 'KITCHEN').orderBy('sort').executeTakeFirst();
+  return new Map(products.map((p) => [p.id, p.station_id ?? fallback?.id ?? null]));
 }
 
 /** Commandes de ce téléphone pour cette table, sur les 12 dernières heures. */
@@ -526,6 +547,10 @@ export async function updateOrderStatus(ctx: AppContext, auth: AuthState | null,
       .where('status', '=', order.status)
       .executeTakeFirst();
     if (Number(updated.numUpdatedRows) !== 1) throw new AppError('CONFLICT', 'Cette commande vient de changer. Actualisez puis réessayez.');
+    // Annoncée prête depuis l'écran Commandes : tous les postes sont considérés comme terminés.
+    if (to === 'READY') {
+      await trx.updateTable('order_items').set({ kds_status: 'READY', kds_updated_at: now }).where('order_id', '=', orderId).where('kds_status', '!=', 'READY').execute();
+    }
     await addHistory(trx, ctx, order, order.status, to, { userId: scope.userId, source: 'STAFF', reason: cleanReason }, hlc);
     await emitOrder(trx, ctx, orderId, 'ORDER_STATUS_CHANGED', hlc);
     let final = to;

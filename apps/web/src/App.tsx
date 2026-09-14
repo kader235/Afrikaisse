@@ -11,6 +11,7 @@ import { LocationsPage } from './pages/Locations.tsx';
 import { MenuPage } from './pages/Menu.tsx';
 import { OrdersPage } from './pages/Orders.tsx';
 import { PosPage } from './pages/Pos.tsx';
+import { KitchenPage } from './pages/Kitchen.tsx';
 import { useActivityFeed } from './activity.ts';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
@@ -24,7 +25,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'orders' | 'pos' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'orders' | 'pos' | 'kitchen' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -140,12 +141,14 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const { health, online } = useHealth();
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
   // Un seul flux d'activité pour toute l'application : pastille et signal sonore sur tous les écrans.
-  const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK');
+  // Le signal des commandes QR et des appels de table concerne la salle, pas la cuisine.
+  const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK', can('orders.create'));
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
 
   const sections: { id: Section; label: string; icon: IconName; visible: boolean; badge?: number }[] = [
     { id: 'orders', label: t('nav.orders'), icon: 'journal', visible: can('orders.read'), badge: waiting },
     { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect') },
+    { id: 'kitchen', label: t('nav.kitchen'), icon: 'kitchen', visible: can('kitchen.use') || can('bar.use') },
     { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
     { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read') },
     { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
@@ -159,6 +162,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   // Chacun ouvre son outil : les commandes pour le service, le menu pour qui gère les épuisés.
   const [section, setSection] = useState<Section>(() => {
     if (me.role === 'CASHIER') return 'pos';
+    if (me.role === 'KITCHEN' || me.role === 'BAR') return 'kitchen';
     if (can('orders.read')) return 'orders';
     if (can('tables.read')) return 'floor';
     if (can('menu.availability')) return 'menu';
@@ -255,6 +259,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {!!error && <ErrorMessage error={error} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'pos' && <PosPage me={me} />}
+        {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
         {current === 'floor' && <FloorPage me={me} />}

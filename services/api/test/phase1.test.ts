@@ -30,7 +30,7 @@ describe.each(ENGINES)('Phase 1 — %s', (engine) => {
       .select(['entity_type', 'status', 'hlc'])
       .where('tenant_id', '=', org.me.tenant.id)
       .execute();
-    expect(events.map((e) => e.entity_type).sort()).toEqual(['location', 'membership', 'tenant', 'user']);
+    expect(events.map((e) => e.entity_type).sort()).toEqual(['location', 'membership', 'station', 'station', 'tenant', 'user']);
     expect(events.every((e) => e.status === 'SYNCED')).toBe(true);
 
     const audit = await t.app.inject({ method: 'GET', url: '/api/audit', headers: bearer(org.token) });

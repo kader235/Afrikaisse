@@ -213,6 +213,7 @@ export interface ProductsTable {
   price: number;
   promo_price: number | null;
   prep_time_min: number | null;
+  station_id: string | null;
   photo_media_id: string | null;
   is_available: Bool;
   /** JSON : tableau de chaînes. */
@@ -374,6 +375,10 @@ export interface OrderItemsTable {
   note: string | null;
   sort: number;
   created_at: number;
+  /** Poste copié au moment de la commande. */
+  station_id: string | null;
+  kds_status: 'QUEUED' | 'PREPARING' | 'READY';
+  kds_updated_at: number | null;
 }
 
 export interface OrderItemModifiersTable {
@@ -501,7 +506,22 @@ export interface DocumentCountersTable {
   last_number: number;
 }
 
+/** Poste de préparation (cuisine, grill, bar…). */
+export interface StationsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  kind: 'KITCHEN' | 'BAR';
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
 export interface Database {
+  stations: StationsTable;
   cash_sessions: CashSessionsTable;
   cash_movements: CashMovementsTable;
   payments: PaymentsTable;

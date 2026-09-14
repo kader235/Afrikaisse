@@ -110,6 +110,23 @@ npm run verify        # types + tests + bundle API + build web
 - sortie de 1 000 : espèces attendues 30 400 ;
 - clôture Z.
 
+## Couverture de la phase 7 (138 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Postes | Cuisine et Bar créés à l'inscription (événements de synchronisation compris) ; nombre de produits par poste ; serveur refusé ; cuisine peut lire ; renommage ; archivage refusé avec produits puis accepté ; affectation à un poste archivé (409) ou d'un autre restaurant (404) |
+| Routage | Brochettes → Grill, bissap → Bar, riz sans poste → Cuisine ; articles « à préparer » |
+| Écran cuisine | Serveur refusé ; commencer au grill → commande en préparation ; prêt au grill sans rendre la commande prête ; cuisinier refusé sur le bar, et sur « tous les postes » qui inclut le bar ; barman prêt ; rappel ; dernier poste prêt → commande prête, historique complet ; rappel refusé ensuite ; autre organisation 404 |
+| Tout prêt d'un coup | L'étape « en préparation » reste dans l'historique |
+| QR | Commande en attente refusée en cuisine ; « prête » depuis l'écran Commandes = tous les articles prêts ; flux d'activité avec les postes |
+
+**Essai dans le navigateur** (tablette 1280 × 800) :
+- boissons affectées au Bar, commande T2 (2 poulets yassa « Bien cuit » + 1 eau) ;
+- poste Cuisine : seul le yassa, « Commencer » → colonne En préparation ;
+- poste Bar : seule l'eau, « Prêt » → colonne Prêt, bouton « Rappeler » ;
+- Cuisine « Prêt » → « Annoncée en salle », commande « Prête » (historique Confirmée → En préparation → Prête) ;
+- minuteur rouge sur une commande de 48 min.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

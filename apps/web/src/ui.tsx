@@ -52,6 +52,7 @@ const ICONS = {
   print: 'M4 6V2h8v4M4 11.5H2.5V6h11v5.5H12M4 9h8v5H4z',
   qr: 'M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h2v2H9zM12 12h2v2h-2zM12 9h2M9 12v2',
   cash: 'M1.5 4.5h13v7h-13zM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM3.5 6.5v3M12.5 6.5v3',
+  kitchen: 'M3 7.5h10v6H3zM1.5 7.5h13M5.5 5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5M6 10.5h4',
 } as const;
 export type IconName = keyof typeof ICONS;
 

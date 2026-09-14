@@ -186,6 +186,27 @@ Onglet **Caisse**.
   Après la clôture, plus aucun paiement de cette caisse ne peut être annulé.
 - **Sessions précédentes** : rouvrir le rapport Z de chaque journée.
 
+## La cuisine et le bar
+
+### Les postes
+Menu **Menu**, onglet **Postes**.
+- Chaque établissement démarre avec deux postes : **Cuisine** et **Bar**.
+- Vous pouvez en ajouter (Grill, Pâtisserie, Bar terrasse…). Le **type** décide qui peut les faire avancer : l'équipe cuisine pour « Cuisine », l'équipe du bar pour « Bar ».
+- Dans la fiche d'un produit, **Poste de préparation** indique où il part. Sans choix, il part au premier poste Cuisine.
+- Un poste qui a encore des produits ne peut pas être archivé : affectez-les d'abord à un autre poste.
+
+### L'écran cuisine
+Menu **Cuisine** : cuisiniers et barmen arrivent directement dessus.
+- En haut, choisir **son poste**. Le choix reste mémorisé sur la tablette. « Tous mes postes » affiche tout ce qu'on a le droit de voir.
+- Trois colonnes : **À préparer**, **En préparation**, **Prêt**. Chaque ticket montre :
+  - le numéro, la table (ou « À emporter ») et un **minuteur** depuis la confirmation, orange après 15 min et rouge après 25 min ;
+  - les quantités en gros, les options et les remarques du client en jaune.
+- **Commencer** puis **Prêt**. Un signal sonore annonce chaque nouveau ticket.
+- **Rappeler** remet un ticket en préparation (erreur de manipulation), tant que la commande n'est pas annoncée prête en salle.
+- Quand **tous les postes** d'une commande ont fini, elle passe « Prête » sur l'écran Commandes des serveurs.
+- Les commandes QR n'arrivent en cuisine qu'une fois **confirmées** par la salle.
+- **Plein écran** masque tout le reste sur une tablette murale.
+
 ## L'équipe
 
 Menu **Équipe** (propriétaire, administrateur, gérant).

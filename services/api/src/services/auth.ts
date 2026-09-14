@@ -4,6 +4,7 @@ import { resolveSession, type AuthState } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { hashPassword, verifyPassword } from '../lib/passwords.ts';
 import { generateRefreshToken, hashToken, signAccessToken } from '../lib/tokens.ts';
+import { createDefaultStations } from './kitchen.ts';
 
 export interface IssuedSession {
   userId: string;
@@ -64,6 +65,7 @@ export async function register(ctx: AppContext, input: RegisterInput, meta: Requ
       } as const;
       await trx.insertInto('locations').values(location).execute();
       await recordChange(trx, ctx, { tenantId, locationId, entityType: 'location', entityId: locationId, operation: 'UPSERT', payload: location, hlc });
+      await createDefaultStations(trx, ctx, tenantId, locationId, hlc);
 
       const user = {
         id: userId,

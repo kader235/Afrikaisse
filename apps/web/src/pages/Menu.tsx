@@ -19,12 +19,13 @@ import { compressImage } from '../images.ts';
 import { mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
 import { QrTab } from './Qr.tsx';
+import { StationsTab } from './Stations.tsx';
 
 /**
  * Menu d'un établissement, pour la tablette du gérant et de la cuisine.
  * Chaque action renvoie le menu complet à jour : l'écran n'a qu'une source de vérité.
  */
-type Tab = 'products' | 'options' | 'qr';
+type Tab = 'products' | 'options' | 'stations' | 'qr';
 type Save = (method: string, path: string, body?: unknown, message?: string) => Promise<void>;
 
 export function MenuPage({ me }: { me: Me }) {
@@ -75,6 +76,7 @@ export function MenuPage({ me }: { me: Me }) {
   const tabs: [Tab, string][] = [
     ['products', t('menu.tabProducts')],
     ['options', t('menu.tabOptions')],
+    ['stations', 'Postes'],
     ...(can('tables.read') ? ([['qr', t('menu.tabQr')]] as [Tab, string][]) : []),
   ];
 
@@ -111,6 +113,7 @@ export function MenuPage({ me }: { me: Me }) {
       {locations?.length === 0 && <div className="empty-state">{t('floor.noLocation')}</div>}
       {menu && tab === 'products' && <ProductsTab menu={menu} canManage={can('menu.manage')} canAvailability={can('menu.availability')} save={save} act={act} onRefresh={() => locationId && load(locationId)} />}
       {menu && tab === 'options' && <OptionsTab menu={menu} canManage={can('menu.manage')} canAvailability={can('menu.availability')} save={save} act={act} onRefresh={() => locationId && load(locationId)} />}
+      {menu && tab === 'stations' && <StationsTab menu={menu} canManage={can('menu.manage')} onChanged={() => locationId && load(locationId)} />}
       {locationId && tab === 'qr' && <QrTab locationId={locationId} canManage={can('tables.manage')} />}
     </Window>
   );
@@ -504,6 +507,7 @@ function ProductDialog({ menu, categoryId, product, onSubmit, onClose }: { menu:
     price: product?.price ?? (null as number | null),
     promoPrice: product?.promoPrice ?? (null as number | null),
     prepTimeMin: product?.prepTimeMin?.toString() ?? '',
+    stationId: product?.stationId ?? (null as string | null),
     tags: (product?.tags ?? []).join(', '),
     allergens: product?.allergens ?? ([] as Allergen[]),
     isAvailable: product?.isAvailable ?? true,
@@ -540,6 +544,7 @@ function ProductDialog({ menu, categoryId, product, onSubmit, onClose }: { menu:
       price: form.price,
       promoPrice: form.promoPrice,
       prepTimeMin: form.prepTimeMin.trim() ? Number(form.prepTimeMin) : null,
+      stationId: form.stationId,
       isAvailable: form.isAvailable,
       tags: form.tags
         .split(',')
@@ -579,6 +584,15 @@ function ProductDialog({ menu, categoryId, product, onSubmit, onClose }: { menu:
           <span className="hint">{t('menu.tagsHint')}</span>
           <label htmlFor="p-prep">{t('menu.prepTime')}</label>
           <input id="p-prep" type="number" inputMode="numeric" min={0} max={240} value={form.prepTimeMin} onChange={(e) => set('prepTimeMin', e.target.value)} />
+          <label htmlFor="p-station">Poste de préparation</label>
+          <select id="p-station" value={form.stationId ?? ''} onChange={(e) => set('stationId', e.target.value || null)}>
+            <option value="">Par défaut ({menu.stations.find((s) => s.kind === 'KITCHEN')?.name ?? 'aucun poste'})</option>
+            {menu.stations.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
           <span />
           <label className="check">
             <input type="checkbox" checked={form.isAvailable} onChange={(e) => set('isAvailable', e.target.checked)} />

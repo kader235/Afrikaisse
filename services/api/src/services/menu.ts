@@ -108,6 +108,29 @@ function assertActive(status: string, message: string) {
   if (status !== 'ACTIVE') throw new AppError('CONFLICT', message);
 }
 
+/** Postes de préparation actifs, avec le nombre de produits qui leur sont affectés. */
+export async function loadStations(db: Db, locationId: string) {
+  const [rows, counts] = await Promise.all([
+    db.selectFrom('stations').selectAll().where('location_id', '=', locationId).where('status', '=', 'ACTIVE').orderBy('sort').execute(),
+    db
+      .selectFrom('products')
+      .select('station_id')
+      .select((eb) => eb.fn.countAll().as('n'))
+      .where('location_id', '=', locationId)
+      .where('status', '=', 'ACTIVE')
+      .groupBy('station_id')
+      .execute(),
+  ]);
+  return rows.map((s) => ({ id: s.id, locationId: s.location_id, name: s.name, kind: s.kind, sort: s.sort, productCount: Number(counts.find((c) => c.station_id === s.id)?.n ?? 0) }));
+}
+
+export async function assertStation(db: Db, locationId: string, stationId: string | null | undefined) {
+  if (!stationId) return;
+  const row = await db.selectFrom('stations').select('status').where('id', '=', stationId).where('location_id', '=', locationId).executeTakeFirst();
+  if (!row) throw new AppError('NOT_FOUND', 'Poste de préparation introuvable.');
+  if (row.status !== 'ACTIVE') throw new AppError('CONFLICT', 'Ce poste de préparation est archivé.');
+}
+
 async function nextSort(db: Db, table: 'menu_categories' | 'products' | 'modifier_groups', column: 'location_id' | 'category_id', value: string) {
   const row = await db
     .selectFrom(table as 'products')
@@ -129,6 +152,7 @@ function toProduct(p: ProductRow, variants: VariantRow[], groupIds: string[]): P
     price: p.price,
     promoPrice: p.promo_price,
     prepTimeMin: p.prep_time_min,
+    stationId: p.station_id,
     isAvailable: bool(p.is_available),
     tags: parseJson<string[]>(p.tags, []),
     allergens: parseJson<Allergen[]>(p.allergens, []),
@@ -162,6 +186,7 @@ export async function getAdminMenu(ctx: AppContext, scope: TenantScope, location
   const activeProductIds = new Set(m.products.map((p) => p.id));
   return {
     location: { id: location.id, name: location.name, currency: location.currency },
+    stations: await loadStations(ctx.db, locationId),
     categories: m.categories.map((c) => ({ id: c.id, locationId: c.location_id, name: c.name, isVisible: bool(c.is_visible), sort: c.sort })),
     products: m.products.map((p) =>
       toProduct(
@@ -363,6 +388,7 @@ export async function createProduct(ctx: AppContext, scope: TenantScope, categor
   assertActive(category.status, 'Cette catégorie est archivée.');
   await assertPhoto(ctx.db, scope, input.photoMediaId);
   await assertGroups(ctx.db, category.location_id, scope, input.modifierGroupIds);
+  await assertStation(ctx.db, category.location_id, input.stationId);
   const id = uuidv7();
   await ctx.db.transaction().execute(async (trx) => {
     const now = ctx.now();
@@ -379,6 +405,7 @@ export async function createProduct(ctx: AppContext, scope: TenantScope, categor
         price: input.price,
         promo_price: input.promoPrice,
         prep_time_min: input.prepTimeMin,
+        station_id: input.stationId,
         photo_media_id: input.photoMediaId,
         is_available: flag(input.isAvailable),
         tags: JSON.stringify(input.tags),
@@ -418,6 +445,7 @@ export async function updateProduct(ctx: AppContext, scope: TenantScope, product
   }
   await assertPhoto(ctx.db, scope, input.photoMediaId);
   if (input.modifierGroupIds) await assertGroups(ctx.db, product.location_id, scope, input.modifierGroupIds);
+  await assertStation(ctx.db, product.location_id, input.stationId);
 
   await ctx.db.transaction().execute(async (trx) => {
     const hlc = ctx.clock.now();
@@ -436,6 +464,7 @@ export async function updateProduct(ctx: AppContext, scope: TenantScope, product
         ...(input.price !== undefined && { price: input.price }),
         ...(input.promoPrice !== undefined && { promo_price: input.promoPrice }),
         ...(input.prepTimeMin !== undefined && { prep_time_min: input.prepTimeMin }),
+        ...(input.stationId !== undefined && { station_id: input.stationId }),
         ...(input.photoMediaId !== undefined && { photo_media_id: input.photoMediaId }),
         ...(input.isAvailable !== undefined && { is_available: flag(input.isAvailable) }),
         ...(input.tags !== undefined && { tags: JSON.stringify(input.tags) }),

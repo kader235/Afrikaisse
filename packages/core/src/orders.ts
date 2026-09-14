@@ -131,6 +131,8 @@ export const orderItemSchema = z.object({
   total: z.number(),
   note: z.string().nullable(),
   modifiers: z.array(z.object({ groupName: z.string(), name: z.string(), priceDelta: z.number() })),
+  stationId: z.string().nullable(),
+  kdsStatus: z.enum(['QUEUED', 'PREPARING', 'READY']),
 });
 export type OrderItem = z.infer<typeof orderItemSchema>;
 

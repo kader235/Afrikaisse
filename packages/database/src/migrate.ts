@@ -6,6 +6,7 @@ import { floor } from './migrations/0002_floor.ts';
 import { menu } from './migrations/0003_menu.ts';
 import { orders } from './migrations/0004_orders.ts';
 import { pos } from './migrations/0005_pos.ts';
+import { kitchen } from './migrations/0006_kitchen.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -20,6 +21,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0003_menu': menu(c),
     '0004_orders': orders(c),
     '0005_pos': pos(c),
+    '0006_kitchen': kitchen(c),
   };
 }
 

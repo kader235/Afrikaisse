@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CURRENCY_CODES, LOCATION_TYPES } from './currency.ts';
+import { stationSchema } from './kitchen.ts';
 import { MONEY_MAX } from './money.ts';
 
 /**
@@ -72,6 +73,8 @@ export const createProductSchema = z
     price: money,
     promoPrice: money.nullable().default(null),
     prepTimeMin: z.number().int().min(0).max(240).nullable().default(null),
+    /** Poste de préparation ; null : premier poste Cuisine de l'établissement. */
+    stationId: z.uuid().nullable().default(null),
     isAvailable: z.boolean().default(true),
     tags: tags.default([]),
     allergens: z.array(z.enum(ALLERGENS)).max(14).default([]),
@@ -93,6 +96,7 @@ export const updateProductSchema = z
     price: money,
     promoPrice: money.nullable(),
     prepTimeMin: z.number().int().min(0).max(240).nullable(),
+    stationId: z.uuid().nullable(),
     isAvailable: z.boolean(),
     tags,
     allergens: z.array(z.enum(ALLERGENS)).max(14),
@@ -184,6 +188,7 @@ export const productSchema = z.object({
   price: z.number(),
   promoPrice: z.number().nullable(),
   prepTimeMin: z.number().nullable(),
+  stationId: z.string().nullable(),
   isAvailable: z.boolean(),
   tags: z.array(z.string()),
   allergens: z.array(z.enum(ALLERGENS)),
@@ -219,6 +224,7 @@ export type ModifierGroup = z.infer<typeof modifierGroupSchema>;
 
 export const adminMenuSchema = z.object({
   location: z.object({ id: z.string(), name: z.string(), currency: z.enum(CURRENCY_CODES) }),
+  stations: z.array(stationSchema),
   categories: z.array(categorySchema),
   products: z.array(productSchema),
   modifierGroups: z.array(modifierGroupSchema),

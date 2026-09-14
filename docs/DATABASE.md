@@ -112,6 +112,14 @@ d'activité des écrans.
 | `payment_allocations` | Part d'un paiement affectée à chaque commande | payment_id, order_id, amount |
 | `document_counters` | Numéros de documents qui ne repartent jamais à zéro | clé (location_id, kind) ; `RECEIPT` |
 
+## Tables livrées en phase 7 (migration `0006_kitchen`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `stations` | Poste de préparation | name, kind `KITCHEN/BAR`, sort, status ; « Cuisine » et « Bar » créés avec chaque établissement (et pour les établissements existants par la migration) |
+| `products` (colonne ajoutée) | Poste du produit | `station_id` (null : premier poste Cuisine) |
+| `order_items` (colonnes ajoutées) | Routage et avancement en cuisine | `station_id` (copié à la commande), `kds_status` `QUEUED/PREPARING/READY`, `kds_updated_at` ; index (station_id, kds_status) |
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

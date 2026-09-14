@@ -295,6 +295,7 @@ const fr = {
   'orders.history': 'Historique',
   'orders.selectHint': 'Touchez une commande pour afficher son détail et la faire avancer.',
   'nav.pos': 'Caisse',
+  'nav.kitchen': 'Cuisine',
 };
 export type MessageKey = keyof typeof fr;
 type Dictionary = Partial<Record<MessageKey, string>>;

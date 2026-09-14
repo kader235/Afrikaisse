@@ -170,6 +170,21 @@ Règles transverses :
 
 Espèces attendues = fond + ventes en espèces + entrées − sorties.
 
+## Routes de la phase 7 — postes et écran cuisine
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/stations` | `menu.read` | Postes actifs (nom, type `KITCHEN`/`BAR`, nombre de produits) ; aussi dans `GET /locations/{id}/menu` (`stations`) |
+| POST | `/api/locations/{id}/stations` | `menu.manage` | Créer un poste (Grill, Pâtisserie, Bar terrasse…) |
+| PATCH | `/api/stations/{id}` | `menu.manage` | Renommer, changer le type ou l'ordre |
+| POST | `/api/stations/{id}/archive` | `menu.manage` | Refusé (409, produits listés) tant que des produits y sont affectés |
+| POST | `/api/orders/{id}/kitchen` | `kitchen.use` / `bar.use` selon les postes touchés | `{stationId \| null, action: START \| READY \| RECALL}`. Avance les articles du poste (tous si `null`) ; la commande passe « en préparation » au premier article commencé, « prête » quand tous les articles le sont. 409 : commande en attente de confirmation, déjà servie, sans article pour ce poste, ou rappel d'une commande déjà annoncée prête |
+
+Les produits portent `stationId` (null : premier poste Cuisine). Chaque article de commande copie
+son poste (`items[].stationId`) et son avancement (`items[].kdsStatus` : `QUEUED`, `PREPARING`,
+`READY`), visibles dans le flux d'activité. Tout nouvel établissement reçoit les postes « Cuisine »
+et « Bar ». Annoncer une commande « prête » depuis l'écran Commandes marque tous ses articles prêts.
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

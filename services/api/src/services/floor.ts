@@ -22,6 +22,7 @@ import type { DiningTablesTable, LocationsTable, ZonesTable } from '@afrikaisse/
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
+import { createDefaultStations } from './kitchen.ts';
 import { createQrCode, revokeQrCodes } from './qr.ts';
 
 /**
@@ -166,6 +167,7 @@ export async function createLocation(ctx: AppContext, scope: TenantScope, input:
       })
       .execute();
     const row = await emitLocation(trx, ctx, scope, id, hlc);
+    await createDefaultStations(trx, ctx, scope.tenantId, id, hlc);
     await writeAudit(trx, ctx, {
       tenantId: scope.tenantId,
       locationId: id,
