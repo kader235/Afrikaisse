@@ -4114,3 +4114,26 @@ fieldset.group > legend + * {
   color: var(--muted);
   word-break: break-all;
 }
+
+/* --- Plan de salle (refonte 2026) --- */
+.plan {
+  border-color: var(--border);
+  border-radius: 14px;
+}
+
+.plan-table {
+  background: var(--window);
+  border-width: 1.5px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-xs);
+}
+
+.plan-table.shape-round {
+  border-radius: 50%;
+}
+
+/* --- Écran cuisine dans la coque (refonte 2026) --- */
+.workspace .kds {
+  overflow: hidden;
+  border-radius: 16px;
+}
