@@ -167,6 +167,13 @@ dernier push et pull réussis, écart d'horloge avec le Cloud. Ces valeurs alime
 `<journée>#cloud`), le serveur local garde 1, 2, 3… ; elles descendent « en attente », sont
 confirmées sur place, et le client suit l'avancement en ligne.
 
+**Adresse des QR** : le client ne rejoint aucun Wi-Fi, il scanne avec ses données mobiles. Un serveur
+local relié écrit donc dans ses QR l'adresse du **Cloud** (`sync_cloud_url`), jamais la sienne ; seul
+un serveur local non relié produit des QR du réseau du restaurant, et l'écran QR le signale
+(`reachableFromInternet: false`). Si le restaurant perd Internet, le Cloud ne voit plus le serveur
+local : il refuse proprement la commande (« adressez-vous à un serveur ») au lieu d'enregistrer une
+commande que la cuisine ne recevrait pas ; le menu reste consultable.
+
 Limites connues, à reprendre :
 - une même table ouverte des deux côtés au même instant (session ouverte en double) produit un conflit gardé pour revue ;
 - l'historique des ventes antérieur à l'appairage reste dans le Cloud ;
