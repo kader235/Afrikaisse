@@ -184,6 +184,7 @@ export function PosPage({ me }: { me: Me }) {
   return (
     <>
       <Window
+        className="page-pos"
         title="Caisse"
         count={drawer ? `Caisse ouverte · espèces ${formatMoney(drawer.summary.expectedCash, currency)}` : drawer === null && canCollect ? 'Caisse fermée' : undefined}
         bodyless

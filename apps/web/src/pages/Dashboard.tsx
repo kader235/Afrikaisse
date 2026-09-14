@@ -291,7 +291,8 @@ function HourChart({ today, yesterday, cutoffHour = 0 }: { today: SalesReport; y
   const last = Math.max(rank(22), ...known);
   const hours = Array.from({ length: last - first + 1 }, (_, i) => (first + i + cutoffHour) % 24);
   const at = (list: SalesReport['byHour'], hour: number) => list.find((h) => h.hour === hour)?.revenue ?? 0;
-  const scale = niceMax(Math.max(1, ...hours.map((h) => Math.max(at(today.byHour, h), at(prev, h)))));
+  // Échelle d'au moins 10 000 (unités mineures) : sans vente, l'axe reste lisible (« 10 k / 5 k / 0 »).
+  const scale = niceMax(Math.max(10_000, ...hours.map((h) => Math.max(at(today.byHour, h), at(prev, h)))));
   const short = (v: number) => {
     const n = Number(moneyToInput(v, today.currency).replace(/\s/g, '').replace(',', '.'));
     if (n >= 1_000_000) return `${(n / 1_000_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M`;

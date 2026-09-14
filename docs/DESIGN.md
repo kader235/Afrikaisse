@@ -23,7 +23,8 @@ Tout le style vit dans `apps/web/src/styles.css` (le menu client a le sien : `sr
 
 Trois éléments rendent l'écran reconnaissable sans logo :
 
-1. **La barre bleu nuit** (`#0F2A4A`) avec le liseré bleu, or et rouge de 3 px.
+1. **La barre bleu nuit** (`#0F2A4A`), unie. Aucune bande de couleur au-dessus d'un cadre (consigne de Kader) :
+   l'état se lit par la colonne, le libellé et une pastille.
 2. **Le safran** (`#D98F0C`) : languette de la rubrique active au bord de la navigation, initiales de l'utilisateur,
    « Kaisse » dans le nom. Jamais en aplat décoratif.
 3. **Le bleu AfriKaisse** (`#1D58A8`) : uniquement ce qui se clique ou ce qui est sélectionné.
@@ -100,7 +101,9 @@ Au doigt, la base passe à 16 px.
 - **Navigation** (248 px) : Tableau de bord ; Vente (Caisse, Commandes, Tables) ; Restauration (Cuisine, Menu) ;
   Gestion (Stock) ; Administration (Personnel, Rapports, Établissements, Paramètres, Journal). Achats, fournisseurs
   et clients ne sont pas encore développés : ils n'apparaissent pas.
-- Tablette paysage étroite (≤ 1200 px) : rail de 96 px, icône au-dessus du nom. Téléphone : barre du bas + « Plus ».
+- Tablette (au doigt jusqu'à 1366 px, et tout écran ≤ 1200 px) : rail de 88 px, icône au-dessus du nom ; rubriques
+  de travail seulement, l'administration sous « Plus ». Référence : Galaxy Tab A9+ (800 × 1280 / 1280 × 800).
+  Au doigt, une barre d'outils n'affiche que les boutons utilisables. Téléphone : barre du bas + « Plus ».
 - **Page** : titre et contexte à gauche, action principale à droite ; puis les panneaux.
 
 ## Tableau de bord (écran de référence)

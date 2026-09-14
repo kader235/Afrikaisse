@@ -296,6 +296,16 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
 
       <nav className="sidebar" aria-label="Navigation">
         <NavList items={visible} current={current} onPick={open} />
+        {/* Rail de la tablette : l'administration passe sous « Plus » pour garder des libellés entiers. */}
+        <button
+          className="nav-item nav-more"
+          aria-haspopup="dialog"
+          aria-current={visible.some((s) => s.group === 'admin' && s.id === current) ? 'page' : undefined}
+          onClick={() => setPanel('nav')}
+        >
+          <Icon name="more" />
+          <span className="nav-label">Plus</span>
+        </button>
       </nav>
 
       <main className="workspace">
@@ -363,7 +373,7 @@ function NavList({ items, current, onPick }: { items: NavItem[]; current: Sectio
         const list = items.filter((i) => i.group === group);
         if (list.length === 0) return null;
         return (
-          <div key={group} className="nav-group">
+          <div key={group} className={`nav-group nav-group-${group}`}>
             {title && <h2 className="nav-title">{title}</h2>}
             {list.map((item) => (
               <NavButton key={item.id} item={item} current={current} onPick={onPick} />

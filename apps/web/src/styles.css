@@ -650,8 +650,7 @@ input[type='radio']:focus {
   padding-inline-end: 16px;
   background: var(--topbar);
   color: var(--topbar-text);
-  border-bottom: 3px solid var(--flag-blue);
-  border-image: linear-gradient(90deg, var(--flag-blue) 0, var(--flag-blue) 33.3%, var(--flag-gold) 33.3%, var(--flag-gold) 66.6%, var(--flag-red) 66.6%, var(--flag-red) 100%) 1;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
 }
 
 .topbar-menu {
@@ -925,11 +924,21 @@ input[type='radio']:focus {
   margin-inline-start: 8px;
 }
 
+.nav-more {
+  display: none;
+}
+
 .workspace {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   padding: 28px;
   overflow: auto;
+}
+
+.workspace > * {
+  flex: none;
 }
 
 .workspace > .msg {
@@ -1131,6 +1140,44 @@ input[type='radio']:focus {
   border-radius: var(--radius-panel);
 }
 
+/* Caisse : la vente occupe toute la hauteur disponible ; produits et ticket défilent chacun de leur côté,
+   les boutons d'envoi restent toujours à l'écran. */
+.page-pos {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-height: 480px;
+}
+
+.page-pos > .page-head {
+  margin-bottom: 14px;
+}
+
+.page-pos > .page-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.page-pos .pos-sale {
+  flex: 1;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.page-pos .pos-cats,
+.page-pos .pos-catalog {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.page-pos .pos-ticket {
+  position: static;
+  max-height: none;
+  min-height: 0;
+}
+
 .window-body {
   padding: 20px;
 }
@@ -1152,6 +1199,13 @@ input[type='radio']:focus {
 
 .toolbar > * {
   flex: none;
+}
+
+.toolbar .btn,
+.toolbar .btn + .btn {
+  margin: 4px;
+  margin-inline-start: 0;
+  margin-inline-end: 8px;
 }
 
 .toolbar .sep {
@@ -1563,7 +1617,6 @@ table.grid td.empty {
   padding: 24px 24px 20px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-top: 3px solid var(--primary);
   border-radius: var(--radius-panel);
 }
 
@@ -2348,7 +2401,6 @@ table.grid td.empty {
   display: flex;
   align-items: center;
   padding: 8px 10px;
-  border-top: 3px solid var(--muted);
   border-bottom: 1px solid var(--border);
   border-radius: var(--radius-panel) var(--radius-panel) 0 0;
   background: var(--surface);
@@ -2361,22 +2413,6 @@ table.grid td.empty {
 
 .board-dot {
   display: none;
-}
-
-.board-wait .board-head {
-  border-top-color: var(--warn);
-}
-
-.board-cook .board-head {
-  border-top-color: var(--ochre);
-}
-
-.board-ready .board-head {
-  border-top-color: var(--ok);
-}
-
-.board-served .board-head {
-  border-top-color: var(--primary);
 }
 
 .board-list {
@@ -3175,6 +3211,7 @@ table.grid td.empty {
 
 .cat-panel-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   min-height: 44px;
@@ -3673,17 +3710,8 @@ table.grid td.empty {
 .kds-card {
   margin-bottom: 10px;
   border: 1px solid #2f3b47;
-  border-top: 4px solid #4a8fe0;
   border-radius: var(--radius);
   background: #1e2731;
-}
-
-.kds-preparing {
-  border-top-color: #e0a13a;
-}
-
-.kds-ready {
-  border-top-color: #3fb36b;
 }
 
 .kds-late1 {
@@ -3909,14 +3937,34 @@ table.grid td.empty {
 }
 
 /* Tablette paysage et petits portables : navigation en rail, icône au-dessus du nom. */
-@media (max-width: 1200px) {
+@media (max-width: 1200px), (pointer: coarse) and (max-width: 1366px) {
   .app {
-    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .workspace {
+    padding: 20px;
+  }
+
+  .page-head {
+    margin-bottom: 18px;
+  }
+
+  .page-head h1 {
+    font-size: 22px;
+  }
+
+  .sidebar .nav-group-admin {
+    display: none;
+  }
+
+  .sidebar .nav-more {
+    display: flex;
   }
 
   .topbar-brand {
     justify-content: center;
-    width: 96px;
+    width: 88px;
     padding: 0;
   }
 
@@ -3945,7 +3993,7 @@ table.grid td.empty {
     height: auto;
     min-height: 64px;
     padding: 8px 2px;
-    font-size: 12px;
+    font-size: 11.5px;
     line-height: 1.2;
     text-align: center;
   }
@@ -4020,9 +4068,21 @@ table.grid td.empty {
     border-top: 1px solid var(--line);
   }
 
-  .pos-sale {
-    grid-template-columns: minmax(0, 1fr) 320px;
+  .pos-sale,
+  .page-pos .pos-sale {
+    grid-template-columns: minmax(0, 1fr) 300px;
     grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .pos-products {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-gap: 10px;
+    padding: 12px;
+  }
+
+  .board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow-x: visible;
   }
 
   .pos-cats {
@@ -4273,6 +4333,18 @@ table.grid td.empty {
     max-height: none;
   }
 
+  .page-pos {
+    flex: none;
+  }
+
+  .page-pos .pos-sale {
+    grid-template-rows: auto;
+  }
+
+  .page-pos .pos-catalog {
+    overflow: visible;
+  }
+
   .catalogue-head {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -4318,6 +4390,10 @@ table.grid td.empty {
 
   .fig-value {
     font-size: 20px;
+  }
+
+  .board {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -4459,11 +4535,34 @@ table.grid td.empty {
     display: inline-block;
     padding: 8px 0;
   }
+
+  .cat-panel-head > :first-child {
+    flex: 1 0 100%;
+    margin-bottom: 6px;
+  }
+
+  .toolbar .btn:disabled,
+  .page-actions .btn:disabled,
+  .toolbar .sep,
+  .page-actions .sep {
+    display: none;
+  }
 }
 
 @media (pointer: coarse) and (min-width: 601px) {
   .form {
     grid-template-columns: 200px minmax(0, 1fr);
     grid-gap: 12px 16px;
+  }
+}
+
+/* Tablette en paysage : « Envoyer et encaisser » et « Vider le ticket » côte à côte, le ticket tient en hauteur. */
+@media (min-width: 1001px) and (max-height: 900px) {
+  .pos-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pos-actions .btn-primary {
+    grid-column: 1 / -1;
   }
 }

@@ -178,9 +178,25 @@ export function MoneyInput({
  * Page de travail, même structure partout : en-tête (titre et informations à gauche, actions à droite),
  * puis une seule carte. `plain` : pas de carte englobante, le contenu pose ses propres cartes.
  */
-export function Window({ title, count, toolbar, children, bodyless, plain }: { title: string; count?: string; toolbar?: ReactNode; children: ReactNode; bodyless?: boolean; plain?: boolean }) {
+export function Window({
+  title,
+  count,
+  toolbar,
+  children,
+  bodyless,
+  plain,
+  className,
+}: {
+  title: string;
+  count?: string;
+  toolbar?: ReactNode;
+  children: ReactNode;
+  bodyless?: boolean;
+  plain?: boolean;
+  className?: string;
+}) {
   return (
-    <section className="page">
+    <section className={className ? `page ${className}` : 'page'}>
       <header className="page-head">
         <div className="page-title">
           <h1>{title}</h1>
