@@ -29,6 +29,8 @@ export const RATE_RULES: RateRule[] = [
 
 const MAX_KEYS = 50_000;
 
+const isLoopback = (ip: string) => ip === '127.0.0.1' || ip === '::1' || ip.startsWith('::ffff:127.');
+
 function waitLabel(seconds: number) {
   return seconds < 90 ? `${seconds} s` : `${Math.ceil(seconds / 60)} min`;
 }
@@ -43,7 +45,11 @@ export function registerRateLimits(app: FastifyInstance<any, any, any, any, any>
     if (!rule) return;
     const now = ctx.now();
     const param = rule.perParam ? ((request.params as Record<string, string> | undefined)?.[rule.perParam] ?? '') : '';
-    const key = `${rule.url}|${request.ip}|${param}`;
+    // Adresse du client inconnue (proxy qui ne transmet pas X-Forwarded-For) : ne jamais mettre tous
+    // les clients dans le même compteur, sinon dix inscriptions dans l'heure fermeraient le service à tous.
+    const ip = request.ip;
+    if (!ip || (ctx.config.profile === 'cloud' && isLoopback(ip) && !request.headers['x-forwarded-for'])) return;
+    const key = `${rule.url}|${ip}|${param}`;
     let entry = hits.get(key);
     if (!entry || entry.resetAt <= now) {
       if (hits.size >= MAX_KEYS) {

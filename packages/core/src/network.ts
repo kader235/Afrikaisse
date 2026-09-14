@@ -41,3 +41,6 @@ export function normalizeServerUrl(input: string): ServerUrlCheck {
   const path = url.pathname.replace(/\/+$/, '').replace(/\/api$/, '');
   return { ok: true, url: `${url.protocol}//${url.host}${path}` };
 }
+
+/** Adresse d'AfriKaisse Cloud : proposée par défaut (tablette, appairage) et repli des QR. À changer ici seulement. */
+export const DEFAULT_CLOUD_URL = 'https://afrikaisse.dametta.com';

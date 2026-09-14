@@ -1,4 +1,4 @@
-import { AppError, generateToken, isLocalNetworkHost, uuidv7, type QrList } from '@afrikaisse/core';
+import { AppError, DEFAULT_CLOUD_URL, generateToken, isLocalNetworkHost, uuidv7, type QrList } from '@afrikaisse/core';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { writeAudit } from '../lib/journal.ts';
@@ -35,7 +35,7 @@ export async function menuBaseUrl(ctx: AppContext, origin: string | undefined): 
   if (!base && ctx.config.profile === 'local') {
     base = (await ctx.db.selectFrom('node_state').select('value').where('key', '=', 'sync_cloud_url').executeTakeFirst())?.value;
   }
-  base ??= origin && /^https?:\/\//.test(origin) ? origin : 'https://app.afrikaisse.com';
+  base ??= origin && /^https?:\/\//.test(origin) ? origin : DEFAULT_CLOUD_URL;
   return base.replace(/\/+$/, '');
 }
 

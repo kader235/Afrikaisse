@@ -37,6 +37,9 @@ import { teamRoutes } from './routes/team.ts';
 import { platformRoutes, tenantRoutes } from './routes/tenant.ts';
 
 export const API_VERSION = '0.1.0';
+declare const __AFK_BUILD__: string | undefined;
+/** Numéro écrit par la construction du paquet : le script de dépôt vérifie qu'il parle à la nouvelle version. */
+export const API_BUILD = typeof __AFK_BUILD__ === 'string' ? __AFK_BUILD__ : 'dev';
 
 export interface BuildOptions {
   database: AppDatabase;
@@ -125,6 +128,7 @@ export async function buildApp(opts: BuildOptions) {
             nodeId: z.string(),
             database: z.enum(['postgres', 'sqlite']),
             version: z.string(),
+            build: z.string(),
             time: z.number(),
             /** Serveur local : adresses à saisir sur les tablettes et téléphones du restaurant. */
             lanUrls: z.array(z.string()).optional(),
@@ -136,7 +140,7 @@ export async function buildApp(opts: BuildOptions) {
     },
     async () => {
       await sql`select 1`.execute(ctx.db);
-      const base = { status: 'ok' as const, profile: config.profile, nodeId: ctx.nodeId, database: ctx.dbKind, version: API_VERSION, time: ctx.now() };
+      const base = { status: 'ok' as const, profile: config.profile, nodeId: ctx.nodeId, database: ctx.dbKind, version: API_VERSION, build: API_BUILD, time: ctx.now() };
       if (config.profile !== 'local') return base;
       const address = app.server.address();
       const tenant = await ctx.db.selectFrom('tenants').select('id').limit(1).executeTakeFirst();

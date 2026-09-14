@@ -46,50 +46,43 @@ Puis, dans cPanel :
    **Copier le rapport** et le transmettre.
 6. **Supprimer l'application et le sous-domaine** ensuite.
 
-## 2. o2switch — API AfriKaisse
+## 2. o2switch — mise en ligne
+
+Adresse retenue : **https://afrikaisse.dametta.com**. Elle est définie à deux endroits : la constante
+`DEFAULT_CLOUD_URL` de `packages/core/src/network.ts` et la variable `ADRESSE` du script de dépôt. Une
+seule application Node sert à la fois l'API et les écrans : même origine, pas de CORS, aucune règle
+Apache à écrire.
+
+Construire le paquet sur ce poste :
 
 ```bash
-npm run build:api     # → services/api/dist/server.cjs et cli.cjs (aucune dépendance à installer)
-npm run build:web     # → apps/web/dist/
+node infrastructure/o2switch/build.mjs
 ```
 
-1. **Base** (Terminal cPanel) :
-   ```bash
-   CPUSER=$(whoami); DB="${CPUSER}_afrikaisse"
-   PASS=$(openssl rand -base64 24 | tr -d '/+=' | head -c 28)
-   uapi PostgresqlFE create_database name="$DB"
-   uapi PostgresqlFE create_user name="$DB" password="$PASS"
-   uapi PostgresqlFE grant_all_privileges user="$DB" database="$DB"
-   echo "AFK_DB=postgres://${DB}:${PASS}@localhost/${DB}"
-   ```
-2. **Setup Node.js App** : Node 24, racine `afrikaisse-api`, URL `app.<domaine>/api` (ou
-   `api.<domaine>`), fichier `server.cjs`. Variables : `AFK_PROFILE=cloud`, `AFK_DB=…`,
-   `AFK_JWT_SECRET=<48 caractères aléatoires>`, `AFK_CORS_ORIGINS=https://app.<domaine>`
-   (seulement si le Web et l'API ont des origines différentes).
-3. Déposer `server.cjs` et `cli.cjs` dans `~/afrikaisse-api/`, puis *Restart*. Les migrations
-   s'appliquent au démarrage.
-4. Web : déposer le contenu de `apps/web/dist/` dans le dossier du sous-domaine `app.<domaine>`.
-   **Recommandé : même origine** (Web sur `app.<domaine>`, API sur `app.<domaine>/api`). Le cookie
-   de renouvellement reste alors `SameSite=Strict`, sans CORS.
-   Le menu client est une seconde page (`menu.html`) servie pour toute adresse `/m/<jeton>`. Dans le
-   `.htaccess` du sous-domaine :
-   ```apache
-   RewriteEngine On
-   RewriteRule ^m/[A-Za-z0-9_-]+/?$ /menu.html [L]
-   ```
-5. Vérifier : `https://app.<domaine>/api/health` → `{"status":"ok","profile":"cloud",…}`.
-6. Donner l'accès back-office (Terminal, environnement Node activé) :
-   ```bash
-   cd ~/afrikaisse-api && node cli.cjs grant-platform-admin vous@globaltech.td
-   ```
+Le résultat va dans `infrastructure/o2switch/sortie/`, avec une copie sur le Bureau : `afrikaisse.tar.gz`,
+`DEPOSER-AFRIKAISSE.sh` et `LISEZ-MOI.txt`. Les gestes cPanel sont dans LISEZ-MOI.txt. Le script de dépôt
+fait le reste :
 
-Mise à jour : redéposer `server.cjs`, puis *Restart* (ou `touch tmp/restart.txt`).
+| Étape | Détail |
+|---|---|
+| Première fois | Crée la base PostgreSQL et son utilisateur (`uapi PostgresqlFE`), écrit `~/afrikaisse/.env` : mot de passe et secret JWT générés sur place, `chmod 600`. Un `.env` existant n'est jamais réécrit |
+| Sauvegarde | `sauvegarder.sh` avant toute migration d'une base existante (pg_dump compressé, 14 jours) |
+| Code | Remplace `web/`, pose `server.cjs`, `cli.cjs`, `VERSION` |
+| Base | `node cli.cjs migrate` : une erreur arrête tout |
+| Redémarrage | `touch tmp/restart.txt`, puis attend que `/api/health` renvoie le nouveau `build` |
+
+Sous Passenger, Fastify ne démarre pas avec `listen({ path: 'passenger' })` (EADDRINUSE, fastify#5407) :
+`main.ts` prépare l'application, puis appelle `app.server.listen('passenger')`.
+
+Accès back-office : `bash ~/DEPOSER-AFRIKAISSE.sh admin vous@exemple.td`. Le compte doit déjà exister
+(créé depuis le site).
 
 ## 3. Sauvegardes Cloud
 
-Cron cPanel quotidien :
-`pg_dump` compressé dans `~/sauvegardes/`, rotation 14 jours, plus une copie hebdomadaire hors
-o2switch. Script livré avec la phase 18. Tester la restauration au moins une fois par trimestre.
+Tâche Cron cPanel quotidienne : `bash ~/afrikaisse/sauvegarder.sh`. Les copies vont dans
+`~/sauvegardes-afrikaisse/` et sont gardées 14 jours. Tester une restauration une fois par trimestre, sur
+une base de test : `gunzip -c fichier.sql.gz | psql "<adresse de la base de test>"`.
+
 
 ## 4. Serveur local Windows
 

@@ -13,3 +13,4 @@ coverage/
 # Construction Windows (infrastructure/windows/build.mjs)
 infrastructure/windows/charge/
 infrastructure/windows/sortie/
+infrastructure/o2switch/sortie/

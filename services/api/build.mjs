@@ -15,6 +15,7 @@ const common = {
   logLevel: 'info',
   // PGlite ne sert qu'aux tests ; pg-native est une option de pg jamais utilisée.
   external: ['@electric-sql/pglite', 'pg-native'],
+  define: { __AFK_BUILD__: JSON.stringify(process.env.AFK_BUILD ?? 'local') },
 };
 
 await build({ ...common, entryPoints: ['src/main.ts'], outfile: 'dist/server.cjs' });

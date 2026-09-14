@@ -1,0 +1,65 @@
+AfriKaisse sur o2switch
+Adresse : https://afrikaisse.dametta.com
+
+Contenu de ce dossier :
+  afrikaisse.tar.gz       le serveur et les écrans
+  DEPOSER-AFRIKAISSE.sh   le script qui met en ligne et vérifie
+  LISEZ-MOI.txt           ce fichier
+
+
+UNE SEULE FOIS
+==============
+
+1. GoDaddy, domaine dametta.com > DNS > Ajouter un enregistrement
+     Type   : A
+     Nom    : afrikaisse
+     Valeur : 109.234.167.48
+     TTL    : 600
+   Même manipulation que pour app.dametta.com. Compter une dizaine de minutes.
+
+2. cPanel > Domaines > Créer un nouveau domaine
+     Domaine : afrikaisse.dametta.com
+   Laisser le dossier proposé. Quand le cadenas est prêt, activer
+   « Forcer la redirection HTTPS » pour ce domaine.
+
+3. cPanel > Setup Node.js App > Create Application
+     Node.js version            : 24
+     Application mode           : Production
+     Application root           : afrikaisse
+     Application URL            : afrikaisse.dametta.com
+     Application startup file   : server.cjs
+     Passenger log file         : /home/sc2abca0814/afrikaisse/passenger.log
+   Cliquer Create. Aucune variable à ajouter : le script écrit lui-même
+   le fichier de réglages (base, secrets).
+
+4. cPanel > Tâches Cron > Ajouter
+     Réglage courant : une fois par jour (par exemple à 3 h)
+     Commande        : bash /home/sc2abca0814/afrikaisse/sauvegarder.sh >/dev/null 2>&1
+
+
+À CHAQUE MISE EN LIGNE
+======================
+
+5. cPanel > Gestionnaire de fichiers > dossier personnel (/home/sc2abca0814)
+   Téléverser : afrikaisse.tar.gz et DEPOSER-AFRIKAISSE.sh
+
+6. cPanel > Terminal, coller :
+     bash ~/DEPOSER-AFRIKAISSE.sh
+
+   Le script doit finir par « Terminé. AfriKaisse est en ligne ».
+   Sinon, il dit quoi faire : envoyer une photo de l'écran.
+
+
+APRÈS LA PREMIÈRE MISE EN LIGNE
+===============================
+
+7. Ouvrir https://afrikaisse.dametta.com et « Créer mon restaurant »
+   avec votre adresse e-mail.
+
+8. Donner à ce compte l'accès « Plateforme » (abonnements des restaurants).
+   Terminal :
+     bash ~/DEPOSER-AFRIKAISSE.sh admin votre@adresse.e-mail
+
+9. Avant d'imprimer les QR d'un vrai restaurant : l'adresse ci-dessus est
+   écrite dans chaque QR. Si vous passez plus tard à afrikaisse.com, il
+   faudra réimprimer les QR.

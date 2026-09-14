@@ -1,3 +1,4 @@
+import { DEFAULT_CLOUD_URL } from '@afrikaisse/core';
 import { Capacitor } from '@capacitor/core';
 import { SecureStorage } from '@aparajita/capacitor-secure-storage';
 import { normalizeServerUrl } from '@afrikaisse/core';
@@ -14,7 +15,7 @@ export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
 }
 
-export const CLOUD_URL: string = import.meta.env.VITE_AFK_CLOUD_URL ?? 'https://app.afrikaisse.com';
+export const CLOUD_URL: string = import.meta.env.VITE_AFK_CLOUD_URL ?? DEFAULT_CLOUD_URL;
 
 export interface ServerChoice {
   kind: 'cloud' | 'local';

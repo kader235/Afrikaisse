@@ -1,3 +1,4 @@
+import { CLOUD_URL as CLOUD_URL_PAR_DEFAUT } from '../platform.ts';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { CURRENCY_CODES, LOCATION_TYPES, type SessionResponse } from '@afrikaisse/core';
 import { api } from '../api.ts';
@@ -138,7 +139,7 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
 
 /** Serveur local neuf : reprendre un établissement du Cloud (équipe, salle, carte) avec un code d'appairage. */
 function PairScreen({ server, onDone, onCancel }: { server?: ServerSwitch; onDone: (message: string) => void; onCancel: () => void }) {
-  const [cloudUrl, setCloudUrl] = useState('https://app.afrikaisse.com');
+  const [cloudUrl, setCloudUrl] = useState(CLOUD_URL_PAR_DEFAUT);
   const [code, setCode] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);

@@ -18,8 +18,15 @@ async function main() {
 
   const { app, ctx } = await buildApp({ database, config, logger: { level: config.logLevel } });
   if (config.profile === 'cloud') {
-    // Sous Passenger (o2switch), listen() est intercepté : le port est ignoré.
-    await app.listen({ host: config.host, port: config.port });
+    // Sous Passenger (o2switch), l'application doit écouter la socket « passenger ». Fastify appelé
+    // avec { path: 'passenger' } échoue (EADDRINUSE, fastify#5407) : on prépare Fastify, puis on
+    // écoute directement sur son serveur HTTP, comme le fait Express.
+    if (typeof (globalThis as { PhusionPassenger?: unknown }).PhusionPassenger !== 'undefined') {
+      await app.ready();
+      app.server.listen('passenger');
+    } else {
+      await app.listen({ host: config.host, port: config.port });
+    }
   } else {
     const port = await listenLocal(app, database, config.host, config.port);
     // Le lanceur Windows attend ce fichier pour ouvrir le navigateur sur le bon port ; l'identifiant

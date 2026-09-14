@@ -23,6 +23,12 @@ describe.each(ENGINES)('Durcissement (phase 18) — %s', (engine) => {
       expect((await login(32, '41.202.10.1')).statusCode).toBe(401);
       t.clock.offsetMs = 0;
 
+      // Sans adresse de client transmise par le proxy : aucun compteur commun à tous les clients.
+      for (let i = 0; i < 35; i++) {
+        const res = await t.app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: `sans.adresse.${i}@test.td`, password: 'mauvais-mot-de-passe' } });
+        expect(res.statusCode).toBe(401);
+      }
+
       const register = (i: number, ip: string) =>
         t.app.inject({
           method: 'POST',
