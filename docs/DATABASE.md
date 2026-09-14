@@ -132,6 +132,13 @@ d'activité des écrans.
 Quantités en **millièmes entiers**. Le niveau n'est pas stocké : c'est `SUM(quantity_milli)`.
 Écart assumé avec le schéma cible : pas de table `recipes` séparée, la recette est l'ensemble des lignes d'un produit.
 
+## Tables livrées en phase 9 (migration `0008_printing`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `printers` | Imprimante réseau (donnée maître, synchronisée) | name, host, port, width, station_id, prints_kitchen, prints_receipts, last_ok_at, last_error |
+| `print_jobs` | File d'impression, **propre au nœud** (jamais synchronisée) | printer_id, kind `KITCHEN/RECEIPT/TEST`, status, payload (ESC/POS en base64), attempts, next_attempt_at, last_error, order_id |
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

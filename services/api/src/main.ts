@@ -3,6 +3,7 @@ import { connect } from 'node:net';
 import { createDatabase, databaseConfigFromUrl, migrateToLatest, type AppDatabase } from '@afrikaisse/database';
 import { buildApp } from './app.ts';
 import { backupNow, scheduleBackups } from './lib/backup.ts';
+import { startPrintWorker } from './services/printing.ts';
 import { loadConfig } from './config.ts';
 
 async function main() {
@@ -24,6 +25,8 @@ async function main() {
     // du nœud lui permet de vérifier qu'il parle bien à CE serveur et pas à un autre logiciel.
     if (config.portFile) writeFileSync(config.portFile, JSON.stringify({ port, nodeId: ctx.nodeId }));
     if (backups) scheduleBackups(database, backups, (err) => app.log.error({ err }, 'Sauvegarde horaire impossible'));
+    // Seul le serveur du restaurant voit les imprimantes du réseau local.
+    startPrintWorker(ctx, (err) => app.log.error({ err }, "File d'impression"));
   }
 
   const shutdown = async () => {

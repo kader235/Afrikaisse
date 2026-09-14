@@ -214,6 +214,19 @@ Essai sur le paquet Windows :
 - « Sauvegarder maintenant » produit une copie de 553 Ko, après migration ;
 - les deux copies sont listées par l'API.
 
+## Phase 9 — impression (163 tests au total)
+
+Les tests ouvrent une **fausse imprimante** : un serveur TCP qui garde les octets reçus.
+
+| Domaine | Vérifié |
+|---|---|
+| Encodeur | Accents en page 850 octet par octet ; espaces fines des montants ; « œ » et « € » translittérés ; coupure de ligne ; colonnes alignées ; initialisation ESC @ + page 850 ; coupe papier |
+| Imprimantes | Serveur refusé ; adresse avec `http://` refusée ; liste avec les postes ; test immédiat (texte et accents reçus) |
+| Tickets de préparation | Commande caisse brochettes (cuisine) + jus (bar) → 2 tickets, chacun avec ses seuls articles, la remarque « >> Bien cuit », la table et le numéro ; commande QR : rien avant confirmation, un seul ticket même confirmée deux fois |
+| Reçus | « Reçu n°000001 », rendu, remerciement |
+| Panne | Imprimante sur un port fermé : test « injoignable » ; trois tentatives espacées → échec avec l'erreur ; relance → en attente ; les autres tickets sortent |
+| Isolation | Liste, test, relance d'une autre organisation → 404 |
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

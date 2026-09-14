@@ -23,6 +23,7 @@ import {
   type Payment,
   type PaymentMethod,
   type PricingProduct,
+  type Printer,
   type Product,
   type Receipt,
 } from '@afrikaisse/core';
@@ -118,6 +119,7 @@ export function PosPage({ me }: { me: Me }) {
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [printing, setPrinting] = useState<ReactNode>(null);
+  const [receiptPrinters, setReceiptPrinters] = useState(0);
   const currency: CurrencyCode = menu?.location.currency ?? 'XAF';
 
   const loadChecks = useCallback(async () => {
@@ -142,6 +144,7 @@ export function PosPage({ me }: { me: Me }) {
     if (!locationId) return;
     api<AdminMenu>('GET', `/locations/${locationId}/menu`).then(setMenu, setError);
     api<Floor>('GET', `/locations/${locationId}/floor`).then(setFloor, () => setFloor(null));
+    api<Printer[]>('GET', `/locations/${locationId}/printers`).then((list) => setReceiptPrinters(list.filter((p) => p.printsReceipts).length), () => setReceiptPrinters(0));
   }, [locationId]);
 
   // Les notes bougent avec le service (QR, serveurs, autre caisse) : relecture régulière.
@@ -299,8 +302,27 @@ export function PosPage({ me }: { me: Me }) {
           onClose={() => setReceipt(null)}
           footer={
             <>
+              {receiptPrinters > 0 && (
+                <button
+                  className="btn btn-primary"
+                  onClick={async () => {
+                    try {
+                      await api('POST', `/payments/${receipt.payment.id}/print`);
+                      setError(null);
+                      setNotice(`Reçu n°${receipt.payment.receiptNumber} envoyé à l'imprimante de caisse.`);
+                      setReceipt(null);
+                    } catch (err) {
+                      setError(err);
+                      setReceipt(null);
+                    }
+                  }}
+                >
+                  <Icon name="print" />
+                  Imprimante de caisse
+                </button>
+              )}
               {print && (
-                <button className="btn btn-primary" onClick={() => print(<ReceiptTicket receipt={receipt} />)}>
+                <button className={receiptPrinters > 0 ? 'btn' : 'btn btn-primary'} onClick={() => print(<ReceiptTicket receipt={receipt} />)}>
                   <Icon name="print" />
                   Imprimer
                 </button>

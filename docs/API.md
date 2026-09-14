@@ -210,6 +210,27 @@ Effets sur les commandes :
 - **Annulation après confirmation** : restitution (`SALE_CANCEL`).
 - **Ingrédient insuffisant pour une portion** : le plat passe épuisé avec le motif `STOCK` (journal `menu.stock_out`). Il redevient disponible au réapprovisionnement (`menu.stock_back`), sauf si quelqu'un l'a épuisé à la main.
 
+## Routes de la phase 9 — impression
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/printers` | `orders.read` | Imprimantes : adresse, papier (48 = 80 mm, 32 = 58 mm), poste, tickets et/ou reçus, dernier état |
+| POST / PATCH | `/api/locations/{id}/printers`, `/api/printers/{id}` | `devices.manage` | Créer, modifier ; adresse IP ou nom sans `http://` |
+| POST | `/api/printers/{id}/archive` | `devices.manage` | Retirer ; ses travaux en attente passent en échec |
+| POST | `/api/printers/{id}/test` | `devices.manage` | Ticket de test envoyé immédiatement ; résultat dans `lastOkAt` / `lastError` |
+| GET | `/api/locations/{id}/print-jobs` | `devices.manage` | 50 derniers travaux (`PENDING/SENT/FAILED`, tentatives, erreur, n° de commande) |
+| POST | `/api/print-jobs/{id}/retry` | `devices.manage` | Relancer un travail en échec |
+| POST | `/api/payments/{id}/print` | `payments.collect` | Reçu vers les imprimantes de reçus ; 409 s'il n'y en a pas |
+
+Chaque **confirmation** de commande met en file un ticket par imprimante de préparation concernée :
+celle du poste de ses articles, ou celle qui imprime tous les postes. Une commande confirmée deux
+fois n'est pas réimprimée. La file est vidée par le **serveur local** toutes les 1,5 s :
+- trois tentatives, espacées de 5 s puis 10 s ;
+- ensuite, échec visible et relançable ;
+- une imprimante en panne ne bloque jamais une vente.
+
+Le texte part en ESC/POS, page de codes 850 (accents français).
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

@@ -243,6 +243,24 @@ Menu **Cuisine** : cuisiniers et barmen arrivent directement dessus.
 - Les commandes QR n'arrivent en cuisine qu'une fois **confirmées** par la salle.
 - **Plein écran** masque tout le reste sur une tablette murale.
 
+## Les imprimantes de tickets
+
+Menu **Menu**, onglet **Imprimantes** (propriétaire, administrateur, gérant). Pour les imprimantes
+thermiques **réseau** (Epson, Xprinter…), branchées sur la box du restaurant, avec le **serveur
+AfriKaisse installé sur le PC** du restaurant.
+
+1. **Nouvelle imprimante** : nom, adresse IP (l'imprimante l'imprime souvent si l'on maintient le bouton d'avance papier à l'allumage), papier 80 ou 58 mm.
+2. Cocher **tickets de préparation** et choisir le **poste** (Cuisine, Bar, Grill…, ou tous), et/ou **reçus de la caisse**.
+3. **Imprimer un test** : le ticket doit sortir avec les accents corrects.
+
+Ensuite :
+- **Tickets de préparation** : chaque commande confirmée sort toute seule sur l'imprimante de chaque poste concerné, avec le numéro, la table, les options et les remarques en gras.
+- **Reçus** : à l'encaissement, **Imprimante de caisse** envoie le reçu.
+- **File d'impression** : elle montre ce qui est sorti et ce qui a échoué (imprimante éteinte, papier…). **Relancer** renvoie le ticket.
+
+Sans serveur local (tout dans le Cloud), le bouton **Imprimer** depuis un ordinateur sort le même
+ticket au format 80 mm par le navigateur.
+
 ## Le stock
 
 Menu **Stock** (propriétaire, administrateur, gérant, magasinier).

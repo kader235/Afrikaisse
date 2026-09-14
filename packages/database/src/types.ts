@@ -566,7 +566,46 @@ export interface RecipeItemsTable {
   updated_hlc: string;
 }
 
+export interface PrintersTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  host: string;
+  port: number;
+  width: number;
+  station_id: string | null;
+  prints_kitchen: Bool;
+  prints_receipts: Bool;
+  status: 'ACTIVE' | 'ARCHIVED';
+  last_ok_at: number | null;
+  last_error: string | null;
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+/** File d'impression : propre au nœud qui imprime, jamais synchronisée. */
+export interface PrintJobsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  printer_id: string;
+  kind: 'KITCHEN' | 'RECEIPT' | 'TEST';
+  status: 'PENDING' | 'SENT' | 'FAILED';
+  /** Octets ESC/POS en base64. */
+  payload: string;
+  attempts: number;
+  last_error: string | null;
+  order_id: string | null;
+  next_attempt_at: number;
+  created_at: number;
+  sent_at: number | null;
+}
+
 export interface Database {
+  printers: PrintersTable;
+  print_jobs: PrintJobsTable;
   inventory_items: InventoryItemsTable;
   inventory_movements: InventoryMovementsTable;
   recipe_items: RecipeItemsTable;
