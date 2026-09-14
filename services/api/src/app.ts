@@ -28,6 +28,7 @@ import { kitchenRoutes } from './routes/kitchen.ts';
 import { reportRoutes } from './routes/reports.ts';
 import { setupRoutes } from './routes/setup.ts';
 import { stockRoutes } from './routes/stock.ts';
+import { systemRoutes } from './routes/system.ts';
 import { teamRoutes } from './routes/team.ts';
 import { platformRoutes, tenantRoutes } from './routes/tenant.ts';
 
@@ -147,6 +148,7 @@ export async function buildApp(opts: BuildOptions) {
   await app.register(reportRoutes(ctx), { prefix: '/api' });
   await app.register(setupRoutes(ctx), { prefix: '/api' });
   await app.register(stockRoutes(ctx), { prefix: '/api' });
+  await app.register(systemRoutes(ctx, database), { prefix: '/api' });
   if (config.profile === 'cloud') {
     await app.register(platformRoutes(ctx), { prefix: '/api/platform' });
   }

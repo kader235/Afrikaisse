@@ -17,6 +17,7 @@ const envSchema = z.object({
   AFK_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   AFK_WEB_DIR: z.string().min(1).optional(),
   AFK_PORT_FILE: z.string().min(1).optional(),
+  AFK_BACKUP_DIR: z.string().min(1).optional(),
 });
 
 export type Profile = 'cloud' | 'local';
@@ -40,6 +41,8 @@ export interface AppConfig {
   webDir: string | undefined;
   /** Fichier où écrire le port réellement retenu (lu par le lanceur Windows). */
   portFile: string | undefined;
+  /** Serveur local : dossier des sauvegardes automatiques de la base (§69). */
+  backupDir: string | undefined;
   accessTokenTtlSec: number;
   sessionTtlSec: number;
   loginMaxFailures: number;
@@ -64,6 +67,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     logLevel: e.AFK_LOG_LEVEL,
     webDir: e.AFK_WEB_DIR,
     portFile: e.AFK_PORT_FILE,
+    backupDir: e.AFK_BACKUP_DIR,
     accessTokenTtlSec: 15 * 60,
     sessionTtlSec: 30 * 24 * 3600,
     loginMaxFailures: 5,

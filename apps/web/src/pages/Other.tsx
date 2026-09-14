@@ -4,6 +4,7 @@ import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { AUDIT_ACTION_LABELS, formatDateTime } from '../labels.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
+import { BackupsPanel } from './Backups.tsx';
 
 interface TenantDetails {
   id: string;
@@ -59,6 +60,7 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
           <label>{t('org.locations')}</label>
           <input readOnly value={tenant ? String(tenant.locations.length) : ''} />
         </div>
+        {me.permissions.includes('settings.manage') && <BackupsPanel />}
       </Window>
 
       {renaming && tenant && (

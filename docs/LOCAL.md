@@ -109,8 +109,16 @@ lancement, il patiente jusqu'à 3 minutes.
 
 ## Sauvegardes (§69)
 
-- Sauvegarde **à chaud** par l'API `backup()` de SQLite (cohérente même pendant l'écriture), toutes
-  les heures et à la fermeture de caisse, avec rotation (24 horaires, 30 quotidiennes).
+**En place** (`services/api/src/lib/backup.ts`, activées par `AFK_BACKUP_DIR`, que le lanceur
+fixe à `C:\ProgramData\AfriKaisse\sauvegardes`) :
+- copie **au démarrage, avant toute migration**, puis **toutes les heures** ;
+- `VACUUM INTO` : copie cohérente même pendant le service ;
+- chaque copie est ouverte en lecture et passe `PRAGMA integrity_check`, sinon elle est supprimée et l'erreur tracée ;
+- rotation : les 24 plus récentes, puis la dernière de chacun des 30 derniers jours ;
+- écran **Organisation → Sauvegardes de ce serveur** (propriétaire, administrateur) : liste, **Sauvegarder maintenant** (journal `system.backup`) ;
+- restauration manuelle : arrêter AfriKaisse, remplacer `afrikaisse.sqlite` par la copie choisie, relancer.
+
+Prévu ensuite :
 - **Copie hors du PC** proposée : clé USB détectée, dossier réseau, ou envoi chiffré au Cloud. Un
   virus ou un disque mort emporte aussi ce qui est sur le même disque.
 - Restauration guidée depuis la console, avec contrôle d'intégrité (`PRAGMA integrity_check`) avant

@@ -2,12 +2,16 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { connect } from 'node:net';
 import { createDatabase, databaseConfigFromUrl, migrateToLatest, type AppDatabase } from '@afrikaisse/database';
 import { buildApp } from './app.ts';
+import { backupNow, scheduleBackups } from './lib/backup.ts';
 import { loadConfig } from './config.ts';
 
 async function main() {
   if (existsSync('.env')) process.loadEnvFile('.env');
   const config = loadConfig();
   const database = await createDatabase(await databaseConfigFromUrl(config.databaseUrl));
+  const backups = config.profile === 'local' && config.backupDir && database.kind === 'sqlite' ? config.backupDir : null;
+  // Copie avant toute migration : une mise à jour ratée se rattrape avec la base d'avant.
+  if (backups) await backupNow(database, backups, 'demarrage').catch((err) => console.error('Sauvegarde de démarrage impossible :', err));
   if (config.autoMigrate) await migrateToLatest(database);
 
   const { app, ctx } = await buildApp({ database, config, logger: { level: config.logLevel } });
@@ -19,6 +23,7 @@ async function main() {
     // Le lanceur Windows attend ce fichier pour ouvrir le navigateur sur le bon port ; l'identifiant
     // du nœud lui permet de vérifier qu'il parle bien à CE serveur et pas à un autre logiciel.
     if (config.portFile) writeFileSync(config.portFile, JSON.stringify({ port, nodeId: ctx.nodeId }));
+    if (backups) scheduleBackups(database, backups, (err) => app.log.error({ err }, 'Sauvegarde horaire impossible'));
   }
 
   const shutdown = async () => {

@@ -293,6 +293,14 @@ réellement reçu. L'écart entre les deux, ce sont les additions encore ouverte
 
 Les données restent sur le PC (`C:\ProgramData\AfriKaisse`), même si l'on désinstalle le logiciel.
 
+**Sauvegardes** : AfriKaisse copie et vérifie sa base au démarrage puis toutes les heures, dans
+`C:\ProgramData\AfriKaisse\sauvegardes`. Le menu **Organisation** montre les dernières copies, avec
+**Sauvegarder maintenant**. Copiez ce dossier chaque semaine sur une clé USB : une panne du disque
+emporterait aussi les copies. Pour revenir à une copie :
+1. quitter AfriKaisse ;
+2. remplacer `afrikaisse.sqlite` par la copie choisie ;
+3. relancer.
+
 ## L'équipe
 
 Menu **Équipe** (propriétaire, administrateur, gérant).

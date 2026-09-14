@@ -202,6 +202,18 @@ Installateur `AfriKaisse-Setup-0.1.0.exe` compilé (Inno Setup 6). L'installatio
 | Rupture | Dernier poulet vendu → yassa épuisé en caisse et sur le menu QR, nouvelle commande refusée ; réception → disponible ; épuisé à la main : le stock ne le remet pas en vente |
 | Droits et isolation | Serveur refusé ; magasinier crée un article ; archivage refusé tant qu'une recette l'utilise ; autre organisation 404 |
 
+## §69 — sauvegardes du serveur local (160 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Rotation | 72 copies horaires et 40 journalières : les 24 plus récentes gardées ; au-delà, une par jour ; rien au-delà de 30 jours |
+| Sauvegarde | Serveur local sur un vrai fichier SQLite : copie créée, relue (organisation présente), listée, tracée ; gérant refusé ; Cloud : désactivée (liste vide, 409) |
+
+Essai sur le paquet Windows :
+- au lancement, `afrikaisse-…-demarrage.sqlite` est créé **avant** la migration 0007 (504 Ko) ;
+- « Sauvegarder maintenant » produit une copie de 553 Ko, après migration ;
+- les deux copies sont listées par l'API.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas
