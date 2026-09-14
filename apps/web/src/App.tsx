@@ -9,6 +9,8 @@ import { TeamPage } from './pages/Team.tsx';
 import { FloorPage } from './pages/Floor.tsx';
 import { LocationsPage } from './pages/Locations.tsx';
 import { MenuPage } from './pages/Menu.tsx';
+import { OrdersPage } from './pages/Orders.tsx';
+import { useActivityFeed } from './activity.ts';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
 import type { ServerSwitch } from './pages/Auth.tsx';
@@ -21,7 +23,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'orders' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
 
 export function App() {
   usePreferences();
@@ -136,22 +138,25 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const [error, setError] = useState<unknown>(null);
   const { health, online } = useHealth();
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
+  // Un seul flux d'activité pour toute l'application : pastille et signal sonore sur tous les écrans.
+  const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK');
+  const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
 
-  const sections: { id: Section; label: string; icon: IconName; visible: boolean }[] = [
-    { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
-    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read') },
+  const sections: { id: Section; label: string; icon: IconName; visible: boolean; badge?: number }[] = [
+    { id: 'orders', label: t('nav.orders'), icon: 'journal', visible: can('orders.read'), badge: waiting },
     { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
     { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read') },
+    { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
+    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read') },
     { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read') },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read') },
     { id: 'account', label: t('nav.account'), icon: 'user', visible: true },
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin },
   ];
   const visible = sections.filter((s) => s.visible);
-  // Le personnel de salle ouvre directement le plan ; la direction, l'organisation.
-  // Le personnel ouvre son outil : la salle pour le service, le menu pour la cuisine et le bar.
+  // Chacun ouvre son outil : les commandes pour le service, le menu pour qui gère les épuisés.
   const [section, setSection] = useState<Section>(() => {
-    if (can('tenant.update')) return visible[0]!.id;
+    if (can('orders.read')) return 'orders';
     if (can('tables.read')) return 'floor';
     if (can('menu.availability')) return 'menu';
     return visible[0]!.id;
@@ -238,12 +243,14 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
           <button key={s.id} aria-current={current === s.id ? 'page' : undefined} onClick={() => setSection(s.id)}>
             <Icon name={s.icon} />
             {s.label}
+            {!!s.badge && <span className="badge-count">{s.badge}</span>}
           </button>
         ))}
       </nav>
 
       <main className="workspace">
         {!!error && <ErrorMessage error={error} />}
+        {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
         {current === 'floor' && <FloorPage me={me} />}

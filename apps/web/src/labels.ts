@@ -113,6 +113,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'menu.modifier_sold_out': 'Option marquée épuisée',
   'menu.modifier_available': 'Option de nouveau disponible',
   'menu.photo_uploaded': 'Photo ajoutée',
+  'order.qr_placed': 'Commande reçue par QR',
+  'order.rejected': 'Commande QR refusée',
+  'order.cancelled': 'Commande annulée',
+  'table.freed': 'Table libérée',
 };
 
 export const OPERATING_MODE_LABELS: Record<OperatingMode, string> = {
@@ -133,6 +137,20 @@ export const CUTOFF_OPTIONS = Array.from({ length: 25 }, (_, i) => i * 30);
 
 export function formatMinutes(min: number): string {
   return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+}
+
+export const ORDER_SOURCE_LABELS: Record<'QR' | 'POS' | 'WAITER', string> = {
+  QR: 'QR client',
+  POS: 'Caisse',
+  WAITER: 'Serveur',
+};
+
+/** « à l'instant », « il y a 4 min », « il y a 1 h 05 ». */
+export function sinceText(ms: number, now = Date.now()): string {
+  const minutes = Math.max(0, Math.floor((now - ms) / 60_000));
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  return `il y a ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`;
 }
 
 export function formatDateTime(ms: number, locale: string): string {

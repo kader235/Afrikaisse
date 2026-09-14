@@ -309,6 +309,113 @@ export interface QrCodesTable {
   updated_hlc: string;
 }
 
+// --- Phases 4-5 : sessions de table, commandes, appels ------------------------
+
+export interface TableSessionsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  table_id: string;
+  status: 'OPEN' | 'CLOSED';
+  opened_at: number;
+  opened_by: string | null;
+  closed_at: number | null;
+  closed_by: string | null;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface OrdersTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  table_session_id: string | null;
+  table_id: string | null;
+  /** Numéro lisible, par établissement et par journée d'exploitation. */
+  number: number;
+  business_date: string;
+  source: 'QR' | 'POS' | 'WAITER';
+  status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'COMPLETED' | 'CANCELLED';
+  note: string | null;
+  currency: CurrencyCode;
+  subtotal: number;
+  total: number;
+  /** Téléphone du client (commande QR) : lui seul suit sa commande. */
+  client_token: string | null;
+  created_by: string | null;
+  created_at: number;
+  updated_at: number;
+  status_changed_at: number;
+  updated_hlc: string;
+}
+
+/** Noms et prix COPIÉS au moment de la commande : un changement de menu ne réécrit pas le passé. */
+export interface OrderItemsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  order_id: string;
+  product_id: string;
+  variant_id: string | null;
+  name: string;
+  variant_name: string | null;
+  unit_price: number;
+  quantity: number;
+  total: number;
+  note: string | null;
+  sort: number;
+  created_at: number;
+}
+
+export interface OrderItemModifiersTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  order_item_id: string;
+  modifier_id: string;
+  group_name: string;
+  name: string;
+  price_delta: number;
+  created_at: number;
+}
+
+/** Ajout seulement. */
+export interface OrderStatusHistoryTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  order_id: string;
+  from_status: OrdersTable['status'] | null;
+  to_status: OrdersTable['status'];
+  reason: string | null;
+  by_user_id: string | null;
+  source: 'QR' | 'STAFF' | 'SYSTEM';
+  at: number;
+  hlc: string;
+}
+
+/** Propre au nœud qui fait autorité sur l'établissement : jamais synchronisé. */
+export interface OrderCountersTable {
+  location_id: string;
+  business_date: string;
+  last_number: number;
+}
+
+export interface ServiceRequestsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  table_id: string;
+  table_session_id: string | null;
+  kind: 'CALL_WAITER' | 'BILL' | 'HELP';
+  status: 'OPEN' | 'DONE';
+  client_token: string | null;
+  created_at: number;
+  handled_at: number | null;
+  handled_by: string | null;
+  updated_hlc: string;
+}
+
 export interface Database {
   tenants: TenantsTable;
   locations: LocationsTable;
@@ -322,6 +429,13 @@ export interface Database {
   product_modifier_groups: ProductModifierGroupsTable;
   media: MediaTable;
   qr_codes: QrCodesTable;
+  table_sessions: TableSessionsTable;
+  orders: OrdersTable;
+  order_items: OrderItemsTable;
+  order_item_modifiers: OrderItemModifiersTable;
+  order_status_history: OrderStatusHistoryTable;
+  order_counters: OrderCountersTable;
+  service_requests: ServiceRequestsTable;
   users: UsersTable;
   memberships: MembershipsTable;
   auth_sessions: AuthSessionsTable;

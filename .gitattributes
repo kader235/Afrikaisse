@@ -1,0 +1,15 @@
+# Fins de ligne LF dans le dépôt, quel que soit le poste.
+* text=auto eol=lf
+
+# Scripts Windows : CRLF obligatoire pour cmd.exe.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binaires
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.jar binary
+*.apk binary

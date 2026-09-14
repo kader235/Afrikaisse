@@ -7,7 +7,7 @@ import {
   createModifierGroupSchema,
   createProductSchema,
   mediaSchema,
-  orderSchema,
+  reorderSchema,
   publicMenuSchema,
   qrListSchema,
   updateCategorySchema,
@@ -64,7 +64,7 @@ export function menuRoutes(ctx: AppContext): FastifyPluginAsyncZod {
       reply.code(201);
       return result;
     });
-    app.put('/locations/:locationId/categories/order', { schema: { tags: ['menu'], summary: 'Réordonner les catégories', security, params: params.location, body: orderSchema, response: menu } }, async (request) =>
+    app.put('/locations/:locationId/categories/order', { schema: { tags: ['menu'], summary: 'Réordonner les catégories', security, params: params.location, body: reorderSchema, response: menu } }, async (request) =>
       reorderCategories(ctx, requireTenant(request.auth, 'menu.manage'), request.params.locationId, request.body.ids, requestMeta(request)),
     );
     app.patch('/categories/:categoryId', { schema: { tags: ['menu'], summary: 'Renommer, masquer ou afficher une catégorie', security, params: params.category, body: updateCategorySchema, response: menu } }, async (request) =>
@@ -73,7 +73,7 @@ export function menuRoutes(ctx: AppContext): FastifyPluginAsyncZod {
     app.post('/categories/:categoryId/archive', { schema: { tags: ['menu'], summary: 'Archiver une catégorie vide', security, params: params.category, response: menu } }, async (request) =>
       archiveCategory(ctx, requireTenant(request.auth, 'menu.manage'), request.params.categoryId, requestMeta(request)),
     );
-    app.put('/categories/:categoryId/products/order', { schema: { tags: ['menu'], summary: "Réordonner les produits d'une catégorie", security, params: params.category, body: orderSchema, response: menu } }, async (request) =>
+    app.put('/categories/:categoryId/products/order', { schema: { tags: ['menu'], summary: "Réordonner les produits d'une catégorie", security, params: params.category, body: reorderSchema, response: menu } }, async (request) =>
       reorderProducts(ctx, requireTenant(request.auth, 'menu.manage'), request.params.categoryId, request.body.ids, requestMeta(request)),
     );
 

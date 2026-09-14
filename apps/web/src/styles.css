@@ -1316,6 +1316,137 @@ input[aria-invalid='true'] {
   color: #555;
 }
 
+/* --- Commandes ---------------------------------------------------------- */
+.menubar .badge-count,
+.count-pill {
+  display: inline-block;
+  min-width: 20px;
+  margin-inline-start: 8px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--band);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+
+.menubar .badge-count {
+  background: var(--danger);
+  color: #fff;
+}
+
+.segmented .btn[aria-pressed='true'] {
+  background: var(--select);
+  border-color: var(--select-border);
+  font-weight: 600;
+}
+
+.segmented .btn[aria-pressed='true'] .count-pill {
+  background: var(--accent);
+  color: #fff;
+}
+
+.st {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.st-pending {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.st-progress {
+  background: var(--select);
+  color: var(--accent);
+}
+
+.st-ready {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.st-served {
+  background: var(--band);
+  color: var(--text-soft);
+}
+
+.st-cancelled {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.request-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.request-row:last-child {
+  border-bottom: 0;
+}
+
+.requests {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+
+.order-lines {
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-lines li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.order-line-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.order-note {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.order-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0 12px;
+  font-size: 15px;
+}
+
+.order-actions .btn {
+  width: 100%;
+  justify-content: center;
+  margin: 0 0 6px;
+}
+
+.order-actions .btn + .btn {
+  margin-inline-start: 0;
+}
+
+.order-history {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.order-history ul {
+  margin: 6px 0 0;
+  padding-inline-start: 16px;
+}
+
 /* --- Choix exclusifs (serveur de la tablette) ---------------------------- */
 .choices {
   border: 1px solid var(--border);

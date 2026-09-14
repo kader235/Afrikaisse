@@ -119,12 +119,41 @@ Le **calcul du prix d'une ligne** (`priceLine`, `packages/core/src/menu.ts`) app
 prix, plus version, plus options ; refuse version manquante, option d'un autre produit, choix hors
 min/max, article ou option épuisé, quantité hors 1-99. Il servira à chaque commande (phase 4-5).
 
+## Routes des phases 4-5 — commandes
+
+### Côté client (sans compte, depuis le QR)
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| POST | `/api/public/menu/{jeton}/orders` | Commander : `clientToken` (identifiant aléatoire du téléphone), lignes `{productId, variantId, modifierIds, quantity, note}`, remarque. **Aucun prix n'est accepté** : tout est recalculé par `priceLine` depuis le menu du moment. La commande arrive `PENDING`. 409 avec le message du premier article invalide ; 429 au-delà de 5 commandes par minute d'un même téléphone dans l'établissement, ou de 10 commandes en attente sur la table ; **503** si l'établissement est exploité par un serveur local muet depuis 20 s (SYNC.md §6) |
+| GET | `/api/public/menu/{jeton}/orders?clientToken=` | Suivi : commandes de ce téléphone sur cette table (12 dernières heures) |
+| POST | `/api/public/menu/{jeton}/requests` | `CALL_WAITER`, `BILL`, `HELP` ; une demande déjà ouverte n'est pas dupliquée |
+
+### Côté personnel
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/orders?view=active\|today` | `orders.read` | Commandes en cours, ou de la journée d'exploitation |
+| GET | `/api/locations/{id}/activity?since=` | `orders.read` | **Flux d'activité** : `since=0` → listes complètes et curseur ; ensuite seulement les commandes et appels modifiés après le curseur |
+| POST | `/api/orders/{id}/status` | selon la transition | `CONFIRMED`/`SERVED` : `orders.create` ; `PREPARING`/`READY` : `kitchen.use`, `bar.use` ou `orders.create` ; `COMPLETED` : `payments.collect` ; `CANCELLED` : `orders.create` si la commande est en attente, sinon `orders.cancel` **avec motif** (tracé). Transition impossible → 409 ; deux gestes simultanés → le second reçoit 409 |
+| GET | `/api/locations/{id}/requests` | `orders.read` | Appels ouverts |
+| POST | `/api/requests/{id}/resolve` | `orders.create` | Appel traité |
+| POST | `/api/table-sessions/{id}/close` | `orders.create` | Libérer la table ; refusé tant qu'une commande est en cours |
+
+Cycle d'une commande : `PENDING → CONFIRMED → PREPARING → READY → SERVED → COMPLETED`, annulation
+possible jusqu'à `READY`. Le numéro repart à 1 à chaque **journée d'exploitation** (fuseau et heure
+de bascule de l'établissement) et reste unique même avec deux tablettes au même instant.
+
 ## Temps réel (phases 5-8)
 
-- **Serveur local** : `GET /api/stream` en **SSE** (KDS, serveurs, POS), avec reprise par
-  `Last-Event-ID`. Repli sur polling `?since=` si le flux se coupe.
-- **Cloud** : SSE si la sonde o2switch confirme qu'il n'est pas bufferisé, sinon polling adaptatif
-  (2 s quand une commande est en cours, 15 s au repos). Pas de WebSocket (ADR-010).
+- **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé
+  toutes les **3 s** quand l'écran est visible, **15 s** en arrière-plan, **6 s** après une erreur
+  réseau. Le journal de synchronisation sert de flux de changements (index `location_id, seq`) :
+  aucune file ni processus permanent, donc compatible o2switch, serveur local, tablette native et
+  vieille WebView. Un seul flux pour toute l'application (pastille de l'onglet Commandes, signal
+  sonore sur n'importe quel écran).
+- **Optimisation possible ensuite** : SSE sur le serveur local, et dans le Cloud si la sonde o2switch
+  confirme qu'il n'est pas bufferisé. Pas de WebSocket (ADR-010).
 
 ## Groupes de routes à venir
 

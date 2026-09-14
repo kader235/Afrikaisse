@@ -86,6 +86,21 @@ Adaptations du §56, justifiées dans ARCHITECTURE.md :
 - La migration donne un QR à chaque table active existante. Ensuite, chaque table reçoit le sien à sa
   création, et son QR est révoqué quand elle est archivée.
 
+## Tables livrées en phases 4-5 (migration `0004_orders`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `table_sessions` | Occupation d'une table, du premier plat à la libération | table_id, status `OPEN/CLOSED`, opened_at/by, closed_at/by ; **une seule session ouverte par table** (index unique partiel) |
+| `orders` | Commande | table_session_id, table_id, **number**, **business_date**, source `QR/POS/WAITER`, status, note, currency, subtotal, total, client_token, created_by, status_changed_at ; **unique (location_id, business_date, number)** |
+| `order_items` | Ligne | product_id, variant_id, **name**, **variant_name**, **unit_price**, quantity, total, note — noms et prix **copiés** |
+| `order_item_modifiers` | Options choisies | modifier_id, **group_name**, **name**, **price_delta** — copiés |
+| `order_status_history` | Transitions (ajout seulement) | from_status, to_status, reason, by_user_id, source `QR/STAFF/SYSTEM`, at, hlc |
+| `order_counters` | Dernier numéro par établissement et journée | clé (location_id, business_date) ; incrément atomique par `INSERT … ON CONFLICT DO UPDATE … RETURNING` ; **propre au nœud qui fait autorité** |
+| `service_requests` | Appel d'une table | kind `CALL_WAITER/BILL/HELP`, status `OPEN/DONE`, handled_at/by |
+
+Index ajouté : `sync_events (location_id, seq)`, qui fait du journal de synchronisation le flux
+d'activité des écrans.
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

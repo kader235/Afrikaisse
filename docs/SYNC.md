@@ -65,6 +65,17 @@ renvoi sans danger. Un PC éteint en pleine synchronisation ne perd ni ne dupliq
 | **Machine à états (commandes, tickets)** | L'événement de transition est ajouté à l'historique. L'état courant est **recalculé** : transitions valides, dans l'ordre HLC. Une transition impossible (ex. `CANCELLED` reçu après `SERVED`) est marquée `CONFLICT` pour revue par le gérant. | Un client annule par QR pendant que la cuisine passe en préparation. |
 | **Suppressions** | Logiques (`status = ARCHIVED`) pour tout ce qui est référencé par une transaction. | Un produit retiré du menu reste lisible dans les anciennes commandes (noms et prix **copiés** dans `order_items`). |
 
+### En place (phase 5)
+
+| Entité | Opération | Contenu |
+|---|---|---|
+| `order` | `ORDER_PLACED` | La commande complète (lignes, options copiées, historique) au moment de sa création |
+| `order` | `ORDER_STATUS_CHANGED` | La commande complète après la transition ; la transition elle-même est dans `order_status_history` (ajout seulement) |
+| `table_session`, `service_request` | `UPSERT` | Ligne après écriture |
+
+Côté réception, une transition est rejouée seulement si elle est valide depuis l'état connu
+(`canTransition`) ; sinon l'événement est marqué `CONFLICT` pour revue.
+
 ## 5. Autorité opérationnelle et numérotation
 
 - Mode `CLOUD` : le Cloud numérote (`order_counters` par établissement et journée d'exploitation).

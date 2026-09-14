@@ -38,12 +38,18 @@ export async function writeAudit(db: Db, ctx: AppContext, e: AuditInput): Promis
     .execute();
 }
 
+/**
+ * UPSERT / DELETE pour les données maîtres (dernier écrivain gagnant par HLC) ;
+ * événements métier nommés pour les transactions, qui s'ajoutent sans jamais s'écraser (SYNC.md §4).
+ */
+export type ChangeOperation = 'UPSERT' | 'DELETE' | 'ORDER_PLACED' | 'ORDER_STATUS_CHANGED';
+
 export interface ChangeInput {
   tenantId: string;
   locationId?: string | null;
   entityType: string;
   entityId: string;
-  operation: 'UPSERT' | 'DELETE';
+  operation: ChangeOperation;
   payload: object;
   hlc: string;
 }

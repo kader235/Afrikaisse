@@ -106,8 +106,30 @@ application ni compte. Il voit le nom du restaurant et le numéro de sa table, p
 parcourir les catégories, et toucher un plat pour voir sa photo, sa description, ses versions,
 options et allergènes. Les articles épuisés restent visibles, marqués « Épuisé ».
 
-Dans cette version, le client consulte le menu et **commande auprès d'un serveur**. La commande
-depuis le téléphone arrive à l'étape suivante.
+### Commander depuis le téléphone
+1. Toucher un plat, choisir la version et les options : les choix obligatoires (Cuisson…) sont
+   indiqués, et **Ajouter** reste grisé tant qu'ils manquent. Le prix se met à jour à chaque choix.
+2. **Voir le panier** : changer les quantités, ajouter un mot pour le restaurant, puis **Commander**.
+3. La commande part au restaurant, **qui la confirme**. Le client suit les étapes sur son
+   téléphone : Envoyée, Confirmée, En cuisine, Prête, Servie.
+4. **Appeler un serveur** et **Demander l'addition** préviennent le personnel sur ses tablettes.
+
+Si l'établissement fonctionne avec un serveur local injoignable, le téléphone affiche « commande en
+ligne momentanément indisponible » : le client commande alors auprès d'un serveur.
+
+## Les commandes (personnel)
+
+Menu **Commandes**, ouvert par défaut pour le personnel de salle.
+- Les nouvelles commandes QR arrivent seules, en quelques secondes, avec un **signal sonore** (après
+  un premier toucher sur l'écran, exigé par les navigateurs) et une pastille rouge sur l'onglet.
+- Filtres **À confirmer**, **En cours**, **Prêtes**.
+- Toucher une commande affiche son détail : plats, options, remarques du client, total, historique.
+- Les boutons suivent le service : **Confirmer** ou **Refuser** (commande QR), **En préparation**,
+  **Prête**, **Servie**, **Terminer**. Chacun ne voit que les boutons de son rôle.
+- **Annuler** une commande déjà partie en cuisine est réservé aux responsables, avec un motif
+  obligatoire, inscrit au journal.
+- **Appels des tables** : « Table 4 — Demande l'addition », bouton **Traité**.
+- **Tables à libérer** : quand toutes les commandes d'une table sont terminées, **Libérer**.
 
 ## L'équipe
 

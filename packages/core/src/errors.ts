@@ -10,6 +10,7 @@ export const ERROR_CODES = {
   CONFLICT: 409,
   TOO_MANY_ATTEMPTS: 429,
   INTERNAL: 500,
+  SERVICE_UNAVAILABLE: 503,
 } as const;
 export type ErrorCode = keyof typeof ERROR_CODES;
 

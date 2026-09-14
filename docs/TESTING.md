@@ -64,6 +64,28 @@ npm run verify        # types + tests + bundle API + build web
 | QR et menu public | Un QR par table, adresse publique configurée ; menu sans session : catégorie masquée et produit archivé absents, épuisé signalé ; régénération (ancien jeton → 404) ; table archivée → 404 ; organisation suspendue → 404 ; jeton malformé → 400 |
 | Isolation | Menu, produit, catégorie, groupe, disponibilité, QR d'une autre organisation : 404 |
 
+## Couverture des phases 4-5 (104 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Cycle de vie (cœur) | Transitions dans l'ordre du service, jamais de retour arrière, états finaux |
+| Journée d'exploitation (cœur) | Service de nuit compté la veille ; fuseau de l'établissement (N'Djamena ≠ Dakar au même instant) |
+| Commande QR | Prix recalculés (un prix envoyé par le client est ignoré), version et options copiées, en attente, numéros 1-2-3, **même session pour deux clients de la même table**, session différente pour une autre table, historique « Client (QR) », 3 événements `ORDER_PLACED` |
+| Paniers invalides | Version manquante, groupe obligatoire oublié, article épuisé, article d'un autre restaurant, panier vide, QR inconnu |
+| Numéros | Retour à 1 à la journée suivante |
+| Personnel | Cuisine ne confirme pas ; serveur confirme ; confirmation répétée sans effet ; cuisine passe en préparation ; retour arrière refusé ; annulation refusée au serveur, exigeant un motif du responsable ; historique complet ; audit ; suivi client mis à jour ; un autre téléphone ne voit rien |
+| Flux d'activité | Liste complète puis vide, puis uniquement la nouvelle commande et le nouvel appel, curseur croissant |
+| Appels | Pas de doublon, traité par le personnel (nom enregistré), nouvel appel possible ensuite |
+| Tables | Libération refusée avec une commande en cours, acceptée une fois terminée ; commande suivante dans une nouvelle session |
+| Anti-abus | 6ᵉ commande en une minute refusée (429) ; établissement en mode serveur local sans serveur joignable → 503 |
+| Isolation | Liste, flux et statut des commandes d'une autre organisation : 404 |
+
+**Essai croisé dans le navigateur** (téléphone 375 px + tablette 1280 × 800, API de démonstration) :
+- composition d'un burger avec « Ajouter » grisé tant que la cuisson manque, puis prix exact ;
+- panier à 10 000 FCFA et commande envoyée ;
+- sur la tablette, commande apparue seule en moins de 3 s avec la pastille, détail exact, puis confirmation ;
+- appel « serveur » reçu sur la tablette puis traité.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas
