@@ -5,6 +5,7 @@ import {
   ORDER_STATUS_LABELS,
   businessDate,
   canTransition,
+  formatMoney,
   permissionsForTransition,
   priceLine,
   roleCan,
@@ -86,20 +87,21 @@ async function countSince(db: Db, table: 'orders' | 'service_requests', location
 
 // --- Prix depuis le menu du moment ------------------------------------------
 
-async function loadPricingProducts(db: Db, locationId: string, productIds: string[]): Promise<Map<string, PricingProduct>> {
+/** `includeHidden` : la caisse vend aussi les catégories masquées au client (repas du personnel…). */
+export async function loadPricingProducts(db: Db, locationId: string, productIds: string[], options: { includeHidden?: boolean } = {}): Promise<Map<string, PricingProduct>> {
   const ids = [...new Set(productIds)];
   const result = new Map<string, PricingProduct>();
   if (ids.length === 0) return result;
-  const products = await db
+  let query = db
     .selectFrom('products as p')
     .innerJoin('menu_categories as c', 'c.id', 'p.category_id')
     .select(['p.id', 'p.name', 'p.price', 'p.promo_price', 'p.is_available'])
     .where('p.location_id', '=', locationId)
     .where('p.id', 'in', ids)
     .where('p.status', '=', 'ACTIVE')
-    .where('c.status', '=', 'ACTIVE')
-    .where('c.is_visible', '=', 1)
-    .execute();
+    .where('c.status', '=', 'ACTIVE');
+  if (!options.includeHidden) query = query.where('c.is_visible', '=', 1);
+  const products = await query.execute();
   if (products.length === 0) return result;
   const pids = products.map((p) => p.id);
   const [variants, links] = await Promise.all([
@@ -134,7 +136,7 @@ async function loadPricingProducts(db: Db, locationId: string, productIds: strin
   return result;
 }
 
-function priceLines(pricing: Map<string, PricingProduct>, lines: PlaceQrOrderInput['lines']): Priced[] {
+export function priceLines(pricing: Map<string, PricingProduct>, lines: PlaceQrOrderInput['lines']): Priced[] {
   return lines.map((line, index) => {
     const product = pricing.get(line.productId);
     if (!product) throw new AppError('CONFLICT', "Un article du panier n'est plus au menu. Retirez-le puis recommandez.", { line: index });
@@ -146,7 +148,7 @@ function priceLines(pricing: Map<string, PricingProduct>, lines: PlaceQrOrderInp
 
 // --- Écritures communes -----------------------------------------------------
 
-async function openSession(trx: Db, ctx: AppContext, where: { tenantId: string; locationId: string; tableId: string; userId: string | null }, hlc: string): Promise<string> {
+export async function openSession(trx: Db, ctx: AppContext, where: { tenantId: string; locationId: string; tableId: string; userId: string | null }, hlc: string): Promise<string> {
   const open = await trx.selectFrom('table_sessions').select('id').where('table_id', '=', where.tableId).where('status', '=', 'OPEN').executeTakeFirst();
   if (open) return open.id;
   const id = uuidv7();
@@ -161,7 +163,7 @@ async function openSession(trx: Db, ctx: AppContext, where: { tenantId: string; 
 }
 
 /** Numéro suivant de la journée, atomique (upsert) : deux tablettes ne reçoivent jamais le même. */
-async function nextOrderNumber(trx: Db, locationId: string, date: string): Promise<number> {
+export async function nextOrderNumber(trx: Db, locationId: string, date: string): Promise<number> {
   const row = await trx
     .insertInto('order_counters')
     .values({ location_id: locationId, business_date: date, last_number: 1 })
@@ -171,7 +173,7 @@ async function nextOrderNumber(trx: Db, locationId: string, date: string): Promi
   return Number(row.last_number);
 }
 
-async function addHistory(
+export async function addHistory(
   trx: Db,
   ctx: AppContext,
   order: { id: string; tenant_id: string; location_id: string },
@@ -186,7 +188,7 @@ async function addHistory(
     .execute();
 }
 
-async function emitOrder(trx: Db, ctx: AppContext, orderId: string, operation: 'ORDER_PLACED' | 'ORDER_STATUS_CHANGED', hlc: string) {
+export async function emitOrder(trx: Db, ctx: AppContext, orderId: string, operation: 'ORDER_PLACED' | 'ORDER_STATUS_CHANGED' | 'ORDER_UPDATED', hlc: string) {
   const [order] = await hydrateOrders(trx, await trx.selectFrom('orders').selectAll().where('id', '=', orderId).execute());
   const row = await trx.selectFrom('orders').select(['tenant_id', 'location_id']).where('id', '=', orderId).executeTakeFirstOrThrow();
   await recordChange(trx, ctx, { tenantId: row.tenant_id, locationId: row.location_id, entityType: 'order', entityId: orderId, operation, payload: order!, hlc });
@@ -206,6 +208,7 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
       .select(['h.order_id', 'h.from_status', 'h.to_status', 'h.at', 'h.reason', 'h.source', 'u.display_name'])
       .where('h.order_id', 'in', ids)
       .orderBy('h.at')
+      .orderBy('h.hlc')
       .execute(),
     tableIds.length ? db.selectFrom('dining_tables').select(['id', 'label']).where('id', 'in', tableIds).execute() : Promise.resolve([]),
   ]);
@@ -225,9 +228,15 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
       tableLabel: tables.find((t) => t.id === o.table_id)?.label ?? null,
       sessionId: o.table_session_id,
       note: o.note,
+      serviceType: o.service_type,
+      customerName: o.customer_name,
       currency: o.currency,
       subtotal: o.subtotal,
+      discount: o.discount,
+      discountReason: o.discount_reason,
       total: o.total,
+      paid: o.paid_amount,
+      paymentStatus: o.payment_status,
       itemCount: own.reduce((sum, i) => sum + i.quantity, 0),
       items: own.map((i) => ({
         id: i.id,
@@ -320,6 +329,13 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
             currency: qr.currency,
             subtotal: total,
             total,
+            service_type: 'DINE_IN',
+            customer_name: null,
+            discount: 0,
+            discount_reason: null,
+            discount_by: null,
+            paid_amount: 0,
+            payment_status: 'UNPAID',
             client_token: input.clientToken,
             created_by: null,
             created_at: now,
@@ -342,7 +358,7 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
   }
 }
 
-async function insertItems(trx: Db, ctx: AppContext, order: { id: string; tenant_id: string; location_id: string }, priced: Priced[]) {
+export async function insertItems(trx: Db, ctx: AppContext, order: { id: string; tenant_id: string; location_id: string }, priced: Priced[]) {
   const now = ctx.now();
   for (const [sort, p] of priced.entries()) {
     const itemId = uuidv7();
@@ -455,10 +471,15 @@ export type { RequestQuery };
 
 // --- Côté personnel -----------------------------------------------------------
 
-async function assertLocation(db: Db, scope: TenantScope, locationId: string) {
+export async function assertLocation(db: Db, scope: TenantScope, locationId: string) {
   const notFound = new AppError('NOT_FOUND', 'Établissement introuvable.');
   if (scope.locationId && scope.locationId !== locationId) throw notFound;
-  const row = await db.selectFrom('locations').select(['id', 'timezone', 'business_day_cutoff_min']).where('id', '=', locationId).where('tenant_id', '=', scope.tenantId).executeTakeFirst();
+  const row = await db
+    .selectFrom('locations')
+    .select(['id', 'timezone', 'business_day_cutoff_min', 'currency'])
+    .where('id', '=', locationId)
+    .where('tenant_id', '=', scope.tenantId)
+    .executeTakeFirst();
   if (!row) throw notFound;
   return row;
 }
@@ -487,6 +508,12 @@ export async function updateOrderStatus(ctx: AppContext, auth: AuthState | null,
   if (to === 'CANCELLED' && order.status !== 'PENDING' && !cleanReason) {
     throw new AppError('VALIDATION', "Indiquez le motif de l'annulation.");
   }
+  if (to === 'COMPLETED' && order.payment_status !== 'PAID') {
+    throw new AppError('CONFLICT', `Encaissez la commande avant de la terminer (reste ${formatMoney(order.total - order.paid_amount, order.currency)}).`);
+  }
+  if (to === 'CANCELLED' && order.paid_amount > 0) {
+    throw new AppError('CONFLICT', "Un paiement est enregistré sur cette commande : annulez d'abord le paiement.");
+  }
 
   await ctx.db.transaction().execute(async (trx) => {
     const hlc = ctx.clock.now();
@@ -501,6 +528,16 @@ export async function updateOrderStatus(ctx: AppContext, auth: AuthState | null,
     if (Number(updated.numUpdatedRows) !== 1) throw new AppError('CONFLICT', 'Cette commande vient de changer. Actualisez puis réessayez.');
     await addHistory(trx, ctx, order, order.status, to, { userId: scope.userId, source: 'STAFF', reason: cleanReason }, hlc);
     await emitOrder(trx, ctx, orderId, 'ORDER_STATUS_CHANGED', hlc);
+    let final = to;
+    // Payée d'avance (comptoir) puis servie : rien ne reste à faire, la commande se termine seule.
+    if (to === 'SERVED' && order.payment_status === 'PAID') {
+      const hlc2 = ctx.clock.now();
+      await trx.updateTable('orders').set({ status: 'COMPLETED', status_changed_at: now, updated_at: now, updated_hlc: hlc2 }).where('id', '=', orderId).execute();
+      await addHistory(trx, ctx, order, 'SERVED', 'COMPLETED', { userId: scope.userId, source: 'SYSTEM' }, hlc2);
+      await emitOrder(trx, ctx, orderId, 'ORDER_STATUS_CHANGED', hlc2);
+      final = 'COMPLETED';
+    }
+    if (final === 'COMPLETED' || final === 'CANCELLED') await closeSessionIfSettled(trx, ctx, order.table_session_id, scope.userId);
     if (to === 'CANCELLED') {
       await writeAudit(trx, ctx, {
         tenantId: scope.tenantId,
@@ -549,18 +586,35 @@ export async function closeTableSession(ctx: AppContext, scope: TenantScope, ses
     throw new AppError('CONFLICT', `${Number(active.n)} commande(s) de cette table ne sont pas terminées.`);
   }
   await ctx.db.transaction().execute(async (trx) => {
-    const hlc = ctx.clock.now();
-    const now = ctx.now();
-    await trx.updateTable('table_sessions').set({ status: 'CLOSED', closed_at: now, closed_by: scope.userId, updated_at: now, updated_hlc: hlc }).where('id', '=', sessionId).execute();
-    const row = await trx.selectFrom('table_sessions').selectAll().where('id', '=', sessionId).executeTakeFirstOrThrow();
-    await recordChange(trx, ctx, { tenantId: scope.tenantId, locationId: session.location_id, entityType: 'table_session', entityId: sessionId, operation: 'UPSERT', payload: row, hlc });
-    const open = await trx.selectFrom('service_requests').select('id').where('table_session_id', '=', sessionId).where('status', '=', 'OPEN').execute();
-    for (const r of open) {
-      await trx.updateTable('service_requests').set({ status: 'DONE', handled_at: now, handled_by: scope.userId, updated_hlc: hlc }).where('id', '=', r.id).execute();
-      await emitRequest(trx, ctx, r.id, hlc);
-    }
+    await closeSessionRow(trx, ctx, session, scope.userId);
     await writeAudit(trx, ctx, { tenantId: scope.tenantId, locationId: session.location_id, actorUserId: scope.userId, action: 'table.freed', entityType: 'table_session', entityId: sessionId, meta });
   });
+}
+
+/** Ferme la session (table libérée) et clôt les appels restés ouverts. */
+export async function closeSessionRow(trx: Db, ctx: AppContext, session: { id: string; tenant_id: string; location_id: string }, userId: string | null) {
+  const hlc = ctx.clock.now();
+  const now = ctx.now();
+  await trx.updateTable('table_sessions').set({ status: 'CLOSED', closed_at: now, closed_by: userId, updated_at: now, updated_hlc: hlc }).where('id', '=', session.id).where('status', '=', 'OPEN').execute();
+  const row = await trx.selectFrom('table_sessions').selectAll().where('id', '=', session.id).executeTakeFirstOrThrow();
+  await recordChange(trx, ctx, { tenantId: session.tenant_id, locationId: session.location_id, entityType: 'table_session', entityId: session.id, operation: 'UPSERT', payload: row, hlc });
+  const open = await trx.selectFrom('service_requests').select('id').where('table_session_id', '=', session.id).where('status', '=', 'OPEN').execute();
+  for (const r of open) {
+    await trx.updateTable('service_requests').set({ status: 'DONE', handled_at: now, handled_by: userId, updated_hlc: hlc }).where('id', '=', r.id).execute();
+    await emitRequest(trx, ctx, r.id, hlc);
+  }
+}
+
+/** Table réglée (toutes ses commandes terminées et payées, ou annulées) : elle se libère seule. */
+export async function closeSessionIfSettled(trx: Db, ctx: AppContext, sessionId: string | null, userId: string | null) {
+  if (!sessionId) return;
+  const session = await trx.selectFrom('table_sessions').select(['id', 'tenant_id', 'location_id', 'status']).where('id', '=', sessionId).executeTakeFirst();
+  if (!session || session.status !== 'OPEN') return;
+  const rows = await trx.selectFrom('orders').select(['status', 'payment_status']).where('table_session_id', '=', sessionId).execute();
+  if (rows.length === 0) return;
+  if (rows.every((r) => r.status === 'CANCELLED' || (r.status === 'COMPLETED' && r.payment_status === 'PAID'))) {
+    await closeSessionRow(trx, ctx, session, userId);
+  }
 }
 
 /**

@@ -1482,6 +1482,418 @@ input[aria-invalid='true'] {
   color: var(--muted);
 }
 
+/* --- Caisse ------------------------------------------------------------- */
+.pos-sale {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) 350px;
+  align-items: start;
+  min-height: 0;
+}
+
+.pos-cats {
+  border-inline-end: 1px solid var(--border);
+  background: var(--band);
+  min-height: 100%;
+}
+
+.pos-cats button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-inline-start: 4px solid transparent;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pos-cats button[aria-current='true'] {
+  border-inline-start-color: var(--accent);
+  background: var(--window);
+  font-weight: 600;
+}
+
+.pad {
+  padding: 10px;
+}
+
+.pos-search {
+  padding: 10px 10px 0;
+}
+
+.pos-search input {
+  width: 100%;
+}
+
+.pos-products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  padding: 10px;
+}
+
+.pos-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 84px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-inline-start: 4px solid var(--accent);
+  border-radius: 3px;
+  background: var(--window);
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.pos-tile:active {
+  background: var(--select);
+}
+
+.pos-tile:disabled {
+  border-inline-start-color: var(--border);
+  opacity: 0.55;
+  cursor: default;
+}
+
+.pos-tile-name {
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.pos-tile-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.pos-tile-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pos-ticket {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 150px);
+  border-inline-start: 1px solid var(--border);
+  background: var(--band);
+}
+
+.pos-dest {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pos-dest .segmented {
+  display: flex;
+}
+
+.pos-dest .segmented .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+.pos-lines {
+  flex: 1;
+  min-height: 120px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--window);
+}
+
+.pos-empty {
+  padding: 16px 10px;
+}
+
+.pos-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.pos-line .qty {
+  grid-column: 1 / -1;
+}
+
+.qty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty .btn {
+  width: 36px;
+  justify-content: center;
+  padding: 0;
+  font-size: 16px;
+}
+
+.qty .num {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.pos-foot {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.pos-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 15px;
+}
+
+.pos-total strong {
+  font-size: 22px;
+}
+
+.pos-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.pos-actions .btn {
+  justify-content: center;
+  height: 44px;
+}
+
+.pos-actions .btn-primary {
+  height: 52px;
+  font-size: 15px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--window);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--select-border);
+  background: var(--select);
+  font-weight: 600;
+}
+
+.chip:disabled {
+  opacity: 0.45;
+  text-decoration: line-through;
+  cursor: default;
+}
+
+.pay-methods {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pay-methods .chip {
+  min-height: 52px;
+  font-size: 15px;
+}
+
+.big-amount {
+  font-size: 20px;
+}
+
+.big-amount.danger {
+  color: var(--danger);
+  font-size: 15px;
+}
+
+.order-total.big {
+  font-size: 17px;
+}
+
+.check-order {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.check-order .order-lines {
+  margin: 4px 0 6px;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  margin: 8px 0 12px;
+}
+
+.kv dt {
+  color: var(--text-soft);
+}
+
+.kv dd {
+  margin: 0;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid tr.voided td {
+  color: var(--muted);
+}
+
+.drawer-open {
+  max-width: 520px;
+}
+
+@media (max-width: 1000px) {
+  .pos-sale {
+    grid-template-columns: minmax(0, 1fr) 310px;
+  }
+
+  .pos-cats {
+    grid-column: 1 / -1;
+    display: flex;
+    min-height: 0;
+    overflow-x: auto;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pos-cats button {
+    width: auto;
+    flex: none;
+    border-bottom: 3px solid transparent;
+    border-inline-start: 0;
+    white-space: nowrap;
+  }
+
+  .pos-cats button[aria-current='true'] {
+    border-bottom-color: var(--accent);
+  }
+
+  .pos-ticket {
+    max-height: calc(100vh - 200px);
+  }
+}
+
+@media (max-width: 700px) {
+  .pos-sale {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pos-ticket {
+    position: static;
+    max-height: none;
+  }
+}
+
+/* Ticket 80 mm : aperçu à l'écran et impression. */
+.ticket {
+  width: 72mm;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 4mm;
+  background: #fff;
+  color: #000;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ticket hr {
+  margin: 6px 0;
+  border: 0;
+  border-top: 1px dashed #000;
+}
+
+.ticket-center {
+  text-align: center;
+}
+
+.ticket-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ticket-row > span:last-child {
+  white-space: nowrap;
+}
+
+.ticket-strong {
+  font-weight: 700;
+}
+
+.ticket-big {
+  font-size: 15px;
+}
+
+.ticket-small {
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+.ticket-void {
+  margin: 6px 0;
+  border: 2px solid #000;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ticket-preview {
+  max-height: 62vh;
+  padding: 12px;
+  overflow-y: auto;
+  background: var(--band);
+}
+
+@page ticket {
+  size: 80mm auto;
+  margin: 0;
+}
+
+@media print {
+  .print-ticket {
+    page: ticket;
+  }
+
+  .print-ticket .ticket {
+    width: 72mm;
+    padding: 2mm 4mm;
+  }
+}
+
 /* Tablette (mode tactile imposé) : WebView Chrome 83 ignore :focus-visible et laisse un
    contour orange sur chaque bouton touché. Au doigt, ce contour n'apporte rien. */
 .touch-forced button:focus {
@@ -1516,5 +1928,26 @@ input[aria-invalid='true'] {
 
   .edit-row {
     grid-template-columns: minmax(0, 1fr) 140px 70px auto;
+  }
+
+  .pos-cats button {
+    min-height: 52px;
+  }
+
+  .pos-tile {
+    min-height: 92px;
+  }
+
+  .qty .btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chip {
+    min-height: 44px;
+  }
+
+  .pay-methods .chip {
+    min-height: 60px;
   }
 }

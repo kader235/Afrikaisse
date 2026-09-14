@@ -22,6 +22,7 @@ import { authRoutes } from './routes/auth.ts';
 import { floorRoutes } from './routes/floor.ts';
 import { menuRoutes, publicRoutes } from './routes/menu.ts';
 import { orderRoutes, publicOrderRoutes } from './routes/orders.ts';
+import { posRoutes } from './routes/pos.ts';
 import { teamRoutes } from './routes/team.ts';
 import { platformRoutes, tenantRoutes } from './routes/tenant.ts';
 
@@ -131,6 +132,7 @@ export async function buildApp(opts: BuildOptions) {
   await app.register(publicRoutes(ctx), { prefix: '/api' });
   await app.register(orderRoutes(ctx), { prefix: '/api' });
   await app.register(publicOrderRoutes(ctx), { prefix: '/api' });
+  await app.register(posRoutes(ctx), { prefix: '/api' });
   if (config.profile === 'cloud') {
     await app.register(platformRoutes(ctx), { prefix: '/api/platform' });
   }

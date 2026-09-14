@@ -42,7 +42,7 @@ export async function writeAudit(db: Db, ctx: AppContext, e: AuditInput): Promis
  * UPSERT / DELETE pour les données maîtres (dernier écrivain gagnant par HLC) ;
  * événements métier nommés pour les transactions, qui s'ajoutent sans jamais s'écraser (SYNC.md §4).
  */
-export type ChangeOperation = 'UPSERT' | 'DELETE' | 'ORDER_PLACED' | 'ORDER_STATUS_CHANGED';
+export type ChangeOperation = 'UPSERT' | 'DELETE' | 'ORDER_PLACED' | 'ORDER_STATUS_CHANGED' | 'ORDER_UPDATED' | 'PAYMENT_RECORDED' | 'PAYMENT_VOIDED';
 
 export interface ChangeInput {
   tenantId: string;

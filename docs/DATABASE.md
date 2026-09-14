@@ -101,6 +101,17 @@ Adaptations du §56, justifiées dans ARCHITECTURE.md :
 Index ajouté : `sync_events (location_id, seq)`, qui fait du journal de synchronisation le flux
 d'activité des écrans.
 
+## Tables livrées en phase 6 (migration `0005_pos`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `orders` (colonnes ajoutées) | Type de service, remise, paiement | `service_type`, `customer_name`, `discount`, `discount_reason`, `discount_by`, `paid_amount` (somme des paiements non annulés, mise à jour dans la transaction du paiement), `payment_status` `UNPAID/PARTIAL/PAID` |
+| `cash_sessions` | Du fond de caisse à la clôture Z | status `OPEN/CLOSED`, business_date, opening_float, opened_at/by, closed_at/by, counted_cash, expected_cash, difference, note, **report** (résumé figé en JSON) ; **une seule ouverte par établissement** (index unique partiel) |
+| `cash_movements` | Entrées/sorties d'espèces hors ventes (ajout seulement) | kind `IN/OUT`, amount, reason, by_user_id |
+| `payments` | Paiement déclaré, jamais supprimé | cash_session_id, **receipt_number** (unique par établissement), method, amount, tendered, change_given, provider, reference, status `RECORDED/VOIDED`, void_reason/by/at |
+| `payment_allocations` | Part d'un paiement affectée à chaque commande | payment_id, order_id, amount |
+| `document_counters` | Numéros de documents qui ne repartent jamais à zéro | clé (location_id, kind) ; `RECEIPT` |
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

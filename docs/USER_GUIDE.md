@@ -131,6 +131,61 @@ Menu **Commandes**, ouvert par défaut pour le personnel de salle.
 - **Appels des tables** : « Table 4 — Demande l'addition », bouton **Traité**.
 - **Tables à libérer** : quand toutes les commandes d'une table sont terminées, **Libérer**.
 
+## La caisse
+
+Menu **Caisse** (propriétaire, administrateur, gérant, caissier). Le caissier arrive directement dessus.
+
+### Ouvrir la caisse
+Onglet **Caisse** :
+1. compter les espèces du tiroir ;
+2. saisir le **fond de caisse** ;
+3. toucher **Ouvrir la caisse**.
+
+Sans caisse ouverte, aucun encaissement n'est possible.
+
+### Vendre
+Onglet **Vente**.
+- Catégories à gauche, produits au centre, **ticket toujours visible** à droite.
+- Toucher un produit l'ajoute. S'il a des versions ou options (« Options… »), une fenêtre s'ouvre :
+  - la première version disponible est déjà choisie ;
+  - les choix obligatoires sont indiqués ;
+  - **Ajouter** montre le prix exact.
+- **− / +** changent la quantité.
+- **Sur place** : choisir la table, ou « Sans table » pour le comptoir. **À emporter** : nom du client.
+- **Envoyer la commande** : la commande part en préparation, l'addition reste ouverte.
+- **Envoyer et encaisser** : le client paie tout de suite.
+
+### Encaisser
+Onglet **Encaissement** : les notes ouvertes (tables occupées, commandes à emporter, commandes restées impayées).
+1. Toucher une note : détail des commandes, total, déjà payé, reste.
+2. **Remise** (responsables) : 5 %, 10 %… ou « Offert », avec un motif inscrit au journal.
+3. **Encaisser** :
+   - choisir **Espèces**, **Mobile money**, **Carte** ou **Autre** ;
+   - le montant proposé est le reste à payer, ou une part de l'addition partagée (**1/2**, **1/3**, **1/4**) ;
+   - en espèces, toucher la somme remise (10 000…) : la **monnaie à rendre** s'affiche ;
+   - en mobile money, noter l'opérateur et le numéro de transaction.
+4. Le **reçu** s'affiche. Depuis un ordinateur, **Imprimer** sort un ticket 80 mm.
+
+Plusieurs paiements sur une même table sont répartis sur les commandes, la plus ancienne d'abord.
+- Une commande **payée et servie se termine seule**.
+- Une table **entièrement réglée se libère seule**.
+- **Changer de table** déplace les clients. Vers une table occupée, les deux additions sont regroupées.
+- **Imprimer l'addition** sort la note à présenter au client (ce n'est pas un reçu).
+
+### Suivre et clôturer
+Onglet **Caisse**.
+- En direct : encaissements par mode, entrées et sorties, **espèces attendues**.
+- **Entrée / Sortie d'espèces** : apport de monnaie, achat réglé en espèces… toujours avec un motif.
+- Toucher un paiement : **Voir le reçu**, ou **Annuler le paiement** (responsables, avec motif). Les commandes redeviennent à encaisser.
+- **Rapport X** : point de caisse sans clôturer.
+- **Clôturer la caisse** :
+  1. compter le tiroir et saisir les espèces comptées ;
+  2. l'**écart** s'affiche ;
+  3. la clôture fige le **rapport Z**.
+
+  Après la clôture, plus aucun paiement de cette caisse ne peut être annulé.
+- **Sessions précédentes** : rouvrir le rapport Z de chaque journée.
+
 ## L'équipe
 
 Menu **Équipe** (propriétaire, administrateur, gérant).

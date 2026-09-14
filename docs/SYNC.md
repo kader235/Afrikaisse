@@ -71,7 +71,10 @@ renvoi sans danger. Un PC éteint en pleine synchronisation ne perd ni ne dupliq
 |---|---|---|
 | `order` | `ORDER_PLACED` | La commande complète (lignes, options copiées, historique) au moment de sa création |
 | `order` | `ORDER_STATUS_CHANGED` | La commande complète après la transition ; la transition elle-même est dans `order_status_history` (ajout seulement) |
-| `table_session`, `service_request` | `UPSERT` | Ligne après écriture |
+| `order` | `ORDER_UPDATED` | La commande complète après une remise, un paiement ou un changement de table |
+| `payment` | `PAYMENT_RECORDED` | Le paiement et sa répartition sur les commandes (ajout seulement) |
+| `payment` | `PAYMENT_VOIDED` | Le paiement annulé, avec motif |
+| `table_session`, `service_request`, `cash_session`, `cash_movement` | `UPSERT` | Ligne après écriture |
 
 Côté réception, une transition est rejouée seulement si elle est valide depuis l'état connu
 (`canTransition`) ; sinon l'événement est marqué `CONFLICT` pour revue.

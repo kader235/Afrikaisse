@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ORDER_STATUS_LABELS,
+  PAYMENT_STATUS_LABELS,
   SERVICE_REQUEST_LABELS,
   formatMoney,
   nextStatuses,
@@ -65,7 +66,9 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
     if (feed.loaded && filter === 'pending' && pending.length === 0 && feed.orders.length > 0) setFilter('active');
   }, [feed.loaded, filter, pending.length, feed.orders.length]);
 
-  const allowed = (order: Order) => nextStatuses(order.status).filter((to) => permissionsForTransition(order.status, to).some((p) => can(p)));
+  // « Terminer » n'apparaît qu'une fois la commande encaissée (sinon le serveur refuserait).
+  const allowed = (order: Order) =>
+    nextStatuses(order.status).filter((to) => (to !== 'COMPLETED' || order.paymentStatus === 'PAID') && permissionsForTransition(order.status, to).some((p) => can(p)));
 
   async function move(order: Order, to: OrderStatus, reason?: string) {
     setError(null);
@@ -263,6 +266,11 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
                   <span>{t('orders.total')}</span>
                   <strong>{formatMoney(selected.total, selected.currency)}</strong>
                 </div>
+                <p className="muted" style={{ marginBottom: 8 }}>
+                  {PAYMENT_STATUS_LABELS[selected.paymentStatus]}
+                  {selected.paid > 0 && selected.paymentStatus !== 'PAID' && ` · ${formatMoney(selected.paid, selected.currency)} payés`}
+                  {selected.discount > 0 && ` · remise ${formatMoney(selected.discount, selected.currency)}`}
+                </p>
                 <div className="order-actions">
                   {allowed(selected)
                     .filter((to) => to !== 'CANCELLED')

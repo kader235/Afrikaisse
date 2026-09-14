@@ -86,6 +86,30 @@ npm run verify        # types + tests + bundle API + build web
 - sur la tablette, commande apparue seule en moins de 3 s avec la pastille, détail exact, puis confirmation ;
 - appel « serveur » reçu sur la tablette puis traité.
 
+## Couverture de la phase 6 (128 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| Calculs (cœur) | Remise en pourcentage arrondie et plafonnée ; état de paiement ; parts égales qui conservent le total ; répartition la plus ancienne d'abord ; coupures proposées en espèces ; motif de remise et somme remise exigés |
+| Prise de commande | Confirmée d'emblée par le personnel, en salle et à emporter ; origine POS / serveur ; cuisine refusée ; catégorie masquée vendable en caisse mais pas par QR ; cuisson oubliée refusée ; table d'une autre organisation : 404 |
+| Caisse | Encaissement refusé caisse fermée ; serveur ne peut pas ouvrir ; une seule caisse ouverte |
+| Comptoir | Espèces : 10 000 remis pour 8 500, 1 500 rendus ; reçus n°1 puis n°2 ; payée puis servie = terminée ; montant supérieur au reste refusé ; somme remise insuffisante refusée ; événements `PAYMENT_RECORDED` |
+| Addition partagée | Commande QR + commande caisse sur T1 ; « Terminer » refusé sans paiement ; mobile money 4 750 réparti 3 000 + 1 750 ; espèces pour le reste ; toutes terminées ; **table libérée seule** ; résumé par mode |
+| Remise | Caissier refusé ; motif exigé ; 120 % refusé ; 10 % puis offert puis retirée ; 3 entrées au journal ; refusée après un paiement |
+| Annulation de paiement | Caissier refusé ; motif exigé ; note rouverte ; deuxième annulation sans effet ; commande payée non annulable ; totaux des annulés |
+| Clôture Z | Entrée/sortie, sortie trop grande refusée ; espèces attendues 15 000 ; comptées 14 800 → écart −200 ; double clôture, mouvement, paiement et annulation refusés ensuite ; historique ; nouvelle ouverture possible |
+| Tables | Transfert vers une table libre ; regroupement sur une table occupée (une seule note) ; table archivée refusée ; audit |
+| Isolation | Notes, caisse, paiement, reçu, annulation, remise, transfert, session d'une autre organisation : 404 |
+
+**Essai dans le navigateur** (tablette 1280 × 800, base de démonstration) :
+- ouverture avec 20 000 de fond ;
+- burger à options (Ajouter grisé tant que la cuisson manque) et 2 eaux à emporter pour « Moussa » ;
+- « Envoyer et encaisser », 10 000 remis, rendu 3 100, reçu n°1 ;
+- note T1 : remise 10 % (10 000 → 9 000) ;
+- ½ en Airtel Money (réf. AM-778812), reste 4 500 en espèces, note « Réglée » ;
+- sortie de 1 000 : espèces attendues 30 400 ;
+- clôture Z.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

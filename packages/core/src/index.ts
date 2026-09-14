@@ -11,3 +11,4 @@ export * from './money.ts';
 export * from './menu.ts';
 export * from './pricing.ts';
 export * from './orders.ts';
+export * from './pos.ts';

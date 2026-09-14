@@ -337,9 +337,18 @@ export interface OrdersTable {
   source: 'QR' | 'POS' | 'WAITER';
   status: 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'SERVED' | 'COMPLETED' | 'CANCELLED';
   note: string | null;
+  service_type: 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
+  customer_name: string | null;
   currency: CurrencyCode;
   subtotal: number;
+  /** Remise sur la commande ; total = sous-total − remise. */
+  discount: number;
+  discount_reason: string | null;
+  discount_by: string | null;
   total: number;
+  /** Somme des paiements non annulés (dénormalisée, mise à jour dans la transaction du paiement). */
+  paid_amount: number;
+  payment_status: 'UNPAID' | 'PARTIAL' | 'PAID';
   /** Téléphone du client (commande QR) : lui seul suit sa commande. */
   client_token: string | null;
   created_by: string | null;
@@ -416,7 +425,88 @@ export interface ServiceRequestsTable {
   updated_hlc: string;
 }
 
+/** Session de caisse : du fond de caisse à la clôture (Z). Une seule ouverte par établissement. */
+export interface CashSessionsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  status: 'OPEN' | 'CLOSED';
+  business_date: string;
+  opening_float: number;
+  opened_at: number;
+  opened_by: string | null;
+  closed_at: number | null;
+  closed_by: string | null;
+  counted_cash: number | null;
+  expected_cash: number | null;
+  difference: number | null;
+  note: string | null;
+  /** Résumé figé à la clôture (JSON). */
+  report: string | null;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+/** Entrées et sorties d'espèces hors ventes. Ajout seulement. */
+export interface CashMovementsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  cash_session_id: string;
+  kind: 'IN' | 'OUT';
+  amount: number;
+  reason: string;
+  by_user_id: string | null;
+  created_at: number;
+  hlc: string;
+}
+
+/** Paiement déclaré. Jamais supprimé : une erreur s'annule (VOIDED) avec motif. */
+export interface PaymentsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  cash_session_id: string;
+  receipt_number: number;
+  business_date: string;
+  method: 'CASH' | 'MOBILE_MONEY' | 'CARD' | 'OTHER';
+  amount: number;
+  tendered: number;
+  change_given: number;
+  provider: string | null;
+  reference: string | null;
+  status: 'RECORDED' | 'VOIDED';
+  void_reason: string | null;
+  voided_by: string | null;
+  voided_at: number | null;
+  created_by: string | null;
+  created_at: number;
+  updated_hlc: string;
+}
+
+/** Part d'un paiement affectée à une commande (addition d'une table réglée en plusieurs fois). */
+export interface PaymentAllocationsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  payment_id: string;
+  order_id: string;
+  amount: number;
+  created_at: number;
+}
+
+export interface DocumentCountersTable {
+  location_id: string;
+  kind: string;
+  last_number: number;
+}
+
 export interface Database {
+  cash_sessions: CashSessionsTable;
+  cash_movements: CashMovementsTable;
+  payments: PaymentsTable;
+  payment_allocations: PaymentAllocationsTable;
+  document_counters: DocumentCountersTable;
   tenants: TenantsTable;
   locations: LocationsTable;
   zones: ZonesTable;

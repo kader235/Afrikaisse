@@ -168,6 +168,9 @@ describe.each(ENGINES)('Phases 4-5 — commandes — %s', (engine) => {
     const placed = (await order(r.t1, { clientToken: CLIENT_A, lines: [{ productId: r.jus.id, quantity: 1 }] })).json();
     const session = (await r.owner.get(`/api/locations/${r.locationId}/orders`)).json()[0].sessionId;
     expect((await r.owner.post(`/api/table-sessions/${session}/close`)).statusCode).toBe(409);
+    // Depuis la phase 6, une commande ne se termine qu'une fois encaissée.
+    await r.owner.post(`/api/locations/${r.locationId}/cash-sessions`, { openingFloat: 0 });
+    expect((await r.owner.post(`/api/locations/${r.locationId}/payments`, { target: { kind: 'order', id: placed.id }, method: 'CASH', amount: 1000 })).statusCode).toBe(201);
     for (const to of ['CONFIRMED', 'READY', 'SERVED', 'COMPLETED']) {
       expect((await r.owner.post(`/api/orders/${placed.id}/status`, { status: to })).statusCode).toBe(200);
     }

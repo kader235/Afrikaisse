@@ -144,6 +144,32 @@ Cycle d'une commande : `PENDING → CONFIRMED → PREPARING → READY → SERVED
 possible jusqu'à `READY`. Le numéro repart à 1 à chaque **journée d'exploitation** (fuseau et heure
 de bascule de l'établissement) et reste unique même avec deux tablettes au même instant.
 
+## Routes de la phase 6 — caisse
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| POST | `/api/locations/{id}/orders` | `orders.create` | Commande saisie par le personnel : `serviceType` (`DINE_IN`, `TAKEAWAY`, `DELIVERY`), `tableId` facultatif, `customerName`, lignes, remarque. **Confirmée d'emblée**, prix recalculés, catégories masquées au client vendables. Origine `POS`, ou `WAITER` pour un serveur |
+| POST | `/api/orders/{id}/discount` | `orders.discount` | `{kind: PERCENT\|AMOUNT, value, reason}` ; motif obligatoire, `value: 0` retire la remise ; refusé après un paiement ; tracé `order.discount` |
+| GET | `/api/locations/{id}/checks` | `orders.read` | **Notes à encaisser** : tables occupées (toutes leurs commandes) et commandes sans table ou restées impayées ; total, payé, reste |
+| POST | `/api/locations/{id}/payments` | `payments.collect` | `{target: {kind: session\|order, id}, method: CASH\|MOBILE_MONEY\|CARD\|OTHER, amount, tendered?, provider?, reference?}` → **reçu**. Caisse ouverte exigée (409 sinon) ; montant ≤ reste (409) ; espèces : `tendered ≥ amount` (400). Réparti sur les commandes, la plus ancienne d'abord |
+| GET | `/api/payments/{id}/receipt` | `payments.collect` | Reçu (établissement, caissier, commandes, paiement, reste) |
+| POST | `/api/payments/{id}/void` | `payments.refund` | Annuler un paiement de la caisse encore ouverte, motif obligatoire ; les commandes redeviennent à encaisser ; tracé `payment.voided` |
+| GET | `/api/locations/{id}/cash-session` | `payments.collect` | Caisse ouverte avec son rapport X en direct, ou `null` |
+| POST | `/api/locations/{id}/cash-sessions` | `payments.collect` | Ouvrir avec `openingFloat` ; une seule caisse ouverte par établissement (409) |
+| GET | `/api/locations/{id}/cash-sessions` | `payments.collect` | Historique (60 dernières) |
+| GET | `/api/cash-sessions/{id}` | `payments.collect` | Détail : paiements, mouvements, résumé |
+| POST | `/api/cash-sessions/{id}/movements` | `payments.collect` | Entrée/sortie d'espèces avec motif ; sortie supérieure aux espèces attendues refusée |
+| POST | `/api/cash-sessions/{id}/close` | `payments.collect` | Clôture Z : `countedCash`, `note` → espèces attendues, écart, résumé figé |
+| POST | `/api/table-sessions/{id}/transfer` | `orders.create` | Changer de table ; vers une table occupée, les additions sont **regroupées** |
+
+Règles transverses :
+- une commande ne passe à `COMPLETED` que **payée** (409 sinon) ;
+- servie et payée, elle se termine seule ;
+- une commande avec un paiement ne s'annule pas : annuler d'abord le paiement ;
+- une table dont toutes les commandes sont terminées et payées, ou annulées, **se libère seule**.
+
+Espèces attendues = fond + ventes en espèces + entrées − sorties.
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

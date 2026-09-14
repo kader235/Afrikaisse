@@ -17,7 +17,8 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | 2 bis | Application tablette Android : Cloud ou serveur local, session dans le Keystore, mode tactile imposé | ✅ vérifiée sur WebView Chrome 83 ; 59 tests sur SQLite **et** PostgreSQL |
 | 3 | Menu (catégories, produits, versions, options, allergènes, photos compressées sur l'appareil), épuisé en un toucher, QR par table et planche A4, menu client par QR | ✅ 83 tests sur SQLite **et** PostgreSQL |
 | 4-5 | Commande client par QR (panier, options, suivi, appel serveur/addition), écran Commandes du personnel en temps réel (confirmation, avancement, annulation motivée, tables à libérer), numéros par journée d'exploitation | ✅ 104 tests ; essai croisé téléphone ↔ tablette |
-| 6 | Caisse (POS), sessions de caisse, remises, encaissement | À venir |
+| 6 | Caisse tablette : vente au doigt, sur place/à emporter, remises motivées, encaissement espèces/mobile money/carte, addition partagée, reçu 80 mm, transfert et regroupement de tables, sessions de caisse (fond, entrées/sorties, rapport X, clôture Z avec écart) | ✅ 128 tests ; essai complet dans le navigateur |
+| 7 | Stations et écran cuisine (KDS) | À venir |
 
 ## Démarrer
 
