@@ -1,3 +1,4 @@
+import { getSubscription } from './subscription.ts';
 import { AppError, type AuditEntry, type PlatformTenant } from '@afrikaisse/core';
 import type { AppContext, RequestMeta } from '../context.ts';
 import type { AuthState, TenantScope } from '../lib/access.ts';
@@ -18,6 +19,7 @@ export async function getTenant(ctx: AppContext, scope: TenantScope) {
     plan: t.plan,
     isDemo: t.is_demo === 1,
     createdAt: t.created_at,
+    subscription: await getSubscription(ctx, scope.tenantId),
     locations: await q.orderBy('name').execute(),
   };
 }
@@ -81,6 +83,7 @@ export async function listTenants(ctx: AppContext): Promise<PlatformTenant[]> {
       't.name',
       't.status',
       't.plan',
+      't.plan_expires_at',
       't.is_demo',
       't.created_at',
       eb.selectFrom('memberships as m').select((e) => e.fn.countAll().as('n')).whereRef('m.tenant_id', '=', 't.id').as('members'),
@@ -95,6 +98,7 @@ export async function listTenants(ctx: AppContext): Promise<PlatformTenant[]> {
     plan: r.plan,
     isDemo: r.is_demo === 1,
     createdAt: r.created_at,
+    planExpiresAt: r.plan_expires_at,
     members: Number(r.members),
     locations: Number(r.locations),
   }));

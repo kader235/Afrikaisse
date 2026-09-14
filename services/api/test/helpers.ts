@@ -11,7 +11,7 @@ export async function startApp(engine: Engine, env: Record<string, string> = {})
   const database = await createDatabase(engine === 'sqlite' ? { kind: 'sqlite', file: ':memory:' } : { kind: 'pglite' });
   await migrateToLatest(database);
   const clock = { offsetMs: 0 };
-  const config = loadConfig({ AFK_PROFILE: 'cloud', AFK_JWT_SECRET: 'secret-de-test-'.padEnd(48, 'x'), ...env });
+  const config = loadConfig({ AFK_PROFILE: 'cloud', AFK_JWT_SECRET: 'secret-de-test-'.padEnd(48, 'x'), AFK_RATE_LIMIT: 'false', ...env });
   const { app, ctx } = await buildApp({ database, config, now: () => Date.now() + clock.offsetMs });
   return {
     app,

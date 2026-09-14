@@ -251,6 +251,25 @@ Serveur local :
 | GET | `/api/system/sync` | `settings.manage` | Relié, adresse, dernier envoi / réception, en attente, à revoir, dernière erreur |
 | POST | `/api/system/sync/now` | `settings.manage` | Synchroniser tout de suite : `{pushed, pulled, conflicts, status}` |
 
+## Routes de la phase 17 — abonnements et serveurs reliés
+
+| Méthode | Route | Accès | Rôle |
+|---|---|---|---|
+| GET | `/api/tenant` | `tenant.read` | Ajoute `subscription` : offre, état `TRIAL/ACTIVE/GRACE/EXPIRED`, échéance, jours restants, limites, utilisation |
+| POST | `/api/platform/tenants/{id}/subscription` | back-office | `{plan, months, unlimited}` : change l'offre ; les mois s'ajoutent à l'échéance restante, jamais à une date passée |
+| GET | `/api/locations/{id}/devices` | `location.manage` (Cloud) | Serveurs locaux reliés : nom, état, relié le, dernier contact |
+| POST | `/api/devices/{id}/revoke` | `location.manage` (Cloud) | 204 ; secret effacé ; sans serveur restant, l'établissement repasse en `CLOUD` |
+
+Au-delà de l'offre, ou une fois l'abonnement échu depuis plus de 7 jours : **402 `PLAN_LIMIT`** sur
+la création d'établissement, l'ajout de membre et le code d'appairage (`details` : `resource`,
+`limit`, `used`). Rien d'autre n'est jamais bloqué. `me.tenant.planExpiresAt` sert au rappel
+d'échéance. Le serveur local ne contrôle aucune limite.
+
+## Phase 18 — limites par adresse IP
+
+Routes `POST` ouvertes sans connexion : 429 `TOO_MANY_ATTEMPTS` et en-tête `Retry-After` au-delà de
+la limite (valeurs dans SECURITY.md). `AFK_RATE_LIMIT=false` les désactive (tests).
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

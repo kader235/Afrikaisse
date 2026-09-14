@@ -44,6 +44,10 @@ export const pairingCodeInputSchema = z
 export const pairingCodeSchema = z.object({ code: z.string(), expiresAt: z.number(), locationName: z.string() });
 export type PairingCode = z.infer<typeof pairingCodeSchema>;
 
+/** Serveur local relié à un établissement, vu du Cloud. */
+export const localServerDeviceSchema = z.object({ id: z.string(), name: z.string(), status: z.enum(['ACTIVE', 'REVOKED']), lastSeenAt: z.number().nullable(), createdAt: z.number() });
+export type LocalServerDevice = z.infer<typeof localServerDeviceSchema>;
+
 export const pairRequestSchema = z.object({ code: pairingCodeInputSchema, deviceName: z.string().trim().min(1).max(60).default('Serveur local') });
 
 export const snapshotSchema = z.array(z.object({ table: z.string(), rows: z.array(z.record(z.string(), z.unknown())) }));

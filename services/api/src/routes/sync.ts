@@ -1,3 +1,5 @@
+import { localServerDeviceSchema } from '@afrikaisse/core';
+import { listLocationDevices, revokeDevice } from '../services/sync/server.ts';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
@@ -27,6 +29,21 @@ export function syncRoutes(ctx: AppContext): FastifyPluginAsyncZod {
         '/locations/:locationId/pairing-code',
         { preHandler: requireAuth(ctx), schema: { tags, summary: "Code d'appairage d'un serveur local (usage unique, 10 min)", security, params: z.object({ locationId: z.uuid() }), response: { 200: pairingCodeSchema } } },
         async (request) => createPairingCode(ctx, requireTenant(request.auth, 'location.manage'), request.params.locationId, requestMeta(request)),
+      );
+
+      app.get(
+        '/locations/:locationId/devices',
+        { preHandler: requireAuth(ctx), schema: { tags, summary: 'Serveurs locaux reliés à un établissement', security, params: z.object({ locationId: z.uuid() }), response: { 200: z.array(localServerDeviceSchema) } } },
+        async (request) => listLocationDevices(ctx, requireTenant(request.auth, 'location.manage'), request.params.locationId),
+      );
+
+      app.post(
+        '/devices/:deviceId/revoke',
+        { preHandler: requireAuth(ctx), schema: { tags, summary: 'Révoquer un serveur local (PC volé ou remplacé)', security, params: z.object({ deviceId: z.uuid() }) } },
+        async (request, reply) => {
+          await revokeDevice(ctx, requireTenant(request.auth, 'location.manage'), request.params.deviceId, requestMeta(request));
+          return reply.code(204).send();
+        },
       );
 
       app.post(

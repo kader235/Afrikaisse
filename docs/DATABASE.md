@@ -193,9 +193,13 @@ Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` 
 - `inventory_movements` (item_id, kind `IN/OUT/SALE/LOSS/ADJUST/COUNT`, quantity, unit_cost, ref_type, ref_id) — **ajout seulement**
 - `recipes` (product_id | variant_id), `recipe_items` (recipe_id, item_id, quantity)
 
-### SaaS, supervision — phases 12, 17
-- `subscriptions` (tenant_id, plan, status, starts_at, ends_at)
-- `entitlements` (tenant_id, payload signé, expires_at, grace_until)
+### Abonnements — phase 17 (en place)
+- `tenants.plan` (`TRIAL/STARTER/PRO/ENTERPRISE`) et `tenants.plan_expires_at` (migration `0010_plans`,
+  null = sans échéance, cas des organisations antérieures). Les limites de chaque offre vivent dans
+  `packages/core/src/plans.ts`, pas en base : changer une offre ne demande aucune migration.
+- Révocation d'un serveur local : `devices.status = 'REVOKED'` et `secret_hash` effacé.
+
+### Supervision — à venir
 - `sync_events` (déjà là), `sync_cursors` (device_id, stream, last_seq), `sync_conflicts` (event_id, entity, local, remote, resolution)
 - `notifications` (location_id, audience, kind, payload, read_at)
 - `backups` (device_id, kind, path, size, created_at, verified_at)

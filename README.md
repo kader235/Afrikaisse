@@ -27,7 +27,8 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | §69 | Sauvegardes du serveur local : au démarrage avant migration et toutes les heures, copies vérifiées, rotation 24 h / 30 jours, sauvegarde à la demande | ✅ 160 tests ; essayé sur le paquet Windows |
 | 9 | Impression réseau ESC/POS : tickets de préparation par poste à la confirmation, reçus, test, file avec relance, accents français ; tickets 80 mm par le navigateur sans serveur local | ✅ 163 tests (fausse imprimante TCP) |
 | 12 | Synchronisation serveur local ↔ Cloud : appairage par code, copie initiale, envoi et réception idempotents, dernier écrivain gagnant par HLC, commandes QR en ligne d'un établissement hybride, garde de périmètre côté Cloud | ✅ 165 tests (Cloud et serveur local réels) |
-| 17-18 | Abonnements SaaS, durcissement (limites par IP, performances) | À venir |
+| 17 | Abonnements : essai gratuit de 30 jours, offres Essentiel / Pro / Groupe et leurs limites (établissements, membres, serveurs locaux), échéance et délai de grâce, activation et prolongation depuis le back-office, révocation d'un serveur local. Le service n'est jamais coupé | ✅ |
+| 18 | Durcissement : limites par adresse IP (inscription, connexion, QR par table, appairage), politique de sécurité du contenu, essai de charge de 200 ventes encaissées ; menu Administration groupé pour la tablette en portrait | ✅ 177 tests |
 
 ## Démarrer
 

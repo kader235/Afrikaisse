@@ -1,3 +1,4 @@
+import { assertCanGrow } from './subscription.ts';
 import {
   AppError,
   canManageRole,
@@ -88,6 +89,7 @@ export async function addMember(ctx: AppContext, scope: TenantScope, input: Crea
     throw new AppError('VALIDATION', 'Un mot de passe est requis pour créer ce compte.');
   }
 
+  await assertCanGrow(ctx, ctx.db, scope.tenantId, 'members');
   const passwordHash = existing ? null : await hashPassword(input.password!);
   const now = ctx.now();
   const membershipId = uuidv7();

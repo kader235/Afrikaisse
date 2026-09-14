@@ -1,3 +1,4 @@
+import { registerRateLimits } from './lib/rateLimit.ts';
 import Fastify, { type FastifyServerOptions } from 'fastify';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
@@ -72,6 +73,7 @@ export async function buildApp(opts: BuildOptions) {
   app.decorateRequest('auth', null);
 
   await app.register(helmet, { contentSecurityPolicy: false });
+  registerRateLimits(app, ctx);
   await app.register(cors, { origin: config.corsOrigins.length > 0 ? config.corsOrigins : false, credentials: true });
   await app.register(cookie);
   await app.register(swagger, {

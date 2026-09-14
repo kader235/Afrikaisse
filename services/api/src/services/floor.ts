@@ -1,3 +1,4 @@
+import { assertCanGrow } from './subscription.ts';
 import type { Selectable } from 'kysely';
 import {
   AppError,
@@ -145,6 +146,7 @@ export async function createLocation(ctx: AppContext, scope: TenantScope, input:
   const id = uuidv7();
   const now = ctx.now();
   return ctx.db.transaction().execute(async (trx) => {
+    await assertCanGrow(ctx, trx, scope.tenantId, 'locations');
     const hlc = ctx.clock.now();
     await trx
       .insertInto('locations')

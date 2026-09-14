@@ -1,3 +1,6 @@
+import type { LocalServerDevice } from '@afrikaisse/core';
+import { recordChange as recordLocationChange } from '../../lib/journal.ts';
+import { assertCanGrow } from '../subscription.ts';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -36,6 +39,7 @@ export async function createPairingCode(ctx: AppContext, scope: TenantScope, loc
   const location = await ctx.db.selectFrom('locations').select(['id', 'name', 'status']).where('id', '=', locationId).where('tenant_id', '=', scope.tenantId).executeTakeFirst();
   if (!location || (scope.locationId && scope.locationId !== locationId)) throw new AppError('NOT_FOUND', 'Établissement introuvable.');
   if (location.status !== 'ACTIVE') throw new AppError('CONFLICT', 'Cet établissement est archivé.');
+  await assertCanGrow(ctx, ctx.db, scope.tenantId, 'localServers');
   let raw = '';
   for (const byte of randomBytes(8)) raw += ALPHABET[byte % ALPHABET.length];
   const now = ctx.now();
@@ -134,8 +138,8 @@ export async function authenticateDevice(ctx: AppContext, request: FastifyReques
 async function guardRow(trx: Db, device: DeviceScope, table: string, row: Row): Promise<Row | string> {
   if (table === 'tenants') {
     if (row.id !== device.tenantId) return 'Organisation hors du périmètre de ce serveur.';
-    const current = await trx.selectFrom('tenants').select(['status', 'plan', 'is_demo']).where('id', '=', device.tenantId).executeTakeFirst();
-    return current ? { ...row, status: current.status, plan: current.plan, is_demo: current.is_demo } : row;
+    const current = await trx.selectFrom('tenants').select(['status', 'plan', 'plan_expires_at', 'is_demo']).where('id', '=', device.tenantId).executeTakeFirst();
+    return current ? { ...row, status: current.status, plan: current.plan, plan_expires_at: current.plan_expires_at, is_demo: current.is_demo } : row;
   }
   if (table === 'users') {
     const elsewhere = await trx.selectFrom('memberships').select('id').where('user_id', '=', row.id as string).where('tenant_id', '!=', device.tenantId).executeTakeFirst();
@@ -199,4 +203,42 @@ export async function pullEvents(ctx: AppContext, device: DeviceScope, since: nu
   if (rows.length > 0) return { events: rows.map(toWire), cursor: Number(rows.at(-1)!.seq) };
   const top = await ctx.db.selectFrom('sync_events').select((eb) => eb.fn.max('seq').as('m')).where('tenant_id', '=', device.tenantId).executeTakeFirst();
   return { events: [], cursor: Math.max(since, Number(top?.m ?? 0)) };
+}
+
+// --- Serveurs reliés (Cloud) ---------------------------------------------------
+
+export async function listLocationDevices(ctx: AppContext, scope: TenantScope, locationId: string): Promise<LocalServerDevice[]> {
+  requireCloud(ctx);
+  if (scope.locationId && scope.locationId !== locationId) throw new AppError('NOT_FOUND', 'Établissement introuvable.');
+  const rows = await ctx.db
+    .selectFrom('devices')
+    .select(['id', 'name', 'status', 'last_seen_at', 'created_at'])
+    .where('tenant_id', '=', scope.tenantId)
+    .where('location_id', '=', locationId)
+    .where('kind', '=', 'LOCAL_SERVER')
+    .orderBy('created_at', 'desc')
+    .execute();
+  return rows.map((r) => ({ id: r.id, name: r.name, status: r.status, lastSeenAt: r.last_seen_at, createdAt: r.created_at }));
+}
+
+/** PC volé ou remplacé : son secret est effacé, il ne peut plus rien envoyer ni recevoir. */
+export async function revokeDevice(ctx: AppContext, scope: TenantScope, deviceId: string, meta: RequestMeta): Promise<void> {
+  requireCloud(ctx);
+  const device = await ctx.db.selectFrom('devices').selectAll().where('id', '=', deviceId).where('tenant_id', '=', scope.tenantId).where('kind', '=', 'LOCAL_SERVER').executeTakeFirst();
+  if (!device || !device.location_id || (scope.locationId && scope.locationId !== device.location_id)) throw new AppError('NOT_FOUND', 'Serveur local introuvable.');
+  if (device.status === 'REVOKED') return;
+  const locationId = device.location_id;
+  const now = ctx.now();
+  await ctx.db.transaction().execute(async (trx) => {
+    await trx.updateTable('devices').set({ status: 'REVOKED', secret_hash: null, updated_at: now }).where('id', '=', deviceId).execute();
+    const stillLinked = await trx.selectFrom('devices').select('id').where('location_id', '=', locationId).where('kind', '=', 'LOCAL_SERVER').where('status', '=', 'ACTIVE').executeTakeFirst();
+    // Plus aucun serveur local : l'établissement est de nouveau exploité en ligne.
+    if (!stillLinked) {
+      const hlc = ctx.clock.now();
+      await trx.updateTable('locations').set({ operating_mode: 'CLOUD', updated_at: now, updated_hlc: hlc }).where('id', '=', locationId).execute();
+      const row = await trx.selectFrom('locations').selectAll().where('id', '=', locationId).executeTakeFirstOrThrow();
+      await recordLocationChange(trx, ctx, { tenantId: scope.tenantId, locationId, entityType: 'location', entityId: locationId, operation: 'UPSERT', payload: row, hlc });
+    }
+    await writeAudit(trx, ctx, { tenantId: scope.tenantId, locationId, actorUserId: scope.userId, action: 'sync.device_revoked', entityType: 'device', entityId: deviceId, data: { name: device.name }, meta });
+  });
 }

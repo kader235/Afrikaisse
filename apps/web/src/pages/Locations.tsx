@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { CURRENCY_CODES, LOCATION_TYPES, OPERATING_MODES, type LocationDetails, type Me, type PairingCode } from '@afrikaisse/core';
+import { CURRENCY_CODES, LOCATION_TYPES, OPERATING_MODES, type LocalServerDevice, type LocationDetails, type Me, type PairingCode } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { COUNTRIES, CUTOFF_OPTIONS, LOCATION_TYPE_LABELS, OPERATING_MODE_LABELS, TIMEZONES, formatMinutes } from '../labels.ts';
@@ -19,6 +19,7 @@ export function LocationsPage({ me, onChanged }: { me: Me; onChanged: () => void
   const selected = list?.find((l) => l.id === selectedId) ?? null;
   const [isCloud, setIsCloud] = useState(false);
   const [pairing, setPairing] = useState<PairingCode | null>(null);
+  const [devicesFor, setDevicesFor] = useState<LocationDetails | null>(null);
   useEffect(() => {
     api<{ profile: string }>('GET', '/health').then((h) => setIsCloud(h.profile === 'cloud'), () => undefined);
   }, []);
@@ -92,10 +93,16 @@ export function LocationsPage({ me, onChanged }: { me: Me; onChanged: () => void
             </button>
           )}
           {isCloud && (
-            <button className="btn" disabled={!selected || selected.status !== 'ACTIVE'} onClick={() => selected && void createPairingCode(selected)}>
-              <Icon name="server" />
-              Relier un serveur local
-            </button>
+            <>
+              <button className="btn" disabled={!selected || selected.status !== 'ACTIVE'} onClick={() => selected && void createPairingCode(selected)}>
+                <Icon name="server" />
+                Relier un serveur local
+              </button>
+              <button className="btn" disabled={!selected} onClick={() => setDevicesFor(selected)}>
+                <Icon name="key" />
+                Serveurs reliés
+              </button>
+            </>
           )}
           <span className="sep" />
         </>
@@ -169,6 +176,15 @@ export function LocationsPage({ me, onChanged }: { me: Me; onChanged: () => void
         </div>
       </Window>
 
+      {devicesFor && (
+        <DevicesDialog
+          location={devicesFor}
+          onClose={() => {
+            setDevicesFor(null);
+            void load();
+          }}
+        />
+      )}
       {pairing && (
         <Dialog
           title={`Relier un serveur local — ${pairing.locationName}`}
@@ -356,5 +372,98 @@ function LocationDialog({ location, onSaved, onClose }: { location?: LocationDet
         </div>
       </Dialog>
     </form>
+  );
+}
+
+const when = (ts: number) => new Date(ts).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+
+/** PC volé, perdu ou remplacé : on coupe sa liaison au Cloud. */
+function DevicesDialog({ location, onClose }: { location: LocationDetails; onClose: () => void }) {
+  const [devices, setDevices] = useState<LocalServerDevice[] | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [error, setError] = useState<unknown>(null);
+  const load = useCallback(() => api<LocalServerDevice[]>('GET', `/locations/${location.id}/devices`).then(setDevices, setError), [location.id]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function revoke(id: string) {
+    setError(null);
+    try {
+      await api('POST', `/devices/${id}/revoke`);
+      setConfirming(null);
+      await load();
+    } catch (err) {
+      setError(err);
+    }
+  }
+
+  return (
+    <Dialog
+      wide
+      title={`Serveurs reliés — ${location.name}`}
+      onClose={onClose}
+      footer={
+        <button className="btn btn-primary" onClick={onClose}>
+          Fermer
+        </button>
+      }
+    >
+      <div className="dialog-body">
+        <ErrorMessage error={error} />
+        {devices?.length === 0 && <p className="muted">Aucun serveur local n'a été relié à cet établissement.</p>}
+        {!!devices?.length && (
+          <div className="grid-wrap">
+            <table className="grid">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>État</th>
+                  <th className="num">Relié le</th>
+                  <th className="num">Dernier contact</th>
+                  <th aria-label="Action" />
+                </tr>
+              </thead>
+              <tbody>
+                {devices.map((d) => (
+                  <tr key={d.id}>
+                    <td>{d.name}</td>
+                    <td>
+                      <span className={d.status === 'ACTIVE' ? 'state state-ok' : 'state state-off'}>
+                        <span className={d.status === 'ACTIVE' ? 'dot dot-ok' : 'dot dot-off'} />
+                        {d.status === 'ACTIVE' ? 'Actif' : 'Révoqué'}
+                      </span>
+                    </td>
+                    <td className="num">{when(d.createdAt)}</td>
+                    <td className="num">{d.lastSeenAt ? when(d.lastSeenAt) : '—'}</td>
+                    <td className="num">
+                      {d.status === 'ACTIVE' &&
+                        (confirming === d.id ? (
+                          <>
+                            <button className="btn btn-primary" onClick={() => revoke(d.id)}>
+                              Confirmer la révocation
+                            </button>{' '}
+                            <button className="btn" onClick={() => setConfirming(null)}>
+                              Annuler
+                            </button>
+                          </>
+                        ) : (
+                          <button className="btn" onClick={() => setConfirming(d.id)}>
+                            Révoquer
+                          </button>
+                        ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="muted">
+          Un serveur révoqué ne peut plus envoyer ni recevoir de données. S'il n'en reste aucun, l'établissement repasse en mode Cloud ; « Relier un serveur local » donne le code du PC de
+          remplacement.
+        </p>
+      </div>
+    </Dialog>
   );
 }

@@ -1,3 +1,4 @@
+import { DAY_MS, TRIAL_DAYS } from '@afrikaisse/core';
 import { AppError, ROLE_PERMISSIONS, uuidv7, type LoginInput, type Me, type RegisterInput } from '@afrikaisse/core';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import { resolveSession, type AuthState } from '../lib/access.ts';
@@ -43,7 +44,7 @@ export async function register(ctx: AppContext, input: RegisterInput, meta: Requ
       const hlc = ctx.clock.now();
       const stamp = { created_at: now, updated_at: now, updated_hlc: hlc };
 
-      const tenant = { id: tenantId, name: input.organizationName, status: 'ACTIVE', is_demo: 0, plan: 'STARTER', ...stamp } as const;
+      const tenant = { id: tenantId, name: input.organizationName, status: 'ACTIVE', is_demo: 0, plan: 'TRIAL', plan_expires_at: ctx.config.profile === 'local' ? null : now + TRIAL_DAYS * DAY_MS, ...stamp } as const;
       await trx.insertInto('tenants').values(tenant).execute();
       await recordChange(trx, ctx, { tenantId, entityType: 'tenant', entityId: tenantId, operation: 'UPSERT', payload: tenant, hlc });
 
@@ -308,7 +309,7 @@ export async function loadMe(ctx: AppContext, auth: AuthState): Promise<Me> {
     user: { id: auth.userId, email: auth.email, displayName: auth.displayName, isPlatformAdmin: auth.isPlatformAdmin },
     tenant:
       auth.tenantId && auth.tenantName && auth.tenantStatus
-        ? { id: auth.tenantId, name: auth.tenantName, status: auth.tenantStatus, isDemo: auth.tenantIsDemo, plan: auth.tenantPlan ?? 'STARTER' }
+        ? { id: auth.tenantId, name: auth.tenantName, status: auth.tenantStatus, isDemo: auth.tenantIsDemo, plan: auth.tenantPlan ?? 'STARTER', planExpiresAt: auth.tenantPlanExpiresAt }
         : null,
     tenantAccess: auth.tenantAccess,
     role: auth.role,

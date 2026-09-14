@@ -1,3 +1,5 @@
+import { setSubscriptionSchema, subscriptionSchema } from '@afrikaisse/core';
+import { setSubscription } from '../services/subscription.ts';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { auditEntrySchema, platformTenantSchema, tenantDetailsSchema, updateTenantSchema } from '@afrikaisse/core';
@@ -52,6 +54,14 @@ export function platformRoutes(ctx: AppContext): FastifyPluginAsyncZod {
         requirePlatformAdmin(request.auth);
         return listTenants(ctx);
       },
+    );
+
+    app.post(
+      '/tenants/:tenantId/subscription',
+      {
+        schema: { tags: ['platform'], summary: "Changer l'offre ou prolonger l'abonnement d'une organisation", security, params, body: setSubscriptionSchema, response: { 200: subscriptionSchema } },
+      },
+      async (request) => setSubscription(ctx, requirePlatformAdmin(request.auth), request.params.tenantId, request.body, requestMeta(request)),
     );
 
     for (const [action, status] of [['suspend', 'SUSPENDED'], ['reactivate', 'ACTIVE']] as const) {

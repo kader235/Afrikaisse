@@ -1,3 +1,4 @@
+import { subscriptionSchema } from './plans.ts';
 import { z } from 'zod';
 import { CURRENCY_CODES, LOCATION_TYPES } from './currency.ts';
 import { PERMISSIONS, ROLES } from './roles.ts';
@@ -40,6 +41,7 @@ export const meSchema = z.object({
       status: z.enum(TENANT_STATUSES),
       isDemo: z.boolean(),
       plan: z.string(),
+      planExpiresAt: z.number().nullable(),
     })
     .nullable(),
   tenantAccess: z.enum(TENANT_ACCESS),
@@ -94,6 +96,7 @@ export const tenantDetailsSchema = z.object({
   plan: z.string(),
   isDemo: z.boolean(),
   createdAt: z.number(),
+  subscription: subscriptionSchema,
   locations: z.array(locationSummarySchema),
 });
 
@@ -104,6 +107,7 @@ export const platformTenantSchema = z.object({
   plan: z.string(),
   isDemo: z.boolean(),
   createdAt: z.number(),
+  planExpiresAt: z.number().nullable(),
   members: z.number(),
   locations: z.number(),
 });

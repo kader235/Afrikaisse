@@ -331,6 +331,31 @@ emporterait aussi les copies. Pour revenir à une copie :
 2. remplacer `afrikaisse.sqlite` par la copie choisie ;
 3. relancer.
 
+## L'abonnement
+
+**Administration → Organisation** montre votre offre, son échéance, et ce que vous utilisez face à
+ce qu'elle inclut.
+
+| Offre | Prix | Établissements | Membres | Serveurs locaux |
+|---|---|---|---|---|
+| Essai gratuit (30 jours) | gratuit | 3 | 25 | 1 |
+| Essentiel | 15 000 FCFA / mois | 1 | 8 | 1 |
+| Pro | 35 000 FCFA / mois | 3 | 30 | 3 |
+| Groupe | sur devis | illimité | illimité | illimité |
+
+- Sept jours avant l'échéance, un rappel s'affiche en haut de l'écran du propriétaire et de
+  l'administrateur.
+- **À l'échéance, rien ne s'arrête** : caisse, cuisine, commandes QR et synchronisation continuent.
+  Après 7 jours de grâce, seuls les ajouts (établissement, membre, serveur local) sont refusés
+  jusqu'au renouvellement.
+- Pour renouveler ou changer d'offre : GLOBALTECH BUSINESS TD (mobile money ou virement).
+
+### Un PC du restaurant volé ou remplacé
+
+**Administration → Établissements**, sélectionnez l'établissement, **Serveurs reliés**, puis
+**Révoquer** : ce PC ne peut plus rien envoyer ni recevoir. **Relier un serveur local** donne
+ensuite le code du PC de remplacement.
+
 ## L'équipe
 
 Menu **Équipe** (propriétaire, administrateur, gérant).

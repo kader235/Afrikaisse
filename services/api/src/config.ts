@@ -18,6 +18,7 @@ const envSchema = z.object({
   AFK_WEB_DIR: z.string().min(1).optional(),
   AFK_PORT_FILE: z.string().min(1).optional(),
   AFK_BACKUP_DIR: z.string().min(1).optional(),
+  AFK_RATE_LIMIT: flag.optional(),
 });
 
 export type Profile = 'cloud' | 'local';
@@ -43,6 +44,8 @@ export interface AppConfig {
   portFile: string | undefined;
   /** Serveur local : dossier des sauvegardes automatiques de la base (§69). */
   backupDir: string | undefined;
+  /** Limites par adresse IP sur les routes ouvertes sans connexion (désactivées dans les tests). */
+  rateLimit: boolean;
   accessTokenTtlSec: number;
   sessionTtlSec: number;
   loginMaxFailures: number;
@@ -68,6 +71,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     webDir: e.AFK_WEB_DIR,
     portFile: e.AFK_PORT_FILE,
     backupDir: e.AFK_BACKUP_DIR,
+    rateLimit: e.AFK_RATE_LIMIT ?? true,
     accessTokenTtlSec: 15 * 60,
     sessionTtlSec: 30 * 24 * 3600,
     loginMaxFailures: 5,

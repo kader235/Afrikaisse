@@ -113,6 +113,23 @@ C'est un APK **de test** (signé avec la clé de débogage). La version distribu
 exigera une clé de signature de publication, conservée hors du dépôt : à créer au moment de la
 diffusion.
 
+## 6. Sécurité en production
+
+- Garder `AFK_TRUST_PROXY` à sa valeur Cloud (vrai) : derrière Passenger, c'est ce qui donne aux
+  limites par adresse IP la vraie adresse du client.
+- Poser la politique de sécurité du contenu sur les pages de l'application, dans le `.htaccess` du
+  dossier web :
+
+```apache
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  </FilesMatch>
+</IfModule>
+```
+
+  Si l'API est servie sur un autre sous-domaine que l'application, ajouter son adresse à `connect-src`.
+
 ## Limites d'un mutualisé
 
 Suffisant pour les premiers dizaines de restaurants. L'architecture n'a **aucune dépendance propre à

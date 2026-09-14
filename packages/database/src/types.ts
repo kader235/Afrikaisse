@@ -18,6 +18,8 @@ export interface TenantsTable {
   status: 'ACTIVE' | 'SUSPENDED';
   is_demo: Bool;
   plan: string;
+  /** Échéance de l'abonnement (null = sans échéance). */
+  plan_expires_at: number | null;
   created_at: number;
   updated_at: number;
   updated_hlc: string;

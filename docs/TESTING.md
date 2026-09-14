@@ -264,6 +264,24 @@ Le scénario commence par un service déjà fait en ligne (commande n°1, reçu 
 
 Le premier passage de cet essai, avant le correctif 2, avait montré le défaut en conditions réelles.
 
+## Phases 17-18 — abonnements et durcissement (177 tests au total)
+
+| Fichier | Ce qui est prouvé |
+|---|---|
+| `phase17.test.ts` | Essai de 30 jours à l'inscription ; 4e établissement refusé (402) ; à J+31, délai de grâce et ajout permis ; à J+38, membre et code d'appairage refusés mais caisse ouverte ; back-office : 12 mois ajoutés aux 30 jours restants, passage en Essentiel qui garde l'échéance, Groupe sans échéance ; route invisible pour un client (404) ; révocation d'un serveur local : refusé dès la requête suivante, établissement repassé en Cloud, place libérée |
+| `phase18.test.ts` | 31e connexion d'une même adresse → 429 avec `Retry-After`, autre adresse libre, fenêtre écoulée → de nouveau permis ; 11e inscription de l'heure refusée ; commandes QR comptées par table ; CSP sur les pages et le menu client ; charge de 200 ventes encaissées |
+
+Mesures de l'essai de charge (poste de développement, base en mémoire) :
+
+| Moteur | Vente + encaissement | Rapport du jour | Additions | Flux d'activité depuis 0 |
+|---|---|---|---|---|
+| SQLite (serveur local) | 8,7 ms | 9 ms | 2 ms | 14 ms |
+| PGlite (PostgreSQL du Cloud) | 65 ms | 21 ms | 8 ms | 50 ms |
+
+PGlite est un PostgreSQL compilé en WebAssembly dans le processus de test : sur le PostgreSQL
+d'o2switch les temps seront différents. L'essai sert de garde-fou contre les régressions (seuils :
+300 ms par vente, 1,5 s par lecture).
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

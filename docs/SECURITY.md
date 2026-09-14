@@ -53,20 +53,28 @@ réinitialisation de mot de passe, renommage d'organisation, suspension et réac
 - `@fastify/helmet`, CORS fermé par défaut (liste blanche `AFK_CORS_ORIGINS`), corps limité à 1 Mo.
 - Toutes les entrées et **toutes les réponses** validées par Zod (une réponse qui fuirait un champ
   non déclaré, comme `password_hash`, est rejetée par le sérialiseur).
+- **Limites par adresse IP** (phase 18, `services/api/src/lib/rateLimit.ts`) : inscription 10 par heure,
+  connexion 30 par 10 min, renouvellement de session 120 par 10 min, commandes et appels QR 30 par
+  10 min **par table**, appairage 20 par 10 min ; au-delà, 429 avec `Retry-After`. Les lectures ne sont
+  pas limitées : les téléphones d'un même Wi-Fi partagent une adresse publique et suivent leur
+  commande en boucle. Compteurs en mémoire (un seul processus). S'ajoute au verrouillage par compte.
+- **Politique de sécurité du contenu** sur les pages servies par le serveur local : scripts, styles,
+  images et connexions du serveur lui-même uniquement, `frame-ancestors 'none'`. Dans le Cloud, Apache
+  pose le même en-tête (DEPLOYMENT.md §6).
+- **Serveurs locaux révocables** (phase 17) : `POST /api/devices/{id}/revoke` efface l'empreinte du
+  secret ; le PC est refusé dès sa requête suivante.
 
 ## Points connus, à traiter
 
 | Point | Phase |
 |---|---|
-| Limitation de débit par IP (inscription, connexion, routes publiques QR) | 4 (avant ouverture publique) |
 | Traduction des messages d'erreur côté client à partir des codes | 4 |
 | Vérification de l'adresse e-mail et récupération de mot de passe | 4 |
 | Connexion par code PIN sur appareil appairé | 6 |
-| Jetons d'appareil pour la synchronisation, révocables | 11-12 |
 | Le flux de synchronisation transporte `password_hash` et `pin_hash` (nécessaires à la connexion hors ligne) : il faut TLS et l'authentification de l'appareil | 12 |
-| Row Level Security PostgreSQL en filet de sécurité | 18 |
-| Double authentification pour propriétaires et back-office | 18 |
-| Signature des mises à jour et des droits d'abonnement (Ed25519) | 16-17 |
+| Row Level Security PostgreSQL en filet de sécurité | après ouverture |
+| Double authentification pour propriétaires et back-office | après ouverture |
+| Signature des mises à jour du serveur local (Ed25519) ; les abonnements ne sont contrôlés que dans le Cloud, rien à signer | 16 |
 | Sauvegardes chiffrées hors du poste | 11 |
 
 ## Signaler une faille

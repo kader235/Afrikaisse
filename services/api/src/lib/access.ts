@@ -14,6 +14,7 @@ export interface AuthState {
   tenantStatus: 'ACTIVE' | 'SUSPENDED' | null;
   tenantIsDemo: boolean;
   tenantPlan: string | null;
+  tenantPlanExpiresAt: number | null;
   membershipId: string | null;
   role: Role | null;
   locationId: string | null;
@@ -59,6 +60,7 @@ export async function resolveSession(ctx: AppContext, userId: string, sessionId:
       't.status as tenant_status',
       't.is_demo',
       't.plan',
+      't.plan_expires_at',
     ])
     .where('s.id', '=', sessionId)
     .executeTakeFirst();
@@ -88,6 +90,7 @@ export async function resolveSession(ctx: AppContext, userId: string, sessionId:
     tenantStatus: hasMembership ? row.tenant_status : null,
     tenantIsDemo: row.is_demo === 1,
     tenantPlan: hasMembership ? row.plan : null,
+    tenantPlanExpiresAt: hasMembership ? (row.plan_expires_at ?? null) : null,
     membershipId: row.membership_id,
     role: hasMembership ? row.role : null,
     locationId: hasMembership ? row.location_id : null,

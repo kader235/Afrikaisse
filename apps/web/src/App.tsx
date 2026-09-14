@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Me, SessionResponse } from '@afrikaisse/core';
+import { GRACE_DAYS, subscriptionState, type Me, type SessionResponse } from '@afrikaisse/core';
 import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
 import { useI18n } from './i18n.tsx';
 import { ROLE_LABELS } from './labels.ts';
@@ -154,7 +154,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK', can('orders.create'));
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
 
-  const sections: { id: Section; label: string; icon: IconName; visible: boolean; badge?: number }[] = [
+  const sections: { id: Section; label: string; icon: IconName; visible: boolean; badge?: number; group?: 'admin' }[] = [
     { id: 'start', label: t('nav.start'), icon: 'start', visible: can('menu.manage') && setupDone === false },
     { id: 'orders', label: t('nav.orders'), icon: 'journal', visible: can('orders.read'), badge: waiting },
     { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect') },
@@ -163,12 +163,12 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read') },
     { id: 'floor', label: t('nav.floor'), icon: 'layout', visible: can('tables.read') },
     { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read') },
-    { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read') },
-    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read') },
-    { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read') },
-    { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read') },
-    { id: 'account', label: t('nav.account'), icon: 'user', visible: true },
-    { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin },
+    { id: 'organization', label: t('nav.organization'), icon: 'building', visible: can('tenant.read'), group: 'admin' },
+    { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'admin' },
+    { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read'), group: 'admin' },
+    { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
+    { id: 'account', label: t('nav.account'), icon: 'user', visible: true, group: 'admin' },
+    { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin, group: 'admin' },
   ];
   const visible = sections.filter((s) => s.visible);
   // Chacun ouvre son outil : les commandes pour le service, le menu pour qui gère les épuisés.
@@ -273,16 +273,18 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
       </header>
 
       <nav className="menubar">
-        {visible.map((s) => (
+        {visible.filter((s) => !s.group).map((s) => (
           <button key={s.id} aria-current={current === s.id ? 'page' : undefined} onClick={() => setSection(s.id)}>
             <Icon name={s.icon} />
             {s.label}
             {!!s.badge && <span className="badge-count">{s.badge}</span>}
           </button>
         ))}
+        <AdminMenu label={t('nav.admin')} items={visible.filter((s) => s.group === 'admin')} current={current} onSelect={setSection} />
       </nav>
 
       <main className="workspace">
+        {can('tenant.read') && <SubscriptionBanner me={me} onOpen={() => setSection('organization')} />}
         {!!error && <ErrorMessage error={error} />}
         {current === 'start' && <StartPage me={me} onGo={(target) => setSection(target)} onStatus={onSetupStatus} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
@@ -319,6 +321,84 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
           <Preferences />
         </span>
       </footer>
+    </div>
+  );
+}
+
+/** Administration regroupée : la barre tient sur une tablette en portrait. */
+function AdminMenu({ label, items, current, onSelect }: { label: string; items: { id: Section; label: string; icon: IconName }[]; current: Section; onSelect: (id: Section) => void }) {
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  useEffect(() => {
+    if (!anchor) return;
+    const close = () => setAnchor(null);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
+    window.addEventListener('pointerdown', close);
+    window.addEventListener('resize', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('pointerdown', close);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [anchor]);
+  if (items.length === 0) return null;
+  const active = items.find((s) => s.id === current);
+  return (
+    <>
+      <button
+        aria-haspopup="menu"
+        aria-expanded={!!anchor}
+        aria-current={active ? 'page' : undefined}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => setAnchor(anchor ? null : e.currentTarget.getBoundingClientRect())}
+      >
+        <Icon name={active?.icon ?? 'building'} />
+        {active ? `${label} · ${active.label}` : label}
+        <span className="caret" aria-hidden="true" />
+      </button>
+      {anchor && (
+        <div className="menu-popup" role="menu" style={{ top: anchor.bottom, left: anchor.left }} onPointerDown={(e) => e.stopPropagation()}>
+          {items.map((s) => (
+            <button
+              key={s.id}
+              role="menuitem"
+              aria-current={s.id === current ? 'page' : undefined}
+              onClick={() => {
+                onSelect(s.id);
+                setAnchor(null);
+              }}
+            >
+              <Icon name={s.icon} />
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+const nDays = (n: number) => `${n} jour${n > 1 ? 's' : ''}`;
+
+/** Rappel d'échéance : discret sept jours avant, franc une fois échu. Jamais bloquant. */
+function SubscriptionBanner({ me, onOpen }: { me: Me; onOpen: () => void }) {
+  const tenant = me.tenant;
+  if (!tenant || tenant.planExpiresAt === null) return null;
+  const { state, daysLeft } = subscriptionState(tenant.plan, tenant.planExpiresAt, Date.now());
+  if (daysLeft === null) return null;
+  let text: string | null = null;
+  if (state === 'EXPIRED') text = `Abonnement échu depuis ${nDays(-daysLeft)} : le service continue, mais l'ajout d'établissements, de membres et de serveurs locaux est suspendu.`;
+  else if (state === 'GRACE') text = `Abonnement échu : encore ${nDays(Math.max(1, GRACE_DAYS + daysLeft))} avant la suspension des ajouts. Le service n'est pas concerné.`;
+  else if (daysLeft <= 7) text = state === 'TRIAL' ? `Essai gratuit : plus que ${nDays(daysLeft)}.` : `Abonnement : échéance dans ${nDays(daysLeft)}.`;
+  if (!text) return null;
+  return (
+    <div className={state === 'EXPIRED' ? 'msg msg-error subscription-banner' : 'msg msg-warn subscription-banner'}>
+      <span>{text}</span>
+      <button className="btn" onClick={onOpen}>
+        Voir l'abonnement
+      </button>
     </div>
   );
 }

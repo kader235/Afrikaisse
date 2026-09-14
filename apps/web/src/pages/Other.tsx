@@ -1,5 +1,20 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import type { AuditEntry, Me, PlatformTenant } from '@afrikaisse/core';
+import {
+  GRACE_DAYS,
+  LIMITED_RESOURCES,
+  PLANS,
+  PLAN_CODES,
+  RESOURCE_LABELS,
+  SUBSCRIPTION_STATE_LABELS,
+  extendExpiry,
+  planOf,
+  subscriptionState,
+  type AuditEntry,
+  type Me,
+  type PlanCode,
+  type PlatformTenant,
+  type Subscription,
+} from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { AUDIT_ACTION_LABELS, formatDateTime } from '../labels.ts';
@@ -14,6 +29,7 @@ interface TenantDetails {
   plan: string;
   isDemo: boolean;
   createdAt: number;
+  subscription: Subscription;
   locations: Me['locations'];
 }
 
@@ -52,8 +68,6 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
         <div className="form" style={{ maxWidth: 560 }}>
           <label>{t('auth.organizationName')}</label>
           <input readOnly value={tenant?.name ?? ''} />
-          <label>{t('org.plan')}</label>
-          <input readOnly value={tenant?.plan ?? ''} />
           <label>{t('org.status')}</label>
           <input readOnly value={tenant ? (tenant.status === 'ACTIVE' ? t('platform.active') : t('platform.suspended')) : ''} />
           <label>{t('org.createdAt')}</label>
@@ -61,6 +75,7 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
           <label>{t('org.locations')}</label>
           <input readOnly value={tenant ? String(tenant.locations.length) : ''} />
         </div>
+        {tenant && <SubscriptionPanel subscription={tenant.subscription} />}
         {me.permissions.includes('settings.manage') && <SyncPanel />}
         {me.permissions.includes('settings.manage') && <BackupsPanel />}
       </Window>
@@ -258,6 +273,7 @@ export function PlatformPage() {
   const [tenants, setTenants] = useState<PlatformTenant[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
+  const [editing, setEditing] = useState(false);
   const selected = tenants?.find((x) => x.id === selectedId) ?? null;
 
   const load = useCallback(() => api<PlatformTenant[]>('GET', '/platform/tenants').then(setTenants, setError), []);
@@ -282,6 +298,10 @@ export function PlatformPage() {
       count={tenants ? String(tenants.length) : undefined}
       toolbar={
         <>
+          <button className="btn" disabled={!selected} onClick={() => setEditing(true)}>
+            <Icon name="key" />
+            Abonnement…
+          </button>
           <button className="btn" disabled={selected?.status !== 'ACTIVE'} onClick={() => setStatus('suspend')}>
             <Icon name="power" />
             {t('platform.suspend')}
@@ -304,6 +324,16 @@ export function PlatformPage() {
           <ErrorMessage error={error} />
         </div>
       )}
+      {editing && selected && (
+        <SubscriptionDialog
+          tenant={selected}
+          onClose={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            void load();
+          }}
+        />
+      )}
       <div className="grid-wrap">
         <table className="grid">
           <thead>
@@ -311,6 +341,7 @@ export function PlatformPage() {
               <th>{t('team.name')}</th>
               <th>{t('platform.status')}</th>
               <th>{t('org.plan')}</th>
+              <th>Échéance</th>
               <th>{t('platform.members')}</th>
               <th>{t('org.locations')}</th>
               <th>{t('platform.createdAt')}</th>
@@ -329,7 +360,10 @@ export function PlatformPage() {
                     {x.status === 'ACTIVE' ? t('platform.active') : t('platform.suspended')}
                   </span>
                 </td>
-                <td>{x.plan}</td>
+                <td>{planOf(x.plan).label}</td>
+                <td className="num">
+                  <ExpiryState plan={x.plan} expiresAt={x.planExpiresAt} />
+                </td>
                 <td className="num">{x.members}</td>
                 <td className="num">{x.locations}</td>
                 <td className="num">{formatDateTime(x.createdAt, locale)}</td>
@@ -339,5 +373,189 @@ export function PlatformPage() {
         </table>
       </div>
     </Window>
+  );
+}
+
+// --- Abonnement (phase 17) ------------------------------------------------------
+
+function priceLabel(price: number | null) {
+  if (price === null) return 'sur devis';
+  if (price === 0) return 'gratuit';
+  return `${price.toLocaleString('fr-FR')} FCFA / mois`;
+}
+
+function expiryLabel(expiresAt: number | null) {
+  return expiresAt === null ? 'Sans échéance' : new Date(expiresAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+const days = (n: number) => `${n} jour${n > 1 ? 's' : ''}`;
+
+function daysLabel(daysLeft: number) {
+  if (daysLeft > 0) return `encore ${days(daysLeft)}`;
+  if (daysLeft === 0) return "échue aujourd'hui";
+  return `échue depuis ${days(-daysLeft)}`;
+}
+
+function ExpiryState({ plan, expiresAt }: { plan: string; expiresAt: number | null }) {
+  if (expiresAt === null) return <span className="muted">Sans échéance</span>;
+  const { state } = subscriptionState(plan, expiresAt, Date.now());
+  const tone = state === 'EXPIRED' ? 'state state-off' : state === 'GRACE' ? 'state state-warn' : 'state';
+  return <span className={tone}>{new Date(expiresAt).toLocaleDateString('fr-FR')}</span>;
+}
+
+function SubscriptionPanel({ subscription: s }: { subscription: Subscription }) {
+  const tone = s.state === 'EXPIRED' ? 'st st-cancelled' : s.state === 'GRACE' ? 'st st-pending' : 'st st-ready';
+  return (
+    <fieldset className="group" style={{ maxWidth: 720, marginTop: 14 }}>
+      <legend>Abonnement AfriKaisse</legend>
+      <dl className="kv">
+        <dt>Offre</dt>
+        <dd>
+          <strong>{s.label}</strong> · {priceLabel(s.monthlyPrice)}
+        </dd>
+        <dt>État</dt>
+        <dd>
+          <span className={tone}>{SUBSCRIPTION_STATE_LABELS[s.state]}</span>
+        </dd>
+        <dt>Échéance</dt>
+        <dd>
+          {expiryLabel(s.expiresAt)}
+          {s.daysLeft !== null && ` · ${daysLabel(s.daysLeft)}`}
+        </dd>
+      </dl>
+      <table className="grid usage-table">
+        <thead>
+          <tr>
+            <th>Utilisation</th>
+            <th className="num">Utilisé</th>
+            <th className="num">Inclus</th>
+            <th aria-label="Jauge" />
+          </tr>
+        </thead>
+        <tbody>
+          {LIMITED_RESOURCES.map((r) => {
+            const limit = s.limits[r];
+            const used = s.usage[r];
+            return (
+              <tr key={r}>
+                <td>{RESOURCE_LABELS[r]}</td>
+                <td className="num">{used}</td>
+                <td className="num">{limit ?? 'Illimité'}</td>
+                <td>
+                  {limit !== null && (
+                    <span className="meter" role="img" aria-label={`${used} sur ${limit}`}>
+                      <span className={used >= limit ? 'full' : undefined} style={{ inlineSize: `${Math.min(100, Math.round((used / Math.max(limit, 1)) * 100))}%` }} />
+                    </span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="muted">
+        À l'échéance, le service continue : caisse, cuisine, commandes et synchronisation ne s'arrêtent jamais. Après {GRACE_DAYS} jours de grâce, seuls les ajouts d'établissements, de membres et
+        de serveurs locaux sont suspendus.
+      </p>
+      <table className="grid plan-table">
+        <thead>
+          <tr>
+            <th>Offre</th>
+            <th className="num">Prix</th>
+            <th className="num">Établissements</th>
+            <th className="num">Membres</th>
+            <th className="num">Serveurs locaux</th>
+          </tr>
+        </thead>
+        <tbody>
+          {PLAN_CODES.filter((code) => code !== 'TRIAL').map((code) => {
+            const p = PLANS[code];
+            return (
+              <tr key={code} aria-current={code === s.plan ? 'true' : undefined}>
+                <td>
+                  {p.label}
+                  {code === s.plan && <span className="tag">Votre offre</span>}
+                  <div className="muted">{p.summary}</div>
+                </td>
+                <td className="num">{priceLabel(p.monthlyPrice)}</td>
+                <td className="num">{p.limits.locations ?? 'Illimité'}</td>
+                <td className="num">{p.limits.members ?? 'Illimité'}</td>
+                <td className="num">{p.limits.localServers ?? 'Illimité'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="muted">Pour changer d'offre ou renouveler, contactez GLOBALTECH BUSINESS TD (mobile money ou virement) : l'offre est activée depuis la plateforme AfriKaisse.</p>
+    </fieldset>
+  );
+}
+
+function SubscriptionDialog({ tenant, onClose, onSaved }: { tenant: PlatformTenant; onClose: () => void; onSaved: () => void }) {
+  const [plan, setPlan] = useState<PlanCode>((PLAN_CODES as readonly string[]).includes(tenant.plan) ? (tenant.plan as PlanCode) : 'STARTER');
+  const [months, setMonths] = useState(1);
+  const [unlimited, setUnlimited] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const next = unlimited ? null : months > 0 ? extendExpiry(tenant.planExpiresAt, months, Date.now()) : tenant.planExpiresAt;
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await api('POST', `/platform/tenants/${tenant.id}/subscription`, { plan, months: unlimited ? 0 : months, unlimited });
+      onSaved();
+    } catch (err) {
+      setError(err);
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <Dialog
+        title={`Abonnement — ${tenant.name}`}
+        onClose={onClose}
+        footer={
+          <>
+            <button className="btn btn-primary" disabled={busy}>
+              Enregistrer
+            </button>
+            <button type="button" className="btn" onClick={onClose}>
+              Annuler
+            </button>
+          </>
+        }
+      >
+        <div className="dialog-body">
+          <ErrorMessage error={error} />
+          <div className="form">
+            <label htmlFor="s-plan">Offre</label>
+            <select id="s-plan" value={plan} onChange={(e) => setPlan(e.target.value as PlanCode)}>
+              {PLAN_CODES.map((code) => (
+                <option key={code} value={code}>
+                  {PLANS[code].label} — {priceLabel(PLANS[code].monthlyPrice)}
+                </option>
+              ))}
+            </select>
+            <label htmlFor="s-months">Mois réglés</label>
+            <select id="s-months" value={months} disabled={unlimited} onChange={(e) => setMonths(Number(e.target.value))}>
+              {[0, 1, 3, 6, 12, 24].map((m) => (
+                <option key={m} value={m}>
+                  {m === 0 ? "Aucun (changer d'offre seulement)" : `${m} mois`}
+                </option>
+              ))}
+            </select>
+            <label htmlFor="s-unlimited">Sans échéance</label>
+            <input id="s-unlimited" type="checkbox" checked={unlimited} onChange={(e) => setUnlimited(e.target.checked)} />
+            <label htmlFor="s-current">Échéance actuelle</label>
+            <input id="s-current" readOnly value={expiryLabel(tenant.planExpiresAt)} />
+            <label htmlFor="s-next">Nouvelle échéance</label>
+            <input id="s-next" readOnly value={expiryLabel(next)} />
+          </div>
+        </div>
+      </Dialog>
+    </form>
   );
 }
