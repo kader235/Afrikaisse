@@ -14,3 +14,4 @@ export * from './orders.ts';
 export * from './pos.ts';
 export * from './kitchen.ts';
 export * from './reports.ts';
+export * from './setup.ts';

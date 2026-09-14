@@ -176,6 +176,22 @@ Résultat :
 Installateur `AfriKaisse-Setup-0.1.0.exe` compilé (Inno Setup 6). L'installation réelle
 (administrateur, pare-feu) reste à faire par Kader sur un poste.
 
+## Mise en route et démonstration, §70-71 (152 tests au total)
+
+| Domaine | Vérifié |
+|---|---|
+| État de mise en route | Restaurant neuf : 0 table, 0 produit, 2 postes, 1 membre, pas prêt ; après démonstration : 2 zones, 10 tables, 5 catégories, 19 produits, 3 postes, prêt ; première commande comptée |
+| Démonstration | Serveur refusé ; installée une fois (seconde fois 409) ; grillades au Grill, boissons au Bar ; 10 QR et menu client aux 5 catégories ; vente immédiate d'un burger double à options + 2 brochettes = 14 500 ; journal `demo.loaded` |
+| Protection | Établissement avec un produit : refus « vide » ; autre organisation : 404 |
+
+**Essai dans le navigateur** :
+- création du restaurant « Maquis Démo Centre » ;
+- ouverture directe sur « Bien démarrer » (0 étape sur 5, offre de démonstration) ;
+- installation de la démonstration ;
+- étapes « salle » et « carte » cochées ;
+- plan de salle avec Salle et Terrasse ;
+- menu aux 5 catégories.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

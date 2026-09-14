@@ -22,6 +22,7 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | 8 | Plan de salle vivant pour les serveurs (libre, occupée, prête, appel/addition/QR, réglée), fiche de service, commande à table en plein écran ; scénario complet du cahier des charges (QR → cuisine → service → paiement → table libérée → Z) | ✅ 140 tests |
 | 11 | **Serveur du restaurant installable** : `AfriKaisse-Setup.exe` (Node embarqué, application servie par le serveur, lanceur sans fenêtre, écran de démarrage, port résistant et vérifié, pare-feu limité au réseau local, démarrage avec Windows, données conservées) | ✅ paquet essayé sur le poste ; installateur compilé |
 | 14 | Tableau de bord : chiffre d'affaires, encaissé, ticket moyen, jours, heures de pointe, modes de paiement, produits, export CSV | ✅ 148 tests |
+| §70-71 | « Bien démarrer » (étapes de mise en route) et restaurant de démonstration en un geste (10 tables, 19 plats africains à options, postes cuisine/grill/bar) | ✅ 152 tests |
 | 9 | Impression tickets cuisine et reçus (ESC/POS), agent d'impression | À venir (tickets 80 mm par le navigateur déjà disponibles) |
 
 ## Démarrer

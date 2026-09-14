@@ -297,6 +297,7 @@ const fr = {
   'nav.pos': 'Caisse',
   'nav.kitchen': 'Cuisine',
   'nav.reports': 'Tableau de bord',
+  'nav.start': 'Bien démarrer',
 };
 export type MessageKey = keyof typeof fr;
 type Dictionary = Partial<Record<MessageKey, string>>;

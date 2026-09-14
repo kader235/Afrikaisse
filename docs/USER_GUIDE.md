@@ -13,6 +13,25 @@
    - Votre nom, votre adresse e-mail et un mot de passe d'au moins 10 caractères.
 3. Vous êtes connecté comme **Propriétaire**.
 
+## Bien démarrer
+
+Tant que l'établissement n'a ni table ni produit, AfriKaisse s'ouvre sur **Bien démarrer** (propriétaire, administrateur, gérant) :
+1. dessiner la salle ;
+2. composer la carte ;
+3. ajouter l'équipe ;
+4. ouvrir la caisse ;
+5. prendre la première commande.
+
+Chaque étape a son bouton, et une coche verte apparaît quand elle est faite.
+
+**Essayer avec un restaurant de démonstration** installe en un geste :
+- une salle et une terrasse, avec 10 tables et leurs QR codes ;
+- une carte de 19 plats et boissons en 5 catégories (yassa, thiéboudienne, kissar, grillades, bissap…), avec options (cuisson, accompagnement, suppléments, piment) et allergènes ;
+- un poste **Grill** en plus de la cuisine et du bar.
+
+Pratique pour découvrir la caisse, l'écran cuisine et le menu client avant de saisir sa propre carte.
+Elle ne s'installe que sur un établissement **vide**. Tout se modifie ou s'archive ensuite.
+
 ## Se connecter
 
 Adresse e-mail et mot de passe. Après 5 erreurs de suite, la connexion est bloquée 15 minutes.
