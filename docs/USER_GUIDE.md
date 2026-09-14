@@ -13,24 +13,19 @@
    - Votre nom, votre adresse e-mail et un mot de passe d'au moins 10 caractères.
 3. Vous êtes connecté comme **Propriétaire**.
 
-## Bien démarrer
+## Se repérer dans l'application
 
-Tant que l'établissement n'a ni table ni produit, AfriKaisse s'ouvre sur **Bien démarrer** (propriétaire, administrateur, gérant) :
-1. dessiner la salle ;
-2. composer la carte ;
-3. ajouter l'équipe ;
-4. ouvrir la caisse ;
-5. prendre la première commande.
+- En haut : le nom du restaurant, **quatre onglets au plus**, choisis selon votre métier, et votre avatar.
+  - Propriétaire et administrateur : Tableau de bord, Commandes, Caisse, Menu.
+  - Gérant : Commandes, Caisse, Plan de salle, Menu.
+  - Caissier : Caisse, Commandes. Serveur : Plan de salle, Commandes. Cuisine et bar : Écran cuisine.
+- **Plus** (ou votre avatar) ouvre un panneau de grandes tuiles : le reste du service (plan de salle,
+  cuisine, stock…), l'administration (organisation, établissements, équipe, journal), votre compte, la
+  langue, le thème **clair ou sombre**, et **Se déconnecter**.
+- Sur téléphone, les onglets passent en barre en bas de l'écran.
 
-Chaque étape a son bouton, et une coche verte apparaît quand elle est faite.
-
-**Essayer avec un restaurant de démonstration** installe en un geste :
-- une salle et une terrasse, avec 10 tables et leurs QR codes ;
-- une carte de 19 plats et boissons en 5 catégories (yassa, thiéboudienne, kissar, grillades, bissap…), avec options (cuisson, accompagnement, suppléments, piment) et allergènes ;
-- un poste **Grill** en plus de la cuisine et du bar.
-
-Pratique pour découvrir la caisse, l'écran cuisine et le menu client avant de saisir sa propre carte.
-Elle ne s'installe que sur un établissement **vide**. Tout se modifie ou s'archive ensuite.
+Pour démarrer vite : **Menu → Importer des plats** (voir plus bas), puis **Plus → Plan de salle** pour
+les tables et leurs QR.
 
 ## Se connecter
 
@@ -121,6 +116,21 @@ Menu **Menu**, trois onglets.
 - **Épuisé / Disponible** : un toucher pendant le service. La cuisine, le bar et la caisse peuvent le
   faire ; le client voit aussitôt « Épuisé » sur son menu.
 
+### Importer des plats
+**Importer des plats** (propriétaire, administrateur, gérant) évite de saisir la carte à la main.
+1. Choisir le **pays** : l'onglet « Vendus au … » propose les plats courants de ce pays ; les autres
+   onglets regroupent l'Afrique centrale, de l'Ouest, du Nord, de l'Est et du Sud, la cuisine du monde
+   et le fast-food, les boissons, les desserts et le petit-déjeuner.
+2. Toucher les plats que vous vendez. Chaque carte montre le **nom**, le **prix indicatif** dans votre
+   devise, une **courte description** et la **photo**. Décocher **Disponible** pour importer un plat
+   sans le proposer tout de suite.
+3. **Importer** : les catégories manquantes (Plats, Grillades, Boissons…) sont créées, puis les plats
+   arrivent avec leur photo.
+
+Les plats déjà présents dans votre menu sont grisés et jamais importés deux fois. **Vérifiez les
+prix** après l'import : ce sont des prix courants, pas les vôtres. Les photos du catalogue sont libres
+de droits (domaine public ou CC0).
+
 ### Options
 Les groupes d'options se créent une fois et servent à plusieurs produits.
 - **Choix minimum 1, maximum 1** : un choix obligatoire (Cuisson).
@@ -162,8 +172,10 @@ ligne momentanément indisponible » : le client commande alors auprès d'un ser
 Menu **Commandes**, ouvert par défaut pour le personnel de salle.
 - Les nouvelles commandes QR arrivent seules, en quelques secondes, avec un **signal sonore** (après
   un premier toucher sur l'écran, exigé par les navigateurs) et une pastille rouge sur l'onglet.
-- Filtres **À confirmer**, **En cours**, **Prêtes**.
-- Toucher une commande affiche son détail : plats, options, remarques du client, total, historique.
+- Quatre colonnes, de gauche à droite : **À confirmer** (rouge), **En cuisine** (jaune), **Prêtes**
+  (vert), **Servies · à encaisser** (bleu). Chaque commande est une carte : numéro, table, temps écoulé
+  (en rouge quand elle attend trop), articles, et un bouton pour l'étape suivante.
+- Toucher une carte ouvre son détail : plats, options, remarques du client, total, historique.
 - Les boutons suivent le service : **Confirmer** ou **Refuser** (commande QR), **En préparation**,
   **Prête**, **Servie**, **Terminer**. Chacun ne voit que les boutons de son rôle.
 - **Annuler** une commande déjà partie en cuisine est réservé aux responsables, avec un motif
