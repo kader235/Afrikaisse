@@ -313,7 +313,8 @@ export async function recordPayment(ctx: AppContext, scope: TenantScope, locatio
     }
 
     const payment = await trx.selectFrom('payments').selectAll().where('id', '=', paymentId).executeTakeFirstOrThrow();
-    await recordChange(trx, ctx, { tenantId: scope.tenantId, locationId, entityType: 'payment', entityId: paymentId, operation: 'PAYMENT_RECORDED', payload: { payment, allocations }, hlc });
+    const allocationRows = await trx.selectFrom('payment_allocations').selectAll().where('payment_id', '=', paymentId).execute();
+    await recordChange(trx, ctx, { tenantId: scope.tenantId, locationId, entityType: 'payment', entityId: paymentId, operation: 'PAYMENT_RECORDED', payload: { payment, allocations: allocationRows }, hlc });
     for (const sessionId of new Set(orders.map((o) => o.table_session_id))) {
       await closeSessionIfSettled(trx, ctx, sessionId, scope.userId);
     }

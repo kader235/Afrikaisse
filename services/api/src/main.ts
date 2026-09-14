@@ -4,6 +4,7 @@ import { createDatabase, databaseConfigFromUrl, migrateToLatest, type AppDatabas
 import { buildApp } from './app.ts';
 import { backupNow, scheduleBackups } from './lib/backup.ts';
 import { startPrintWorker } from './services/printing.ts';
+import { startSyncLoop } from './services/sync/client.ts';
 import { loadConfig } from './config.ts';
 
 async function main() {
@@ -27,6 +28,7 @@ async function main() {
     if (backups) scheduleBackups(database, backups, (err) => app.log.error({ err }, 'Sauvegarde horaire impossible'));
     // Seul le serveur du restaurant voit les imprimantes du réseau local.
     startPrintWorker(ctx, (err) => app.log.error({ err }, "File d'impression"));
+    startSyncLoop(ctx, (err) => app.log.warn({ err }, 'Synchronisation avec le Cloud'));
   }
 
   const shutdown = async () => {

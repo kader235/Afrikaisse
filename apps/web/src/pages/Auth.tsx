@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { CURRENCY_CODES, LOCATION_TYPES, type SessionResponse } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
@@ -61,6 +61,16 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
   const [password, setPassword] = useState('');
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  // Serveur local neuf : il peut être relié à un établissement du Cloud au lieu d'en créer un.
+  const [canPair, setCanPair] = useState(false);
+  const [pairing, setPairing] = useState(false);
+  const [paired, setPaired] = useState<string | null>(null);
+  useEffect(() => {
+    api<{ profile: string; configured?: boolean }>('GET', '/health').then(
+      (h) => setCanPair(h.profile === 'local' && h.configured === false),
+      () => setCanPair(false),
+    );
+  }, [pairing]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -75,6 +85,19 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
     }
   }
 
+  if (pairing) {
+    return (
+      <PairScreen
+        server={server}
+        onCancel={() => setPairing(false)}
+        onDone={(message) => {
+          setPaired(message);
+          setPairing(false);
+        }}
+      />
+    );
+  }
+
   return (
     <form onSubmit={submit}>
       <AccessScreen
@@ -85,6 +108,11 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
             <button type="button" className="link" onClick={onRegister}>
               {t('auth.createRestaurant')}
             </button>
+            {canPair && (
+              <button type="button" className="link" onClick={() => setPairing(true)}>
+                Relier à AfriKaisse Cloud
+              </button>
+            )}
             <button className="btn btn-primary" disabled={busy}>
               {busy ? t('common.loading') : t('auth.login.submit')}
             </button>
@@ -92,11 +120,69 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
         }
       >
         <ErrorMessage error={error} />
+        {paired && (
+          <div className="msg msg-ok" role="status">
+            {paired}
+          </div>
+        )}
         <div className="form" style={{ gridTemplateColumns: '120px minmax(0,1fr)' }}>
           <label htmlFor="login-email">{t('auth.email')}</label>
           <input id="login-email" type="email" autoComplete="username" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} />
           <label htmlFor="login-password">{t('auth.password')}</label>
           <input id="login-password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+        </div>
+      </AccessScreen>
+    </form>
+  );
+}
+
+/** Serveur local neuf : reprendre un établissement du Cloud (équipe, salle, carte) avec un code d'appairage. */
+function PairScreen({ server, onDone, onCancel }: { server?: ServerSwitch; onDone: (message: string) => void; onCancel: () => void }) {
+  const [cloudUrl, setCloudUrl] = useState('https://app.afrikaisse.com');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState<unknown>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api<{ organization: string; location: string }>('POST', '/system/sync/pair', { cloudUrl: cloudUrl.trim(), code });
+      onDone(`Serveur relié à « ${r.organization} — ${r.location} ». Connectez-vous avec votre compte AfriKaisse Cloud.`);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit}>
+      <AccessScreen
+        server={server}
+        title="Relier au Cloud"
+        footer={
+          <div className="login-foot">
+            <button type="button" className="link" onClick={onCancel}>
+              Retour
+            </button>
+            <button className="btn btn-primary" disabled={busy}>
+              {busy ? 'Appairage…' : 'Relier ce serveur'}
+            </button>
+          </div>
+        }
+      >
+        <ErrorMessage error={error} />
+        <p className="muted" style={{ marginBottom: 10 }}>
+          Dans AfriKaisse Cloud, menu Établissements : choisissez l'établissement, puis « Relier un serveur local ». Un code de 8 caractères s'affiche pendant 10 minutes. L'équipe, la salle et la carte
+          sont copiées sur ce PC ; les ventes remontent ensuite au Cloud dès qu'Internet est là.
+        </p>
+        <div className="form" style={{ gridTemplateColumns: '140px minmax(0,1fr)' }}>
+          <label htmlFor="pair-url">Adresse du Cloud</label>
+          <input id="pair-url" type="url" required value={cloudUrl} onChange={(e) => setCloudUrl(e.target.value)} />
+          <label htmlFor="pair-code">Code</label>
+          <input id="pair-code" required autoFocus autoComplete="off" maxLength={9} placeholder="K7QM-3XRA" style={{ letterSpacing: '0.1em' }} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
         </div>
       </AccessScreen>
     </form>

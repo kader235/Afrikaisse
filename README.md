@@ -26,7 +26,8 @@ stock, paiements, statistiques. Il continue de fonctionner **quand Internet tomb
 | 13 | Stock : articles, réceptions, pertes, inventaires, recettes par version, déduction à la confirmation et restitution à l'annulation, épuisé automatique et retour au réapprovisionnement, coût matière | ✅ 158 tests |
 | §69 | Sauvegardes du serveur local : au démarrage avant migration et toutes les heures, copies vérifiées, rotation 24 h / 30 jours, sauvegarde à la demande | ✅ 160 tests ; essayé sur le paquet Windows |
 | 9 | Impression réseau ESC/POS : tickets de préparation par poste à la confirmation, reçus, test, file avec relance, accents français ; tickets 80 mm par le navigateur sans serveur local | ✅ 163 tests (fausse imprimante TCP) |
-| 12 | Synchronisation serveur local ↔ Cloud | À venir |
+| 12 | Synchronisation serveur local ↔ Cloud : appairage par code, copie initiale, envoi et réception idempotents, dernier écrivain gagnant par HLC, commandes QR en ligne d'un établissement hybride, garde de périmètre côté Cloud | ✅ 165 tests (Cloud et serveur local réels) |
+| 17-18 | Abonnements SaaS, durcissement (limites par IP, performances) | À venir |
 
 ## Démarrer
 

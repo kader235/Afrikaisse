@@ -191,9 +191,14 @@ export async function addHistory(
 }
 
 export async function emitOrder(trx: Db, ctx: AppContext, orderId: string, operation: 'ORDER_PLACED' | 'ORDER_STATUS_CHANGED' | 'ORDER_UPDATED', hlc: string) {
-  const [order] = await hydrateOrders(trx, await trx.selectFrom('orders').selectAll().where('id', '=', orderId).execute());
-  const row = await trx.selectFrom('orders').select(['tenant_id', 'location_id']).where('id', '=', orderId).executeTakeFirstOrThrow();
-  await recordChange(trx, ctx, { tenantId: row.tenant_id, locationId: row.location_id, entityType: 'order', entityId: orderId, operation, payload: order!, hlc });
+  const rows = await trx.selectFrom('orders').selectAll().where('id', '=', orderId).execute();
+  const [order] = await hydrateOrders(trx, rows);
+  const row = rows[0]!;
+  // Lignes brutes en plus de la commande lisible : le nœud qui reçoit les rejoue telles quelles (SYNC.md).
+  const items = await trx.selectFrom('order_items').selectAll().where('order_id', '=', orderId).execute();
+  const modifiers = items.length ? await trx.selectFrom('order_item_modifiers').selectAll().where('order_item_id', 'in', items.map((i) => i.id)).execute() : [];
+  const history = await trx.selectFrom('order_status_history').selectAll().where('order_id', '=', orderId).execute();
+  await recordChange(trx, ctx, { tenantId: row.tenant_id, locationId: row.location_id, entityType: 'order', entityId: orderId, operation, payload: { order: order!, rows: { order: row, items, modifiers, history } }, hlc });
 }
 
 // --- Lecture ----------------------------------------------------------------
@@ -317,7 +322,10 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
         const hlc = ctx.clock.now();
         const sessionId = await openSession(trx, ctx, { tenantId: qr.tenant_id, locationId: qr.location_id, tableId: qr.table_id, userId: null }, hlc);
         const date = businessDate(now, qr.timezone, qr.business_day_cutoff_min);
-        const number = await nextOrderNumber(trx, qr.location_id, date);
+        // Établissement hybride : le Cloud numérote ses commandes QR à partir de 901, le serveur local
+        // garde 1, 2, 3… : les deux ne se marchent jamais dessus en se synchronisant.
+        const number =
+          ctx.config.profile === 'cloud' && qr.operating_mode === 'HYBRID' ? 900 + (await nextOrderNumber(trx, qr.location_id, `${date}#cloud`)) : await nextOrderNumber(trx, qr.location_id, date);
         const order = { id: orderId, tenant_id: qr.tenant_id, location_id: qr.location_id };
         await trx
           .insertInto('orders')

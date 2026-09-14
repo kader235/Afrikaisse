@@ -227,6 +227,23 @@ Les tests ouvrent une **fausse imprimante** : un serveur TCP qui garde les octet
 | Panne | Imprimante sur un port fermé : test « injoignable » ; trois tentatives espacées → échec avec l'erreur ; relance → en attente ; les autres tickets sortent |
 | Isolation | Liste, test, relance d'une autre organisation → 404 |
 
+## Phase 12 — synchronisation (165 tests au total)
+
+Un **vrai Cloud** (SQLite, puis PostgreSQL) et un **vrai serveur local** (SQLite), reliés par un
+transport qui remplace le réseau (`syncTransport`), dans un seul scénario :
+
+| Étape | Vérifié |
+|---|---|
+| Appairage | Serveur refusé pour le code ; code `XXXX-XXXX` ; serveur local neuf « non configuré » ; code faux 404 ; bon code en minuscules → organisation et établissement ; second appairage 403 ; établissement passé « serveur local » dans le Cloud |
+| Hors ligne | Connexion sur le PC avec le compte du Cloud ; carte et 2 QR copiés |
+| Montée | Caisse, commande T1, paiement → commande n°1 payée visible dans le Cloud, rapport 2 000 / 2 000 |
+| Descente | Prix changé en ligne → reçu sur le PC |
+| Rejeu | Tous les événements renvoyés : aucun conflit, toujours une seule commande dans le Cloud |
+| QR hybride | Commande QR en ligne n°901 → descendue « en attente » sur T2 → confirmée sur place → le client la voit confirmée en ligne |
+| Sécurité | Secret faux 401 ; identifiant mal formé 400 ; écriture dans une organisation voisine `REJECTED` ; élévation « administrateur plateforme » neutralisée (le renommage passe, le droit non) |
+
+**Défaut trouvé par ce test et corrigé** : sous PostgreSQL, un identifiant d'événement mal formé provoquait une erreur interne (colonne UUID). Il est désormais refusé dès l'entrée.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

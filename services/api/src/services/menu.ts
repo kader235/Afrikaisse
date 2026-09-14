@@ -652,7 +652,7 @@ export async function uploadMedia(ctx: AppContext, scope: TenantScope, locationI
       entityType: 'media',
       entityId: id,
       operation: 'UPSERT',
-      payload: { id, content_type: info.contentType, size: bytes.length, width: info.width, height: info.height, sha256 },
+      payload: { id, tenant_id: scope.tenantId, location_id: locationId, content_type: info.contentType, size: bytes.length, width: info.width, height: info.height, sha256, bytes: { $bytes: bytes.toString('base64') }, created_by: scope.userId, created_at: ctx.now() },
       hlc: ctx.clock.now(),
     });
     await writeAudit(trx, ctx, { tenantId: scope.tenantId, locationId, actorUserId: scope.userId, action: 'menu.photo_uploaded', entityType: 'media', entityId: id, data: { size: bytes.length, width: info.width, height: info.height }, meta });

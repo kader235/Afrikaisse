@@ -17,3 +17,4 @@ export * from './reports.ts';
 export * from './setup.ts';
 export * from './stock.ts';
 export * from './printing.ts';
+export * from './sync.ts';

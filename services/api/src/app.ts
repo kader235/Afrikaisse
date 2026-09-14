@@ -19,6 +19,8 @@ import type { AppConfig } from './config.ts';
 import type { AppContext } from './context.ts';
 import { initNode } from './lib/node.ts';
 import { lanUrls, registerWebApp } from './lib/web.ts';
+import { setSyncTransport, type SyncTransport } from './services/sync/client.ts';
+import { syncRoutes } from './routes/sync.ts';
 import { authRoutes } from './routes/auth.ts';
 import { floorRoutes } from './routes/floor.ts';
 import { menuRoutes, publicRoutes } from './routes/menu.ts';
@@ -40,6 +42,8 @@ export interface BuildOptions {
   config: AppConfig;
   logger?: FastifyServerOptions['logger'];
   now?: () => number;
+  /** Tests : appels vers le Cloud sans réseau. */
+  syncTransport?: SyncTransport;
 }
 
 /**
@@ -60,6 +64,7 @@ export async function buildApp(opts: BuildOptions) {
     clock: new HybridClock(node.nodeId, now),
     now,
   };
+  if (opts.syncTransport) setSyncTransport(ctx, opts.syncTransport);
 
   const app = Fastify({ logger: opts.logger ?? false, trustProxy: config.trustProxy, bodyLimit: 1024 * 1024 }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
@@ -121,6 +126,8 @@ export async function buildApp(opts: BuildOptions) {
             time: z.number(),
             /** Serveur local : adresses à saisir sur les tablettes et téléphones du restaurant. */
             lanUrls: z.array(z.string()).optional(),
+            /** Serveur local : false tant qu'aucun restaurant n'est créé ni relié au Cloud. */
+            configured: z.boolean().optional(),
           }),
         },
       },
@@ -130,7 +137,8 @@ export async function buildApp(opts: BuildOptions) {
       const base = { status: 'ok' as const, profile: config.profile, nodeId: ctx.nodeId, database: ctx.dbKind, version: API_VERSION, time: ctx.now() };
       if (config.profile !== 'local') return base;
       const address = app.server.address();
-      return { ...base, lanUrls: lanUrls(address && typeof address === 'object' ? address.port : config.port) };
+      const tenant = await ctx.db.selectFrom('tenants').select('id').limit(1).executeTakeFirst();
+      return { ...base, lanUrls: lanUrls(address && typeof address === 'object' ? address.port : config.port), configured: !!tenant };
     },
   );
 
@@ -151,6 +159,7 @@ export async function buildApp(opts: BuildOptions) {
   await app.register(stockRoutes(ctx), { prefix: '/api' });
   await app.register(systemRoutes(ctx, database), { prefix: '/api' });
   await app.register(printerRoutes(ctx), { prefix: '/api' });
+  await app.register(syncRoutes(ctx), { prefix: '/api' });
   if (config.profile === 'cloud') {
     await app.register(platformRoutes(ctx), { prefix: '/api/platform' });
   }

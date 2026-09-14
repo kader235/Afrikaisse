@@ -32,6 +32,7 @@ export async function initNode(db: Db, profile: Profile, now: number) {
       last_seen_at: now,
       created_at: now,
       updated_at: now,
+      secret_hash: null,
     })
     .onConflict((oc) => oc.column('id').doNothing())
     .execute();

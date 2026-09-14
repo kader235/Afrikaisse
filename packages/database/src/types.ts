@@ -141,6 +141,20 @@ export interface DevicesTable {
   last_seen_at: number | null;
   created_at: number;
   updated_at: number;
+  /** Serveur local appairé : empreinte SHA-256 de son secret (le secret n'est jamais stocké). */
+  secret_hash: string | null;
+}
+
+/** Code d'appairage d'un serveur local : usage unique, 10 minutes. */
+export interface PairingCodesTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  code_hash: string;
+  expires_at: number;
+  used_at: number | null;
+  created_by: string | null;
+  created_at: number;
 }
 
 /** Identité et état de CE nœud (clé/valeur). */
@@ -604,6 +618,7 @@ export interface PrintJobsTable {
 }
 
 export interface Database {
+  pairing_codes: PairingCodesTable;
   printers: PrintersTable;
   print_jobs: PrintJobsTable;
   inventory_items: InventoryItemsTable;

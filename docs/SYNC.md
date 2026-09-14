@@ -1,8 +1,9 @@
 # AfriKaisse — Synchronisation Local ↔ Cloud
 
-> État : le **journal** (outbox) est écrit depuis la phase 1, dans la même transaction que chaque
-> modification. Le **transport** (push/pull) est la phase 12. Ce document fixe les règles pour que
-> le code écrit d'ici là les respecte.
+> État : **livrée en phase 12**. Le journal (outbox) est écrit depuis la phase 1 ; le transport
+> (appairage, push, pull) est dans `services/api/src/services/sync/` (`apply.ts` commun,
+> `server.ts` côté Cloud, `client.ts` côté serveur local). Voir « Ce qui est en place » en fin de
+> document pour l'écart avec la cible décrite ci-dessous.
 
 ## 1. Principes
 
@@ -122,6 +123,52 @@ back-office, commandes QR, changements d'abonnement.
 Chaque nœud expose : événements `PENDING` (nombre, âge du plus ancien), `FAILED`, `CONFLICT`,
 dernier push et pull réussis, écart d'horloge avec le Cloud. Ces valeurs alimentent l'écran d'état
 (§68) et le back-office (§67).
+
+## Ce qui est en place (phase 12)
+
+**Appairage** (§8, sens « Cloud d'abord ») :
+1. Dans le Cloud, **Établissements → Relier un serveur local** : code `XXXX-XXXX`, usage unique, 10 minutes (empreinte SHA-256 seulement en base ; au-delà de 20 échecs en 10 minutes, les essais sont bloqués).
+2. Sur le PC, serveur **neuf** (aucun restaurant) : écran de connexion → **Relier à AfriKaisse Cloud** → adresse et code.
+3. Le Cloud crée l'appareil `LOCAL_SERVER` et son secret (renvoyé une fois, stocké haché), passe l'établissement en `HYBRID`, et renvoie une **copie initiale** :
+   - organisation, établissement, membres (mots de passe compris, droits plateforme retirés), photos ;
+   - zones, tables, QR, postes, carte complète, imprimantes, stock et recettes ;
+   - le curseur courant.
+4. Le serveur local l'insère et retient `sync_cloud_url`, `sync_device_id`, `sync_device_secret`, `sync_location_id` et `sync_cursor` dans `node_state`.
+
+**Boucle** (toutes les 5 s, serveur local relié) :
+- **push** : les événements `PENDING` de ce nœud, par lots de 200, en-têtes `x-afk-device` / `x-afk-device-secret`. Réponses `APPLIED` / `DUPLICATE` → `SYNCED` ; `CONFLICT` / `REJECTED` → `CONFLICT` avec le motif.
+- **pull** : les événements du tenant après le curseur, par pages de 500 :
+  - venant d'un autre nœud, et seulement `SYNCED` ;
+  - de cet établissement, ou sans établissement (organisation, comptes).
+- **Idempotence** : l'`event_id` reçu est inscrit dans le `sync_events` du nœud qui reçoit. Un rejeu répond `DUPLICATE`, et un événement déjà reçu est ignoré.
+- **HLC** : chaque événement reçu passe par `clock.receive`.
+- **Signe de vie** : chaque appel authentifié met à jour `devices.last_seen_at` ; c'est lui qui rouvre les commandes QR en ligne (§6).
+- **Hors ligne** : l'erreur est gardée dans `sync_last_error`, rien n'est perdu, et tout part au retour d'Internet.
+
+**Application** (`apply.ts`) :
+
+| Événement | Règle |
+|---|---|
+| Maîtres (tenant, location, user, membership, zone, dining_table, qr_code, carte, station, printer, inventory_item, recipe_item, table_session, service_request, cash_session) | Insertion, ou mise à jour si `updated_hlc` reçu > local ; `DELETE` supprime |
+| `cash_movement`, `inventory_movement`, `media` (octets en `{ $bytes }`) | Insérés si absents, jamais réécrits |
+| `order` | La charge porte les lignes brutes (`rows.order/items/modifiers/history`) : commande par HLC, lignes rejouées, options et historique ajoutés si absents |
+| `payment` | `PAYMENT_RECORDED` : paiement et parts ajoutés si absents ; `PAYMENT_VOIDED` : ligne remplacée |
+| Sessions de connexion, file d'impression, compteurs | Jamais synchronisés |
+
+**Garde du Cloud** (un serveur local compromis ne sort pas de son périmètre) :
+- **Périmètre** : chaque ligne doit appartenir à son organisation et à son établissement, sinon `REJECTED`.
+- **Organisation** : le statut, l'offre et le mode démo ne sont pas modifiables.
+- **Comptes** : jamais de droits plateforme ; pas de modification d'un compte partagé avec une autre organisation ; pas d'adresse e-mail déjà prise.
+
+**Commandes QR d'un établissement hybride** : le Cloud les numérote à partir de **901** (compteur
+`<journée>#cloud`), le serveur local garde 1, 2, 3… ; elles descendent « en attente », sont
+confirmées sur place, et le client suit l'avancement en ligne.
+
+Limites connues, à reprendre :
+- une même table ouverte des deux côtés au même instant (session ouverte en double) produit un conflit gardé pour revue ;
+- l'historique des ventes antérieur à l'appairage reste dans le Cloud ;
+- il n'y a pas encore d'écran de revue des conflits (compteur « à revoir » dans Organisation) ;
+- la révocation d'un appareil se fait depuis la base.
 
 ## 10. Tests exigés (phase 12)
 

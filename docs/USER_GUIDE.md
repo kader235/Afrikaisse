@@ -311,6 +311,18 @@ réellement reçu. L'écart entre les deux, ce sont les additions encore ouverte
 
 Les données restent sur le PC (`C:\ProgramData\AfriKaisse`), même si l'on désinstalle le logiciel.
 
+**Relier le PC au Cloud** (pour suivre le restaurant à distance, et proposer la commande QR en ligne) :
+1. Dans AfriKaisse Cloud (navigateur, avec Internet), menu **Établissements** : choisir l'établissement, puis **Relier un serveur local**. Un code s'affiche, par exemple `K7QM-3XRA`, valable 10 minutes.
+2. Sur le PC où AfriKaisse vient d'être installé, écran de connexion : **Relier à AfriKaisse Cloud**, saisir le code.
+3. L'équipe, la salle, la carte, le stock et les imprimantes arrivent sur le PC. On se connecte avec son compte habituel.
+
+Ensuite, la synchronisation est automatique, toutes les 5 secondes :
+- les ventes, la caisse et le stock du restaurant remontent au Cloud (tableau de bord à distance) ;
+- les changements faits en ligne (prix, carte, équipe) descendent au PC.
+
+Sans Internet, le restaurant travaille normalement ; tout part au retour de la connexion. Le menu
+**Organisation** montre l'état de la liaison et propose **Synchroniser maintenant**.
+
 **Sauvegardes** : AfriKaisse copie et vérifie sa base au démarrage puis toutes les heures, dans
 `C:\ProgramData\AfriKaisse\sauvegardes`. Le menu **Organisation** montre les dernières copies, avec
 **Sauvegarder maintenant**. Copiez ce dossier chaque semaine sur une clé USB : une panne du disque

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { CURRENCY_CODES, LOCATION_TYPES, OPERATING_MODES, type LocationDetails, type Me } from '@afrikaisse/core';
+import { CURRENCY_CODES, LOCATION_TYPES, OPERATING_MODES, type LocationDetails, type Me, type PairingCode } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { COUNTRIES, CUTOFF_OPTIONS, LOCATION_TYPE_LABELS, OPERATING_MODE_LABELS, TIMEZONES, formatMinutes } from '../labels.ts';
@@ -17,6 +17,21 @@ export function LocationsPage({ me, onChanged }: { me: Me; onChanged: () => void
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const selected = list?.find((l) => l.id === selectedId) ?? null;
+  const [isCloud, setIsCloud] = useState(false);
+  const [pairing, setPairing] = useState<PairingCode | null>(null);
+  useEffect(() => {
+    api<{ profile: string }>('GET', '/health').then((h) => setIsCloud(h.profile === 'cloud'), () => undefined);
+  }, []);
+
+  async function createPairingCode(location: LocationDetails) {
+    setError(null);
+    setNotice(null);
+    try {
+      setPairing(await api<PairingCode>('POST', `/locations/${location.id}/pairing-code`));
+    } catch (err) {
+      setError(err);
+    }
+  }
 
   const load = useCallback(async () => {
     setError(null);
@@ -74,6 +89,12 @@ export function LocationsPage({ me, onChanged }: { me: Me; onChanged: () => void
             <button className="btn" disabled={!selected} onClick={() => selected && setDialog({ kind: 'archive', location: selected })}>
               <Icon name="archive" />
               {t('loc.archive')}
+            </button>
+          )}
+          {isCloud && (
+            <button className="btn" disabled={!selected || selected.status !== 'ACTIVE'} onClick={() => selected && void createPairingCode(selected)}>
+              <Icon name="server" />
+              Relier un serveur local
             </button>
           )}
           <span className="sep" />
@@ -148,6 +169,35 @@ export function LocationsPage({ me, onChanged }: { me: Me; onChanged: () => void
         </div>
       </Window>
 
+      {pairing && (
+        <Dialog
+          title={`Relier un serveur local — ${pairing.locationName}`}
+          onClose={() => {
+            setPairing(null);
+            void load();
+          }}
+          footer={
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setPairing(null);
+                void load();
+              }}
+            >
+              Fermer
+            </button>
+          }
+        >
+          <div className="dialog-body">
+            <p>Sur le PC du restaurant, installez AfriKaisse, puis à l'écran de connexion choisissez « Relier à AfriKaisse Cloud » et saisissez :</p>
+            <p className="pairing-code">{pairing.code}</p>
+            <p className="muted">
+              Valable jusqu'à {new Date(pairing.expiresAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, une seule fois. Une fois relié, l'établissement passe en mode « serveur local » :
+              la caisse, la cuisine et les commandes fonctionnent même sans Internet, et tout remonte ici dès que la connexion revient.
+            </p>
+          </div>
+        </Dialog>
+      )}
       {dialog?.kind === 'form' && <LocationDialog location={dialog.location} onSaved={applySaved} onClose={() => setDialog(null)} />}
       {dialog?.kind === 'archive' && (
         <Dialog

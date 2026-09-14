@@ -231,6 +231,26 @@ fois n'est pas réimprimée. La file est vidée par le **serveur local** toutes 
 
 Le texte part en ESC/POS, page de codes 850 (accents français).
 
+## Routes de la phase 12 — synchronisation
+
+Cloud :
+
+| Méthode | Route | Accès | Rôle |
+|---|---|---|---|
+| POST | `/api/locations/{id}/pairing-code` | `location.manage` | Code d'appairage `XXXX-XXXX` (usage unique, 10 min) |
+| POST | `/api/sync/pair` | code | `{code, deviceName}` → identité et secret de l'appareil, copie initiale, curseur ; l'établissement passe en `HYBRID` |
+| POST | `/api/sync/push` | appareil (`x-afk-device`, `x-afk-device-secret`) | Jusqu'à 500 événements ; résultat par événement `APPLIED/DUPLICATE/CONFLICT/REJECTED` ; identifiants mal formés → 400 |
+| GET | `/api/sync/pull?since=` | appareil | Événements des autres nœuds pour cet établissement, curseur suivant |
+
+Serveur local :
+
+| Méthode | Route | Accès | Rôle |
+|---|---|---|---|
+| GET | `/api/health` | — | `configured` : false tant qu'aucun restaurant n'est créé ni relié |
+| POST | `/api/system/sync/pair` | serveur neuf | `{cloudUrl, code}` → 201 `{organization, location}` ; 403 si déjà configuré |
+| GET | `/api/system/sync` | `settings.manage` | Relié, adresse, dernier envoi / réception, en attente, à revoir, dernière erreur |
+| POST | `/api/system/sync/now` | `settings.manage` | Synchroniser tout de suite : `{pushed, pulled, conflicts, status}` |
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

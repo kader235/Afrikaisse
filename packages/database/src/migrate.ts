@@ -9,6 +9,7 @@ import { pos } from './migrations/0005_pos.ts';
 import { kitchen } from './migrations/0006_kitchen.ts';
 import { stock } from './migrations/0007_stock.ts';
 import { printing } from './migrations/0008_printing.ts';
+import { sync } from './migrations/0009_sync.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -26,6 +27,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0006_kitchen': kitchen(c),
     '0007_stock': stock(c),
     '0008_printing': printing(c),
+    '0009_sync': sync(c),
   };
 }
 
