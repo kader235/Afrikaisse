@@ -23,6 +23,8 @@ set -euo pipefail
 ADRESSE="https://afrikaisse.dametta.com"
 APP="$HOME/afrikaisse"
 ARCHIVE="$HOME/afrikaisse.tar.gz"
+# Plus ancienne version de PostgreSQL acceptée : 9.5 (INSERT … ON CONFLICT).
+PG_MINIMUM=90500
 
 NODE=""
 for candidat in "$HOME"/nodevenv/afrikaisse/*/bin/node; do
@@ -96,12 +98,10 @@ mkdir -p "$APP"
 echo "  Node $("$NODE" -v), dossier $APP"
 echo
 
-PREMIERE_FOIS=0
 echo "== Base de données et secrets =="
 if [ -f "$APP/.env" ]; then
   echo "  .env déjà en place : secrets conservés"
 else
-  PREMIERE_FOIS=1
   BASE="$(whoami)_afrikaisse"
   # cPanel refuse un utilisateur du même nom que la base.
   UTILISATEUR="$(whoami)_afk"
@@ -141,19 +141,6 @@ FIN
 fi
 echo
 
-echo "== Sauvegarde avant mise à jour =="
-if [ "$PREMIERE_FOIS" = "1" ]; then
-  echo "  base neuve : rien à sauvegarder"
-elif [ -f "$APP/sauvegarder.sh" ]; then
-  if ! bash "$APP/sauvegarder.sh"; then
-    echo "La sauvegarde a échoué : rien n'a été modifié. Envoyez une photo de cet écran."
-    exit 1
-  fi
-else
-  echo "  pas encore de script de sauvegarde (première version)"
-fi
-echo
-
 echo "== Application =="
 # web/ est remplacé en entier : ses fichiers changent de nom à chaque version.
 if [ -d "$APP/web" ] && [ -f "$APP/web/index.html" ]; then
@@ -171,14 +158,37 @@ echo "  version $ATTENDU posée"
 echo
 
 echo "== Base =="
-if ! (cd "$APP" && "$NODE" cli.cjs migrate); then
-  echo "La base n'a pas pu être mise à jour."
-  if [ "$PREMIERE_FOIS" = "1" ]; then
-    echo "Première installation : vérifiez le mot de passe et que l'utilisateur est bien ajouté à la base,"
+# Réponse attendue : « 90624 9.6.24 migrations=3 ». Sinon, c'est la connexion qui échoue.
+ETAT="$(cd "$APP" && "$NODE" cli.cjs db-version 2>&1 || true)"
+NUMERO="${ETAT%% *}"
+case "$NUMERO" in
+  ''|*[!0-9]*)
+    echo "Connexion à la base impossible :"
+    echo "  $ETAT"
+    echo "Vérifiez que l'utilisateur est bien ajouté à la base avec tous les privilèges,"
     echo "puis effacez le réglage raté et recommencez :"
     echo "  rm ~/afrikaisse/.env && bash ~/DEPOSER-AFRIKAISSE.sh base"
-  fi
+    exit 1
+    ;;
+esac
+VERSION_PG="$(printf '%s' "$ETAT" | cut -d' ' -f2)"
+MIGRATIONS="${ETAT##*migrations=}"
+echo "  PostgreSQL $VERSION_PG, $MIGRATIONS migration(s) déjà appliquée(s)"
+if [ "$NUMERO" -lt "$PG_MINIMUM" ]; then
+  echo "PostgreSQL $VERSION_PG est trop ancien : AfriKaisse a besoin de la version 9.5 au moins."
   echo "Envoyez une photo de cet écran."
+  exit 1
+fi
+
+if [ "$MIGRATIONS" = "0" ]; then
+  echo "  base encore vide : rien à sauvegarder"
+elif ! bash "$APP/sauvegarder.sh"; then
+  echo "La sauvegarde a échoué : la base n'a pas été modifiée. Envoyez une photo de cet écran."
+  exit 1
+fi
+
+if ! (cd "$APP" && "$NODE" cli.cjs migrate); then
+  echo "La base n'a pas pu être mise à jour. Envoyez une photo de cet écran."
   exit 1
 fi
 echo

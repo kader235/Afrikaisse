@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { sql } from 'kysely';
 import { createDatabase, databaseConfigFromUrl, migrateToLatest } from '@afrikaisse/database';
 import { loadConfig } from './config.ts';
 
@@ -18,6 +19,23 @@ async function main() {
       case 'migrate': {
         const applied = await migrateToLatest(database);
         console.log(applied.length ? `Migrations appliquées : ${applied.join(', ')}` : 'Base déjà à jour.');
+        break;
+      }
+      case 'db-version': {
+        // Lu par le script de dépôt o2switch : « 90624 9.6.24 migrations=3 ».
+        if (database.kind !== 'postgres') {
+          console.log(`0 ${database.kind} migrations=?`);
+          break;
+        }
+        const { rows } = await sql<{ num: string; nom: string }>`select current_setting('server_version_num') as num, current_setting('server_version') as nom`.execute(database.db);
+        let applied = 0;
+        try {
+          const count = await sql<{ n: string }>`select count(*) as n from kysely_migration`.execute(database.db);
+          applied = Number(count.rows[0]?.n ?? 0);
+        } catch {
+          applied = 0; // base neuve : la table de suivi n'existe pas encore
+        }
+        console.log(`${rows[0]!.num} ${rows[0]!.nom.split(' ')[0]} migrations=${applied}`);
         break;
       }
       case 'grant-platform-admin':

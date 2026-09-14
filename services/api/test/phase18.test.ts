@@ -6,7 +6,8 @@ import { businessDate } from '@afrikaisse/core';
 import { ENGINES, PASSWORD, as, registerOrg, startApp } from './helpers.ts';
 
 describe.each(ENGINES)('Durcissement (phase 18) — %s', (engine) => {
-  it('limite inscriptions, connexions et commandes QR par adresse IP, avec Retry-After', async () => {
+  // Une centaine de connexions et d'inscriptions, chacune avec un hachage de mot de passe volontairement lent.
+  it('limite inscriptions, connexions et commandes QR par adresse IP, avec Retry-After', { timeout: 120_000 }, async () => {
     const t = await startApp(engine, { AFK_RATE_LIMIT: 'true' });
     try {
       const from = (ip: string) => ({ 'x-forwarded-for': ip });

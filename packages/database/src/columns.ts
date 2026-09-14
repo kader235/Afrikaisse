@@ -8,7 +8,7 @@ export interface ColumnKit {
   ts: 'bigint' | 'integer';
   money: 'bigint' | 'integer';
   blob: 'bytea' | 'blob';
-  autoPk: { type: 'bigint' | 'integer'; build: (col: ColumnDefinitionBuilder) => ColumnDefinitionBuilder };
+  autoPk: { type: 'bigserial' | 'integer'; build: (col: ColumnDefinitionBuilder) => ColumnDefinitionBuilder };
 }
 
 export function columnKit(kind: DialectKind): ColumnKit {
@@ -19,7 +19,8 @@ export function columnKit(kind: DialectKind): ColumnKit {
       ts: 'bigint',
       money: 'bigint',
       blob: 'bytea',
-      autoPk: { type: 'bigint', build: (col) => col.primaryKey().generatedAlwaysAsIdentity() },
+      // bigserial et non « generated always as identity » (PostgreSQL 10+) : o2switch sert un PostgreSQL plus ancien.
+      autoPk: { type: 'bigserial', build: (col) => col.primaryKey() },
     };
   }
   return {
