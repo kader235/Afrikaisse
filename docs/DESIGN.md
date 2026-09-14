@@ -142,6 +142,17 @@ Au doigt, la base passe à 16 px.
 - **Cuisine** : reste sombre ; postes en boutons (Tous, Cuisine, Bar…), colonnes pleine hauteur, minuteur « m:ss »
   puis « 1 h 05 » au-delà d'une heure.
 
+## Tables
+
+- **Deux modes** (bascule à droite des zones, pour qui gère les tables) : **Service** par défaut, **Aménager** pour
+  zones, tables et disposition (les outils n'apparaissent que là, plan complet quadrillé en « Disposer »).
+- **En service**, le plan est recadré sur les tables et agrandi à la place disponible ; toucher une table ouvre sa fiche
+  à droite (360 px ; en dessous en portrait) : état, demandes et QR à confirmer en cartes d'alerte blanches, commandes,
+  reste à payer, puis boutons en bas (Nouvelle commande ; Encaisser, Addition ; Changer de table, Libérer).
+- Sans table choisie : Libres / Occupées / À traiter et les tables qui attendent quelque chose, touchables.
+- Pages de travail (caisse, commandes, cuisine, tables) : `flex: 1 1 0`, jamais agrandies par leur contenu ; chaque
+  liste défile dans son cadre, les boutons du bas restent à l'écran.
+
 ## Écrire
 
 Libellés courts qui disent ce qui se passe : « Nouvelle commande », « Encaisser », « Fermer la caisse ». Pas de texte

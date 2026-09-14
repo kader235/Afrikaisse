@@ -1144,7 +1144,7 @@ input[type='radio']:focus {
    l'envoi et l'encaissement restent toujours à l'écran. */
 .page-pos {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 520px;
 }
@@ -2404,7 +2404,7 @@ table.grid td.empty {
 /* Commandes : la page occupe la hauteur ; une colonne par étape, chacune défile de son côté. */
 .page-orders {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 520px;
 }
@@ -3683,7 +3683,143 @@ table.grid td.empty {
   margin-top: 12px;
 }
 
+/* Tables : barre des zones + mode, plan recadré à gauche, fiche de la table à droite (boutons en bas). */
+.page-floor {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 520px;
+}
+
+.page-floor > .page-head {
+  margin-bottom: 14px;
+}
+
+.page-floor > .page-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.floor-bar-end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 6px 16px;
+}
+
+.floor-bar-end > * + * {
+  margin-inline-start: 10px;
+}
+
+.floor-bar-end select {
+  width: auto;
+}
+
+.floor-tools {
+  flex: none;
+}
+
+.page-floor .floor {
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.page-floor .floor-plan {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.page-floor .plan-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.page-floor .plan-legend {
+  flex: none;
+}
+
+.page-floor .floor-side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.page-floor .floor-side.arrange {
+  display: block;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.page-floor .floor-side > .check-detail {
+  flex: 1;
+  border-inline-start: 0;
+}
+
+.service-panel .alert-card,
+.floor-summary .alert-card {
+  margin-bottom: 8px;
+}
+
+.summary-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.summary-counts > div {
+  padding: 10px 12px;
+}
+
+.summary-counts > div + div {
+  border-inline-start: 1px solid var(--line);
+}
+
+.summary-counts dt {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.summary-counts dd {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-counts dd.alert {
+  color: var(--attention);
+}
+
+.floor-alert {
+  width: 100%;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.floor-alert > .ico {
+  flex: none;
+  color: var(--muted);
+}
+
+.plan-table strong {
+  font-size: 1.2em;
+}
+
 .plan-wrap {
+  display: flex;
   width: 100%;
   overflow: auto;
 }
@@ -3691,6 +3827,8 @@ table.grid td.empty {
 /* Un plan est physique : il ne se retourne pas en arabe. */
 .plan {
   position: relative;
+  flex: none;
+  margin: auto;
   direction: ltr;
   background-color: var(--surface);
   border: 1px solid var(--border);
@@ -3836,27 +3974,6 @@ table.grid td.empty {
 .plan-legend .l-settled {
   border-style: dashed;
   border-color: var(--ok);
-}
-
-.service-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  padding: 6px 8px;
-  border-radius: var(--radius);
-}
-
-.service-row > * + * {
-  margin-inline-start: 8px;
-}
-
-.service-warn {
-  background: var(--warn-soft);
-}
-
-.service-ok {
-  background: var(--ok-soft);
 }
 
 .nudge {
@@ -4304,7 +4421,7 @@ table.grid td.empty {
 /* === Écran cuisine (sombre dans les deux thèmes : lu à distance) ========== */
 .kds {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 0;
   flex-direction: column;
   min-height: 520px;
   overflow: hidden;
@@ -4787,6 +4904,20 @@ table.grid td.empty {
     grid-template-columns: minmax(0, 1fr) 340px;
   }
 
+  /* Plan à sa hauteur (plafonnée), la fiche de la table prend le reste. */
+  .page-floor .floor {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .page-floor .floor-plan {
+    max-height: 58vh;
+  }
+
+  .page-floor .floor-side {
+    border-top: 1px solid var(--border);
+  }
+
   .pay-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
     grid-gap: 18px;
@@ -5062,8 +5193,23 @@ table.grid td.empty {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .page-orders {
+  .page-orders,
+  .page-floor {
     flex: none;
+  }
+
+  .page-floor .floor {
+    grid-template-rows: auto;
+  }
+
+  .page-floor .plan-wrap,
+  .page-floor .floor-side {
+    flex: none;
+    overflow: visible;
+  }
+
+  .page-floor .check-detail-body {
+    overflow: visible;
   }
 
   .board-list {
@@ -5269,7 +5415,8 @@ table.grid td.empty {
 
   /* Tablette : le rail indique déjà « Caisse » ; la hauteur va au travail. */
   .page-pos > .page-head,
-  .page-orders > .page-head {
+  .page-orders > .page-head,
+  .page-floor > .page-head {
     display: none;
   }
 

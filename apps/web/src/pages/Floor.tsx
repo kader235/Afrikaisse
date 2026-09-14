@@ -25,7 +25,7 @@ import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { SHAPE_LABELS } from '../labels.ts';
 import { isNativeApp } from '../platform.ts';
-import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
+import { Dialog, ErrorMessage, FloatMessage, Icon, OkMessage, Window } from '../ui.tsx';
 import { BillTicket, PayDialog, ReceiptTicket, SaleTab, TransferDialog } from './Pos.tsx';
 
 /**
@@ -84,6 +84,8 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
   const [dialog, setDialog] = useState<DialogState>(null);
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // En service, le plan sert à travailler ; « Aménager » réunit zones, tables et disposition.
+  const [mode, setMode] = useState<'service' | 'arrange'>('service');
 
   useEffect(() => {
     api<LocationDetails[]>('GET', '/locations').then((list) => {
@@ -108,6 +110,7 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
 
   // En service : occupation des tables, relue régulièrement (commandes QR, autres serveurs, caisse).
   const live = !!feed && me.permissions.includes('orders.read');
+  const arranging = canManage && (!live || mode === 'arrange');
   const loadChecks = useCallback(async () => {
     if (!locationId || !live) return;
     try {
@@ -279,26 +282,9 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
     setDialog(null);
   }
 
-  const toolbar = (
-    <>
-      {locations && locations.length > 1 && (
-        <select
-          aria-label={t('team.location')}
-          value={locationId ?? ''}
-          disabled={dirty}
-          onChange={(e) => {
-            setLocationId(e.target.value);
-            pick(null);
-          }}
-        >
-          {locations.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
-      )}
-      {canManage && !editing && (
+  const tools = arranging && (
+    <div className="toolbar floor-tools">
+      {!editing && (
         <>
           <button className="btn" disabled={!floor} onClick={() => setDialog({ kind: 'zone' })}>
             <Icon name="add" />
@@ -330,6 +316,10 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
             <Icon name="move" />
             {t('floor.arrange')}
           </button>
+          <button className="btn" disabled={!locationId} onClick={() => locationId && loadFloor(locationId)}>
+            <Icon name="refresh" />
+            {t('common.refresh')}
+          </button>
         </>
       )}
       {editing && (
@@ -348,39 +338,82 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
           </button>
         </>
       )}
-      {!editing && (
-        <>
-          <span className="sep" />
-          <button className="btn" disabled={!locationId} onClick={() => locationId && loadFloor(locationId)}>
-            <Icon name="refresh" />
-            {t('common.refresh')}
-          </button>
-        </>
-      )}
-    </>
+    </div>
   );
 
   return (
     <>
-      <Window title={floor ? `${t('floor.title')} — ${floor.location.name}` : t('floor.title')} count={zone ? `${tables.length} ${t('floor.tables').toLowerCase()} · ${seats} ${t('floor.seats').toLowerCase()}` : undefined} toolbar={toolbar} bodyless>
-        {floor && floor.zones.length > 0 && (
-          <div className="subtabs" role="tablist">
-            {floor.zones.map((z) => (
-              <button
-                key={z.id}
-                role="tab"
-                aria-current={z.id === zoneId ? 'page' : undefined}
-                disabled={dirty && z.id !== zoneId}
-                onClick={() => {
-                  setZoneId(z.id);
-                  pick(null);
-                }}
-              >
-                {z.name}
-              </button>
-            ))}
-          </div>
-        )}
+      <Window className="page-floor" title={floor ? `${t('floor.title')} — ${floor.location.name}` : t('floor.title')} count={zone ? `${tables.length} ${t('floor.tables').toLowerCase()} · ${seats} ${t('floor.seats').toLowerCase()}` : undefined} bodyless>
+        <div className="pos-bar floor-bar">
+          {floor && floor.zones.length > 0 ? (
+            <div className="subtabs" role="tablist">
+              {floor.zones.map((z) => (
+                <button
+                  key={z.id}
+                  role="tab"
+                  aria-current={z.id === zoneId ? 'page' : undefined}
+                  disabled={dirty && z.id !== zoneId}
+                  onClick={() => {
+                    setZoneId(z.id);
+                    pick(null);
+                  }}
+                >
+                  {z.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span />
+          )}
+          {((locations && locations.length > 1) || (canManage && live)) && (
+            <div className="floor-bar-end">
+              {locations && locations.length > 1 && (
+                <select
+                  aria-label={t('team.location')}
+                  value={locationId ?? ''}
+                  disabled={dirty}
+                  onChange={(e) => {
+                    setLocationId(e.target.value);
+                    pick(null);
+                  }}
+                >
+                  {locations.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {canManage && live && (
+                <span className="segmented" role="group" aria-label="Mode">
+                  <button
+                    className="btn"
+                    aria-pressed={!arranging}
+                    disabled={dirty}
+                    onClick={() => {
+                      setMode('service');
+                      setEditing(false);
+                      pick(null);
+                    }}
+                  >
+                    Service
+                  </button>
+                  <button
+                    className="btn"
+                    aria-pressed={arranging}
+                    onClick={() => {
+                      setMode('arrange');
+                      pick(null);
+                    }}
+                  >
+                    Aménager
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        {tools}
         <div className="floor">
           <div className="floor-plan">
             {/* Messages au-dessus du plan seulement sans zone : sinon, leur apparition ou
@@ -408,11 +441,12 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
                 conflicts={conflicts}
                 onSelect={pick}
                 onMove={(table, x, y) => place(table, { x, y })}
-                onOpen={(table) => canManage && setDialog({ kind: 'table', table })}
-                live={editing ? undefined : liveFor}
+                onOpen={(table) => arranging && setDialog({ kind: 'table', table })}
+                live={arranging ? undefined : liveFor}
+                crop={!arranging}
               />
             )}
-            {zone && live && !editing && (
+            {zone && live && !arranging && (
               <div className="plan-legend">
                 <span>
                   <i className="l-free" />
@@ -439,88 +473,86 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
           </div>
 
           {zone && (
-            <aside className="floor-side">
-              <ErrorMessage error={error} />
-              {notice && !error && <OkMessage>{notice}</OkMessage>}
-              <fieldset className="group">
-                <legend>{zone.name}</legend>
-                <dl className="facts">
-                  <dt>{t('floor.tables')}</dt>
-                  <dd className="num">{tables.length}</dd>
-                  <dt>{t('floor.seats')}</dt>
-                  <dd className="num">{seats}</dd>
-                  {live && !editing && (
-                    <>
-                      <dt>Occupées</dt>
-                      <dd className="num">{tables.filter((x) => liveFor(x)?.state !== 'free').length}</dd>
-                    </>
+            <aside className={arranging ? 'floor-side arrange' : 'floor-side'}>
+              {!arranging ? (
+                selected && live ? (
+                  <ServicePanel
+                    table={selected}
+                    info={liveFor(selected)!}
+                    me={me}
+                    onNewOrder={() => openEntry(selected)}
+                    onMove={moveOrder}
+                    onResolve={resolveRequest}
+                    onPay={startPayment}
+                    onPrint={isNativeApp() ? null : (check) => setPrinting(<BillTicket check={check} locationName={floor?.location.name ?? ''} />)}
+                    onTransfer={setTransfer}
+                    onFree={freeTable}
+                  />
+                ) : (
+                  <ZoneSummary zone={zone} tables={tables} liveFor={liveFor} onPick={pick} />
+                )
+              ) : (
+                <>
+                  <fieldset className="group">
+                    <legend>{zone.name}</legend>
+                    <dl className="facts">
+                      <dt>{t('floor.tables')}</dt>
+                      <dd className="num">{tables.length}</dd>
+                      <dt>{t('floor.seats')}</dt>
+                      <dd className="num">{seats}</dd>
+                      <dt>{t('floor.planSize')}</dt>
+                      <dd className="num">
+                        {zone.planWidth} × {zone.planHeight}
+                      </dd>
+                    </dl>
+                  </fieldset>
+                  {selected && (
+                    <fieldset className="group">
+                      <legend>
+                        {t('floor.table')} {selected.label}
+                      </legend>
+                      <dl className="facts">
+                        <dt>{t('floor.seats')}</dt>
+                        <dd className="num">{selected.capacity}</dd>
+                        <dt>{t('floor.shape')}</dt>
+                        <dd>{SHAPE_LABELS[selected.shape]}</dd>
+                        <dt>{t('floor.position')}</dt>
+                        <dd className="num">
+                          {selected.x}, {selected.y} ({selected.w} × {selected.h})
+                        </dd>
+                      </dl>
+                      {editing && (
+                        <div className="nudge">
+                          <span />
+                          <button className="btn" aria-label="Haut" onClick={() => nudge(0, -1)}>
+                            <Icon name="up" />
+                          </button>
+                          <span />
+                          <button className="btn" aria-label="Gauche" onClick={() => nudge(-1, 0)}>
+                            <Icon name="left" />
+                          </button>
+                          <button className="btn" aria-label={t('floor.rotate')} onClick={rotate}>
+                            <Icon name="rotate" />
+                          </button>
+                          <button className="btn" aria-label="Droite" onClick={() => nudge(1, 0)}>
+                            <Icon name="right" />
+                          </button>
+                          <span />
+                          <button className="btn" aria-label="Bas" onClick={() => nudge(0, 1)}>
+                            <Icon name="down" />
+                          </button>
+                          <span />
+                        </div>
+                      )}
+                    </fieldset>
                   )}
-                  <dt>{t('floor.planSize')}</dt>
-                  <dd className="num">
-                    {zone.planWidth} × {zone.planHeight}
-                  </dd>
-                </dl>
-              </fieldset>
-              {selected && !editing && live ? (
-                <ServicePanel
-                  table={selected}
-                  info={liveFor(selected)!}
-                  me={me}
-                  onNewOrder={() => openEntry(selected)}
-                  onMove={moveOrder}
-                  onResolve={resolveRequest}
-                  onPay={startPayment}
-                  onPrint={isNativeApp() ? null : (check) => setPrinting(<BillTicket check={check} locationName={floor?.location.name ?? ''} />)}
-                  onTransfer={setTransfer}
-                  onFree={freeTable}
-                />
-              ) : selected ? (
-                <fieldset className="group">
-                  <legend>
-                    {t('floor.table')} {selected.label}
-                  </legend>
-                  <dl className="facts">
-                    <dt>{t('floor.seats')}</dt>
-                    <dd className="num">{selected.capacity}</dd>
-                    <dt>{t('floor.shape')}</dt>
-                    <dd>{SHAPE_LABELS[selected.shape]}</dd>
-                    <dt>{t('floor.position')}</dt>
-                    <dd className="num">
-                      {selected.x}, {selected.y} ({selected.w} × {selected.h})
-                    </dd>
-                  </dl>
-                  {editing && (
-                    <div className="nudge">
-                      <span />
-                      <button className="btn" aria-label="Haut" onClick={() => nudge(0, -1)}>
-                        <Icon name="up" />
-                      </button>
-                      <span />
-                      <button className="btn" aria-label="Gauche" onClick={() => nudge(-1, 0)}>
-                        <Icon name="left" />
-                      </button>
-                      <button className="btn" aria-label={t('floor.rotate')} onClick={rotate}>
-                        <Icon name="rotate" />
-                      </button>
-                      <button className="btn" aria-label="Droite" onClick={() => nudge(1, 0)}>
-                        <Icon name="right" />
-                      </button>
-                      <span />
-                      <button className="btn" aria-label="Bas" onClick={() => nudge(0, 1)}>
-                        <Icon name="down" />
-                      </button>
-                      <span />
+                  {editing && dirty && conflicts.size === 0 && <div className="msg msg-warn">{t('floor.unsaved')}</div>}
+                  {conflicts.size > 0 && (
+                    <div className="msg msg-error">
+                      <strong>{t('floor.conflicts')} :</strong> {tables.filter((x) => conflicts.has(x.id)).map((x) => x.label).join(', ')}
                     </div>
                   )}
-                </fieldset>
-              ) : (
-                null
-              )}
-              {editing && dirty && conflicts.size === 0 && <div className="msg msg-warn">{t('floor.unsaved')}</div>}
-              {conflicts.size > 0 && (
-                <div className="msg msg-error">
-                  <strong>{t('floor.conflicts')} :</strong> {tables.filter((x) => conflicts.has(x.id)).map((x) => x.label).join(', ')}
-                </div>
+                </>
               )}
             </aside>
           )}
@@ -638,6 +670,16 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
           </div>
         </Dialog>
       )}
+      {!!zone && (
+        <FloatMessage
+          error={error}
+          notice={notice}
+          onClose={() => {
+            setError(null);
+            setNotice(null);
+          }}
+        />
+      )}
       {printing && createPortal(<div className="print-sheet print-ticket">{printing}</div>, document.body)}
       {(dialog?.kind === 'archiveTable' || dialog?.kind === 'archiveZone') && (
         <Dialog
@@ -671,6 +713,7 @@ function PlanCanvas({
   onMove,
   onOpen,
   live,
+  crop,
 }: {
   zone: Zone;
   tables: DiningTable[];
@@ -681,19 +724,31 @@ function PlanCanvas({
   onMove: (table: DiningTable, x: number, y: number) => void;
   onOpen: (table: DiningTable) => void;
   live?: (table: DiningTable) => TableLive | null;
+  /** En service : on ne montre que la partie du plan qui porte des tables, agrandie. */
+  crop?: boolean;
 }) {
   const { t } = useI18n();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [cell, setCell] = useState(32);
   const drag = useRef<{ id: string; startX: number; startY: number; x: number; y: number } | null>(null);
 
-  // La taille d'une case suit la largeur disponible : le plan occupe toujours l'écran de la tablette.
+  const view = useMemo(() => {
+    if (!crop || tables.length === 0) return { x: 0, y: 0, w: zone.planWidth, h: zone.planHeight };
+    const x0 = Math.max(0, Math.min(...tables.map((x) => x.x)) - 1);
+    const y0 = Math.max(0, Math.min(...tables.map((x) => x.y)) - 1);
+    const x1 = Math.min(zone.planWidth, Math.max(...tables.map((x) => x.x + x.w)) + 1);
+    const y1 = Math.min(zone.planHeight, Math.max(...tables.map((x) => x.y + x.h)) + 1);
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }, [crop, tables, zone.planWidth, zone.planHeight]);
+
+  // La taille d'une case suit la place disponible (largeur ET hauteur du cadre) : le plan entier reste visible.
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    // Elle suit aussi la hauteur de la fenêtre : le plan entier reste visible sans faire défiler la page.
-    const measure = () =>
-      setCell(clamp(Math.min(Math.floor((el.clientWidth - 2) / zone.planWidth), Math.floor((window.innerHeight - 330) / zone.planHeight)), 14, 64));
+    const measure = () => {
+      const height = el.clientHeight > 160 ? el.clientHeight - 2 : window.innerHeight * 0.55;
+      setCell(clamp(Math.min(Math.floor((el.clientWidth - 2) / view.w), Math.floor(height / view.h)), 14, crop ? 110 : 64));
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
@@ -702,13 +757,13 @@ function PlanCanvas({
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [zone.planWidth, zone.planHeight]);
+  }, [view.w, view.h, crop]);
 
   return (
     <div className="plan-wrap" ref={wrapRef}>
       <div
         className={editing ? 'plan editing' : 'plan'}
-        style={{ width: cell * zone.planWidth + 2, height: cell * zone.planHeight + 2, backgroundSize: `${cell}px ${cell}px` }}
+        style={{ width: cell * view.w + 2, height: cell * view.h + 2, backgroundSize: `${cell}px ${cell}px` }}
         onClick={(e) => {
           if (e.target === e.currentTarget) onSelect(null);
         }}
@@ -722,11 +777,11 @@ function PlanCanvas({
             className={`plan-table shape-${table.shape.toLowerCase()}${conflicts.has(table.id) ? ' conflict' : ''}${info ? ` live-${info.state}` : ''}`}
             aria-pressed={table.id === selectedId}
             style={{
-              left: table.x * cell,
-              top: table.y * cell,
+              left: (table.x - view.x) * cell,
+              top: (table.y - view.y) * cell,
               width: table.w * cell,
               height: table.h * cell,
-              fontSize: clamp(Math.round(cell * 0.42), 11, 18),
+              fontSize: clamp(Math.round(cell * 0.42), 11, crop ? 20 : 18),
             }}
             onPointerDown={(e) => {
               onSelect(table.id);
@@ -769,7 +824,15 @@ const LIVE_LABELS: Record<TableLive['state'], string> = {
   settled: 'Réglée',
 };
 
-/** Fiche d'une table en service : tout ce qu'un serveur fait sans quitter le plan. */
+const LIVE_DOT: Record<TableLive['state'], string> = {
+  free: 'st',
+  occupied: 'st st-progress',
+  ready: 'st st-ready',
+  call: 'st st-pending',
+  settled: 'st st-served',
+};
+
+/** Fiche d'une table en service : tout ce qu'un serveur fait sans quitter le plan ; les boutons restent en bas. */
 function ServicePanel({
   table,
   info,
@@ -795,57 +858,64 @@ function ServicePanel({
 }) {
   const has = (p: Me['permissions'][number]) => me.permissions.includes(p);
   const { check } = info;
+  const hasOrders = !!check && check.orders.length > 0;
+  const quiet = info.requests.length === 0 && info.pending.length === 0 && info.ready.length === 0 && !hasOrders;
+  const canPay = !!check && check.remaining > 0 && has('payments.collect');
+  const canPrint = hasOrders && !!onPrint;
+
   return (
-    <fieldset className="group service-panel">
-      <legend>
-        Table {table.label} · {LIVE_LABELS[info.state]}
-      </legend>
-      <p className="muted">
-        {table.capacity} places
-        {check && ` · occupée depuis ${minutesSince(check.openedAt)} min`}
-      </p>
+    <div className="check-detail service-panel">
+      <div className="check-detail-head">
+        <strong>Table {table.label}</strong>
+        <span className="muted">
+          <span className={LIVE_DOT[info.state]}>{LIVE_LABELS[info.state]}</span> · {table.capacity} places
+          {check && ` · depuis ${minutesSince(check.openedAt)} min`}
+        </span>
+      </div>
 
-      {info.requests.map((r) => (
-        <div className="service-row service-warn" key={r.id}>
-          <span>
-            <strong>{SERVICE_REQUEST_LABELS[r.kind]}</strong> <small className="muted">il y a {minutesSince(r.createdAt)} min</small>
-          </span>
-          {has('orders.create') && (
-            <button className="btn" onClick={() => onResolve(r)}>
-              Traité
-            </button>
-          )}
-        </div>
-      ))}
-      {info.pending.map((o) => (
-        <div className="service-row service-warn" key={o.id}>
-          <span>
-            <strong>QR n°{o.number} à confirmer</strong> <small className="muted">{o.items.map((i) => `${i.quantity} ${i.name}`).join(', ')}</small>
-          </span>
-          {has('orders.create') && (
-            <button className="btn btn-primary" onClick={() => onMove(o, 'CONFIRMED')}>
-              Confirmer
-            </button>
-          )}
-        </div>
-      ))}
-      {info.ready.map((o) => (
-        <div className="service-row service-ok" key={o.id}>
-          <span>
-            <strong>n°{o.number} prête</strong> <small className="muted">{o.items.map((i) => `${i.quantity} ${i.name}`).join(', ')}</small>
-          </span>
-          {has('orders.create') && (
-            <button className="btn btn-primary" onClick={() => onMove(o, 'SERVED')}>
-              Servie
-            </button>
-          )}
-        </div>
-      ))}
-
-      {check && check.orders.length > 0 && (
-        <>
+      <div className="check-detail-body">
+        {info.requests.map((r) => (
+          <div className="alert-card" key={r.id}>
+            <div className="alert-text">
+              <strong>{SERVICE_REQUEST_LABELS[r.kind]}</strong>
+              <span>il y a {minutesSince(r.createdAt)} min</span>
+            </div>
+            {has('orders.create') && (
+              <button className="btn" onClick={() => onResolve(r)}>
+                Traité
+              </button>
+            )}
+          </div>
+        ))}
+        {info.pending.map((o) => (
+          <div className="alert-card" key={o.id}>
+            <div className="alert-text">
+              <strong>QR n°{o.number} à confirmer</strong>
+              <span>{o.items.map((i) => `${i.quantity} ${i.name}`).join(', ')}</span>
+            </div>
+            {has('orders.create') && (
+              <button className="btn" onClick={() => onMove(o, 'CONFIRMED')}>
+                Confirmer
+              </button>
+            )}
+          </div>
+        ))}
+        {info.ready.map((o) => (
+          <div className="alert-card alert-card-ok" key={o.id}>
+            <div className="alert-text">
+              <strong>n°{o.number} prête</strong>
+              <span>{o.items.map((i) => `${i.quantity} ${i.name}`).join(', ')}</span>
+            </div>
+            {has('orders.create') && (
+              <button className="btn" onClick={() => onMove(o, 'SERVED')}>
+                Servie
+              </button>
+            )}
+          </div>
+        ))}
+        {hasOrders && (
           <ul className="order-lines">
-            {check.orders.map((o) => (
+            {check!.orders.map((o) => (
               <li key={o.id}>
                 <div className="order-line-head">
                   <span>
@@ -857,53 +927,117 @@ function ServicePanel({
               </li>
             ))}
           </ul>
-          <div className="order-total">
-            <span>Total</span>
-            <strong>{formatMoney(check.total, check.currency)}</strong>
-          </div>
-          {check.paid > 0 && (
+        )}
+        {quiet && <p className="muted">Aucune commande.</p>}
+      </div>
+
+      <div className="check-detail-foot">
+        {hasOrders && (
+          <>
             <div className="order-line-head">
-              <span>Déjà payé</span>
-              <span className="num">{formatMoney(check.paid, check.currency)}</span>
+              <span>Total</span>
+              <span className="num">{formatMoney(check!.total, check!.currency)}</span>
+            </div>
+            {check!.paid > 0 && (
+              <div className="order-line-head">
+                <span>Déjà payé</span>
+                <span className="num">{formatMoney(check!.paid, check!.currency)}</span>
+              </div>
+            )}
+            <div className="check-due">
+              <span>Reste à payer</span>
+              <strong>{formatMoney(check!.remaining, check!.currency)}</strong>
+            </div>
+          </>
+        )}
+        <div className="check-actions">
+          {has('orders.create') && (
+            <button className="btn btn-primary" onClick={onNewOrder}>
+              <Icon name="add" />
+              Nouvelle commande
+            </button>
+          )}
+          {(canPay || canPrint) && (
+            <div className="check-actions-row">
+              {canPay && (
+                <button className="btn" onClick={() => onPay(check!)}>
+                  <Icon name="cash" />
+                  Encaisser
+                </button>
+              )}
+              {canPrint && (
+                <button className="btn" onClick={() => onPrint!(check!)}>
+                  <Icon name="print" />
+                  Addition
+                </button>
+              )}
             </div>
           )}
-          <div className="order-total big">
-            <span>Reste à payer</span>
-            <strong>{formatMoney(check.remaining, check.currency)}</strong>
-          </div>
-        </>
-      )}
-
-      <div className="order-actions">
-        {has('orders.create') && (
-          <button className="btn btn-primary" onClick={onNewOrder}>
-            <Icon name="add" />
-            Nouvelle commande
-          </button>
-        )}
-        {check && check.remaining > 0 && has('payments.collect') && (
-          <button className="btn" onClick={() => onPay(check)}>
-            Encaisser
-          </button>
-        )}
-        {check && check.orders.length > 0 && onPrint && (
-          <button className="btn" onClick={() => onPrint(check)}>
-            <Icon name="print" />
-            Imprimer l'addition
-          </button>
-        )}
-        {check && has('orders.create') && (
-          <button className="btn" onClick={() => onTransfer(check)}>
-            Changer de table
-          </button>
-        )}
-        {check && info.state === 'settled' && has('orders.create') && (
-          <button className="btn" onClick={() => onFree(check)}>
-            Libérer la table
-          </button>
-        )}
+          {check && has('orders.create') && (
+            <div className="check-actions-row">
+              <button className="btn" onClick={() => onTransfer(check)}>
+                <Icon name="move" />
+                Changer de table
+              </button>
+              {info.state === 'settled' && (
+                <button className="btn" onClick={() => onFree(check)}>
+                  Libérer
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </fieldset>
+    </div>
+  );
+}
+
+/** Sans table choisie : l'état de la zone et les tables qui attendent quelque chose. */
+function ZoneSummary({ zone, tables, liveFor, onPick }: { zone: Zone; tables: DiningTable[]; liveFor: (table: DiningTable) => TableLive | null; onPick: (id: string) => void }) {
+  const rows = tables.map((table) => ({ table, info: liveFor(table) }));
+  const inState = (states: TableLive['state'][]) => rows.filter((r) => r.info && states.includes(r.info.state)).length;
+  const waiting = rows.filter((r) => r.info && r.info.state !== 'free' && r.info.state !== 'occupied').sort((a, b) => a.table.label.localeCompare(b.table.label, 'fr', { numeric: true }));
+  const live = rows.some((r) => r.info);
+  const seats = tables.reduce((sum, x) => sum + x.capacity, 0);
+  const todo = inState(['call', 'ready']);
+  const reason = (info: TableLive) => (info.state === 'ready' ? 'Commande prête à servir' : info.state === 'settled' ? 'Réglée · à libérer' : info.badge === 'QR' ? 'Commande QR à confirmer' : info.badge === 'Addition' ? "Demande l'addition" : 'Appel');
+
+  return (
+    <div className="check-detail floor-summary">
+      <div className="check-detail-head">
+        <strong>{zone.name}</strong>
+        <span className="muted">
+          {tables.length} tables · {seats} places
+        </span>
+      </div>
+      <div className="check-detail-body">
+        {live && (
+          <dl className="summary-counts">
+            <div>
+              <dt>Libres</dt>
+              <dd>{inState(['free'])}</dd>
+            </div>
+            <div>
+              <dt>Occupées</dt>
+              <dd>{inState(['occupied', 'ready', 'call', 'settled'])}</dd>
+            </div>
+            <div>
+              <dt>À traiter</dt>
+              <dd className={todo > 0 ? 'alert' : undefined}>{todo}</dd>
+            </div>
+          </dl>
+        )}
+        {waiting.map(({ table, info }) => (
+          <button key={table.id} className={info!.state === 'settled' ? 'alert-card alert-card-ok floor-alert' : 'alert-card floor-alert'} onClick={() => onPick(table.id)}>
+            <span className="alert-text">
+              <strong>Table {table.label}</strong>
+              <span>{reason(info!)}</span>
+            </span>
+            <Icon name="chevronRight" />
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
