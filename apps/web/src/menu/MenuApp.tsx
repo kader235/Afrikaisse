@@ -13,7 +13,9 @@ import { errorText, isNetworkError, request } from './api.ts';
 import { ACTIVE_STATUSES, ChoiceRow, GuestFields, LanguageSwitch, OfflineBanner, PaySheet, Sheet, TableSheet, type Blocked, type Money } from './ClientSheets.tsx';
 import { Icon } from './Icon.tsx';
 import { LangProvider, MONEY_LOCALE, choiceRuleText, useLang } from './i18n.tsx';
+import { MemoryGameSheet, type MemoryPhoto } from './MemoryGame.tsx';
 import { nicknameStore, setupPwa, tableCodeStore, useFavorites, useOnline } from './pwa.ts';
+import { sloganSize, sloganText } from './slogan.ts';
 import { applyMenuTheme } from './theme.ts';
 import '../styles/pricing.css';
 
@@ -33,7 +35,7 @@ interface CartLine {
   quantity: number;
   note: string;
 }
-type SheetState = null | { kind: 'product'; product: PublicProduct } | { kind: 'cart' } | { kind: 'table' } | { kind: 'pay' };
+type SheetState = null | { kind: 'product'; product: PublicProduct } | { kind: 'cart' } | { kind: 'table' } | { kind: 'pay' } | { kind: 'game' };
 interface Section {
   id: string;
   name: string;
@@ -179,7 +181,8 @@ function Menu() {
 
   // Suivi : relecture toutes les 8 s tant qu'une commande de ce téléphone est en cours ou qu'une
   // addition est demandée ; toutes les 30 s pour détecter le retour de la connexion ; jamais page masquée.
-  const tracking = !!session && (session.orders.some((o) => o.mine && ACTIVE_STATUSES.has(o.status)) || !!session.bill);
+  // Jeu du mémo ouvert : suivi aussi, pour annoncer « commande prête » (même passée par un autre convive de la table).
+  const tracking = !!session && (session.orders.some((o) => o.mine && ACTIVE_STATUSES.has(o.status)) || !!session.bill || sheet?.kind === 'game');
   useEffect(() => {
     const period = !reachable ? 30_000 : tracking ? 8000 : 0;
     const onVisible = () => {
@@ -203,6 +206,17 @@ function Menu() {
   const products = useMemo(() => new Map((menu?.categories ?? []).flatMap((c) => c.products.map((p) => [p.id, p] as const))), [menu]);
   const popular = useMemo(() => (menu?.popular ?? []).map((id) => products.get(id)).filter((p): p is PublicProduct => !!p), [menu, products]);
   const favs = useMemo(() => (menu?.categories ?? []).flatMap((c) => c.products).filter((p) => favorites.has(p.id)), [menu, favorites]);
+  // Cartes du jeu du mémo : vraies photos des plats d'abord, puis photos d'exemple du catalogue.
+  const gamePhotos = useMemo<MemoryPhoto[]>(() => {
+    if (loadedState.kind !== 'ready') return [];
+    const all = loadedState.menu.categories.flatMap((c) => c.products);
+    const real = all.flatMap((p) => (p.photoUrl ? [{ url: p.photoUrl, name: p.name }] : []));
+    const samples = all.flatMap((p) => {
+      const url = p.photoUrl ? null : samplePhoto(p.name);
+      return url ? [{ url, name: p.name }] : [];
+    });
+    return [...real, ...samples];
+  }, [loadedState, samplePhoto]);
 
   // Navigation : « Les plus commandés » (ventes réelles) et « Favoris » (ce téléphone) avant les catégories.
   const nav = useMemo<Section[]>(() => {
@@ -305,6 +319,8 @@ function Menu() {
   const cartTotal = quote ? quote.total : priced.reduce((sum, p) => sum + (p.result.ok ? p.result.total : 0), 0);
   const mine = session?.orders.filter((o) => o.mine) ?? [];
   const latest = mine.find((o) => ACTIVE_STATUSES.has(o.status));
+  // Pendant le jeu : commande prête (la mienne d'abord), relue par le suivi toutes les 8 s.
+  const readyOrder = mine.find((o) => o.status === 'READY') ?? session?.orders.find((o) => o.status === 'READY') ?? null;
 
   // Annonces en cours dans le fuseau de l'établissement ; sans ce fuseau (tarifs pas encore chargés), aucune.
   const announcementMoment = pricing ? localMoment(now, pricing.timezone) : null;
@@ -377,11 +393,18 @@ function Menu() {
         </div>
       </header>
 
-      <h1 className="m-greeting">
-        {t('greetingStart')}
-        <em>{t('greetingWord')}</em>
-        {t(evening ? 'greetingEndEvening' : 'greetingEnd')}
-      </h1>
+      {restaurant.slogan ? (
+        // Slogan saisi par le restaurant, tel quel ; sa langue peut différer de celle du menu.
+        <h1 className={`m-greeting m-slogan m-slogan-${sloganSize(restaurant.slogan)}`} dir="auto">
+          {sloganText(restaurant.slogan)}
+        </h1>
+      ) : (
+        <h1 className="m-greeting">
+          {t('greetingStart')}
+          <em>{t('greetingWord')}</em>
+          {t(evening ? 'greetingEndEvening' : 'greetingEnd')}
+        </h1>
+      )}
 
       <label className="m-search">
         <Icon path={mdiMagnify} size={22} />
@@ -533,11 +556,11 @@ function Menu() {
           )
         )}
         <nav className="m-tabs">
-          <button className={sheet?.kind !== 'table' && sheet?.kind !== 'pay' ? 'on' : undefined} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <button className={sheet?.kind !== 'table' && sheet?.kind !== 'game' && sheet?.kind !== 'pay' ? 'on' : undefined} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <Icon path={mdiSilverwareForkKnife} size={24} />
             <span>{t('navMenu')}</span>
           </button>
-          <button className={sheet?.kind === 'table' ? 'on' : undefined} onClick={() => open('table')}>
+          <button className={sheet?.kind === 'table' || sheet?.kind === 'game' ? 'on' : undefined} onClick={() => open('table')}>
             <Icon path={mdiReceipt} size={24} />
             <span>{t('myTable')}</span>
           </button>
@@ -598,7 +621,15 @@ function Menu() {
           }}
         />
       )}
-      {sheet?.kind === 'table' && <TableSheet session={session} token={token} me={me} money={money} blocked={blocked} onSession={setSession} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'table' && <TableSheet session={session} token={token} me={me} money={money} blocked={blocked} onSession={setSession} onPlay={() => setSheet({ kind: 'game' })} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'game' && (
+        <MemoryGameSheet
+          photos={gamePhotos}
+          readyOrder={readyOrder?.number ?? null}
+          onReady={() => open('table')}
+          onClose={() => open('table')}
+        />
+      )}
       {sheet?.kind === 'pay' && (
         <PaySheet
           session={session}

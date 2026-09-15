@@ -50,6 +50,8 @@ export interface LocationsTable {
   setup_completed_at: number | null;
   /** Thème du menu client (identifiant de MENU_THEMES) ; null = thème par défaut. */
   menu_theme: string | null;
+  /** Slogan affiché en titre du menu client (80 caractères au plus) ; null = phrase d'accueil. */
+  slogan: string | null;
   status: 'ACTIVE' | 'ARCHIVED';
   created_at: number;
   updated_at: number;

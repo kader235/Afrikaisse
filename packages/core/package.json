@@ -11,7 +11,8 @@
     "./promotions": "./src/promotions.ts",
     "./guests": "./src/guests.ts",
     "./dish-photos": "./src/dishPhotos.ts",
-    "./menu-themes": "./src/menuThemes.ts"
+    "./menu-themes": "./src/menuThemes.ts",
+    "./memory-game": "./src/memoryGame.ts"
   },
   "dependencies": {
     "zod": "^4.1.0"

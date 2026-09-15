@@ -20,6 +20,7 @@ import { recovery } from './migrations/0016_recovery.ts';
 import { announcements } from './migrations/0017_announcements.ts';
 import { zoneColors } from './migrations/0018_zone_colors.ts';
 import { menuTheme } from './migrations/0019_menu_theme.ts';
+import { locationSlogan } from './migrations/0020_location_slogan.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -48,6 +49,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0017_announcements': announcements(c),
     '0018_zone_colors': zoneColors(c),
     '0019_menu_theme': menuTheme(c),
+    '0020_location_slogan': locationSlogan(c),
   };
 }
 

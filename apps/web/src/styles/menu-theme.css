@@ -135,7 +135,7 @@
 .mt-phone {
   position: relative;
   width: 200px;
-  height: 356px;
+  height: 384px;
   overflow: hidden;
   border: 5px solid #1c2230;
   border-radius: 26px;
@@ -387,4 +387,213 @@
   border-radius: 5px;
   background: rgba(var(--m-on-accent-rgb), 0.25);
   font-style: normal;
+}
+
+/* --- Titre du menu dans le téléphone miniature (slogan ou phrase d'accueil) --- */
+.mt-title {
+  display: -webkit-box;
+  margin: 2px 9px 6px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.mt-title em {
+  color: var(--m-accent-text);
+  font-style: normal;
+}
+
+.mt-title-md {
+  font-size: 11.5px;
+}
+
+.mt-title-sm {
+  font-size: 10px;
+}
+
+/* --- Carte « Slogan du menu » ------------------------------------------------ */
+.mt-slogan {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 16px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.mt-slogan-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px;
+}
+
+.mt-slogan-form h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 17px;
+}
+
+.mt-slogan-form > p {
+  margin: 6px 0 14px;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+.mt-slogan-form label {
+  color: var(--text-soft);
+}
+
+.mt-slogan-field {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.mt-slogan-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.mt-slogan-count {
+  flex: none;
+  min-width: 56px;
+  margin-inline-start: 10px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.mt-slogan-count.full {
+  color: var(--danger, #b42318);
+  font-weight: 700;
+}
+
+.mt-slogan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.mt-slogan-actions .btn {
+  margin-inline-end: 10px;
+}
+
+.mt-slogan-actions small {
+  color: var(--text-soft);
+}
+
+/* Aperçu : l'en-tête du menu client à la largeur d'un téléphone, couleurs du thème actuel. */
+.mt-slogan-stage {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 420px;
+  padding: 16px 18px;
+  background: var(--band);
+  border-inline-start: 1px solid var(--line);
+}
+
+.mt-header {
+  width: 100%;
+  max-width: 390px;
+  padding: 14px 0 16px;
+  border-radius: 18px;
+  background: var(--m-bg);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  color: var(--m-text);
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+  text-align: start;
+}
+
+.mt-header-brand {
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+}
+
+.mt-header-brand .mt-logo {
+  width: 34px;
+  height: 34px;
+  margin-inline-end: 10px;
+  border-radius: 11px;
+  font-size: 16px;
+}
+
+.mt-header-brand span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mt-header-brand small {
+  color: var(--m-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mt-header-brand strong {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-header-title {
+  display: -webkit-box;
+  margin: 14px 18px 0;
+  overflow: hidden;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.mt-header-title em {
+  color: var(--m-accent-text);
+  font-style: normal;
+}
+
+.mt-header-title.md {
+  font-size: 22px;
+  line-height: 1.22;
+}
+
+.mt-header-title.sm {
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+@media (max-width: 1000px) {
+  .mt-slogan {
+    flex-direction: column;
+  }
+
+  .mt-slogan-stage {
+    width: auto;
+    border-inline-start: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+
+.tablette .mt-slogan {
+  border-radius: 18px;
+}
+
+.tablette .mt-slogan-actions .btn {
+  min-height: 48px;
 }
