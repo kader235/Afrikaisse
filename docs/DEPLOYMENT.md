@@ -91,7 +91,7 @@ une base de test : `gunzip -c fichier.sql.gz | psql "<adresse de la base de test
 
 ## 4. Serveur local Windows
 
-Voir LOCAL.md. Installateur Inno Setup en phases 11 et 16.
+Voir LOCAL.md et DESKTOP.md. Installateur Inno Setup en phases 11 et 16 ; construction : §4.3.
 
 ### 4.1 Publier une nouvelle version du serveur local (§73)
 
@@ -124,6 +124,40 @@ node services/api/dist/cli.cjs release-keygen
 `GET /api/public/releases/latest?channel=stable` sert la plus haute version (ordre semver). Les serveurs
 locaux la vérifient toutes les 6 h et sur **Supervision → Rechercher une mise à jour**. Ils affichent le
 lien ; **rien ne s'installe seul**.
+
+### 4.3 Construire l'installateur Windows (console comprise)
+
+Prérequis sur le poste de build : Node 24, **Inno Setup 6** (`ISCC`), **Python + Pillow** (icône ; variable
+`PYTHON` si `python` du PATH n'est pas le bon, par exemple `PYTHON=C:/Users/<vous>/anaconda3/python.exe`), un
+`node.exe` 24 win-x64 à embarquer (`AFK_NODE_EXE`), et le **réseau au premier empaquetage de la console**
+(téléchargement unique d'Electron, ~110 Mo, conservé dans `node_modules/electron/dist` ; `ELECTRON_MIRROR`
+pour un miroir).
+
+```bash
+npm ci
+npm run verify                                  # types + tests (dont console et tâche planifiée) + builds
+node infrastructure/windows/build.mjs --console # API, web, console empaquetée, charge, installateur
+```
+
+| Étape | Commande seule | Sortie |
+|---|---|---|
+| Console (bundle) | `npm run build -w @afrikaisse/desktop` | `apps/desktop/dist/` |
+| Console empaquetée | `npm run package -w @afrikaisse/desktop` | `apps/desktop/sortie/console/AfriKaisse.exe` (~340 Mo décompressés : Electron 44, langues fr, en-US, ar) |
+| Essai de la console | `npm run start -w @afrikaisse/desktop` (après le bundle ; `AFK_HOME_DATA`, `AFK_APP_DIR`) | fenêtre Electron |
+| Charge sans installateur | `node infrastructure/windows/build.mjs --sans-installateur` | `infrastructure/windows/charge/` |
+
+Sans `--console`, `build.mjs` reprend `apps/desktop/sortie/console` s'il existe ; sinon l'installateur se
+construit **sans console** (icône vers le navigateur, comme en phase 11) et le journal de construction le dit
+(« SANS la console »).
+
+Rien n'est signé (DESKTOP.md, « Signature ») : SmartScreen avertit à l'installation.
+
+Avant la première diffusion, sur un **PC d'essai** (jamais le poste de développement) : installer, redémarrer
+**sans ouvrir de session** et appeler `http://<IP>:<port>/api/health` depuis une tablette ; vérifier
+`schtasks /Query /TN "AfriKaisse\Serveur" /V` (compte `LOCAL SERVICE`), `journaux\superviseur.log` et
+`journaux\installation.log` ; tuer `node.exe` dans le Gestionnaire des tâches et constater la relance ; lancer la
+console depuis un compte standard serveur arrêté ; mettre à jour depuis la version précédente ; désinstaller
+(données conservées, tâche absente).
 
 ### 4.2 Procédure de mise à jour sûre, chez le client
 

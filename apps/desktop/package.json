@@ -1,0 +1,19 @@
+{
+  "name": "@afrikaisse/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Console Windows d'AfriKaisse : zone de notification, caisse, état du système, appairage des tablettes",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node scripts/lancer.mjs",
+    "package": "node scripts/empaqueter.mjs"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/qrcode": "^1.5.6",
+    "electron": "^44.3.0"
+  }
+}

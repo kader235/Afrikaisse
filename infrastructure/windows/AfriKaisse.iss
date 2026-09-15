@@ -1,13 +1,16 @@
 ; ============================================================================
-;  AfriKaisse — Serveur du restaurant (Windows)
+;  AfriKaisse — Logiciel du restaurant (Windows)
 ;
-;  Un seul AfriKaisse-Setup.exe : Node embarqué, serveur, application web, lanceur.
+;  Un seul AfriKaisse-Setup.exe : Node embarqué, serveur, application web, superviseur,
+;  console Electron (si construite), lanceur navigateur de repli.
 ;  Aucune base de données à installer (SQLite intégré à Node) ni module natif.
 ;
 ;   - Programme -> C:\Program Files\AfriKaisse   (non modifiable sans administrateur)
-;   - Données   -> C:\ProgramData\AfriKaisse     (base, journaux ; conservées à la désinstallation)
+;   - Données   -> C:\ProgramData\AfriKaisse     (base, journaux, sauvegardes ; conservées à la désinstallation)
+;   - Serveur   -> tâche planifiée « AfriKaisse\Serveur », compte Service local, au démarrage de Windows
+;                  (lanceur\tache.cjs ; choix expliqué dans docs/DESKTOP.md, ADR-007)
 ;
-;  Construit par : node infrastructure/windows/build.mjs
+;  Construit par : node infrastructure/windows/build.mjs [--console]
 ; ============================================================================
 
 #ifndef AppVersion
@@ -15,6 +18,12 @@
 #endif
 #define AppName "AfriKaisse"
 #define AppPublisher "GLOBALTECH BUSINESS TD"
+#define TaskName "AfriKaisse\Serveur"
+#define ConsoleAppId "GlobalTech.AfriKaisse.Console"
+; Console présente dans la charge : raccourcis vers elle. Absente : raccourcis vers le navigateur.
+#if FileExists(AddBackslash(SourcePath) + "charge\console\AfriKaisse.exe")
+  #define WithConsole
+#endif
 
 [Setup]
 AppId={{B6F4C2D1-7A3E-4F0B-9C58-AF12CA55E001}
@@ -47,30 +56,56 @@ Name: "fr"; MessagesFile: "compiler:Languages\French.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-; Coché : le serveur est prêt quand les tablettes arrivent, même si personne n'a ouvert AfriKaisse.
-Name: "demarrage"; Description: "Démarrer le serveur AfriKaisse à l'ouverture de session Windows (recommandé)"; GroupDescription: "Fonctionnement :"
 
 [Dirs]
+; Utilisateurs : lecture du fichier de port et des journaux, sauvegarde depuis la console.
+; Le Service local (compte du serveur) reçoit ses droits par lanceur\tache.cjs (icacls) : Inno Setup n'a pas de SID « localservice ».
 Name: "{commonappdata}\{#AppName}"; Permissions: users-modify; Flags: uninsneveruninstall
+
+[InstallDelete]
+; Phase 11 : démarrage à l'ouverture de session, remplacé par la tâche planifiée (recréé seulement en repli).
+Type: files; Name: "{commonstartup}\{#AppName} (serveur).lnk"
 
 [Files]
 Source: "charge\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Icons]
+#ifdef WithConsole
+Name: "{group}\{#AppName}"; Filename: "{app}\console\AfriKaisse.exe"; WorkingDir: "{app}\console"; IconFilename: "{app}\afrikaisse.ico"; AppUserModelID: "{#ConsoleAppId}"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\console\AfriKaisse.exe"; WorkingDir: "{app}\console"; IconFilename: "{app}\afrikaisse.ico"; AppUserModelID: "{#ConsoleAppId}"; Tasks: desktopicon
+Name: "{group}\Appairer une tablette"; Filename: "{app}\console\AfriKaisse.exe"; Parameters: "--appairage"; WorkingDir: "{app}\console"; IconFilename: "{app}\afrikaisse.ico"; AppUserModelID: "{#ConsoleAppId}"
+Name: "{group}\{#AppName} dans le navigateur"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AfriKaisse.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\afrikaisse.ico"
+#else
 Name: "{group}\{#AppName}"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AfriKaisse.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\afrikaisse.ico"
 Name: "{autodesktop}\{#AppName}"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AfriKaisse.vbs"""; WorkingDir: "{app}"; IconFilename: "{app}\afrikaisse.ico"; Tasks: desktopicon
-Name: "{commonstartup}\{#AppName} (serveur)"; Filename: "{sys}\wscript.exe"; Parameters: """{app}\AfriKaisse.vbs"" --silencieux"; WorkingDir: "{app}"; IconFilename: "{app}\afrikaisse.ico"; Tasks: demarrage
+#endif
 Name: "{group}\Désinstaller {#AppName}"; Filename: "{uninstallexe}"
 
 [Run]
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\pare-feu.ps1"" -Programme ""{app}\runtime\node\node.exe"""; Flags: runhidden waituntilterminated; StatusMsg: "Ouverture du réseau du restaurant aux tablettes…"
-Filename: "{sys}\wscript.exe"; Parameters: """{app}\AfriKaisse.vbs"""; Description: "Démarrer {#AppName} maintenant"; Flags: nowait postinstall skipifsilent
+#ifdef WithConsole
+; Lancée sous le compte de la personne qui installe (pas l'administrateur) : icône, caisse, démarrage avec sa session.
+Filename: "{app}\console\AfriKaisse.exe"; WorkingDir: "{app}\console"; Description: "Ouvrir {#AppName}"; Flags: nowait postinstall skipifsilent runasoriginaluser
+#else
+Filename: "{sys}\wscript.exe"; Parameters: """{app}\AfriKaisse.vbs"""; Description: "Ouvrir {#AppName}"; Flags: nowait postinstall skipifsilent runasoriginaluser
+#endif
 
 [UninstallRun]
+; Consoles ouvertes (tous comptes) : sinon leurs fichiers restent verrouillés dans Program Files.
+Filename: "{sys}\taskkill.exe"; Parameters: "/IM AfriKaisse.exe /T /F"; Flags: runhidden waituntilterminated; RunOnceId: "FermerConsole"
+; Tâche planifiée supprimée, superviseur et serveur arrêtés. Les données restent.
+Filename: "{app}\runtime\node\node.exe"; Parameters: """{app}\lanceur\tache.cjs"" desinstaller"; WorkingDir: "{app}"; Flags: runhidden waituntilterminated; RunOnceId: "TacheAfriKaisse"
 Filename: "{sys}\wscript.exe"; Parameters: """{app}\Arreter AfriKaisse.vbs"""; Flags: runhidden waituntilterminated; RunOnceId: "ArreterAfriKaisse"
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\pare-feu.ps1"" -Retirer"; Flags: runhidden waituntilterminated; RunOnceId: "PareFeuAfriKaisse"
 
+[UninstallDelete]
+Type: files; Name: "{commonstartup}\{#AppName} (serveur).lnk"
+
 [Code]
+var
+  TacheSuspendue: Boolean;
+  TacheEnregistree: Boolean;
+
 function InitializeSetup: Boolean;
 var
   Version: TWindowsVersion;
@@ -89,6 +124,16 @@ begin
       mbCriticalError, MB_OK);
     Result := False;
   end;
+end;
+
+function Schtasks(const Parametres: String): Integer;
+var
+  Code: Integer;
+begin
+  if Exec(ExpandConstant('{sys}\schtasks.exe'), Parametres, '', SW_HIDE, ewWaitUntilTerminated, Code) then
+    Result := Code
+  else
+    Result := -1;
 end;
 
 { Copie de la base, serveur arrêté, AVANT de remplacer le programme (§73).
@@ -129,6 +174,8 @@ var
   Code: Integer;
 begin
   Result := '';
+  { Version avec tâche planifiée : l'arrêt la désactive ; DeinitializeSetup la réactive si l'on n'arrive pas au bout. }
+  TacheSuspendue := Schtasks('/Query /TN "{#TaskName}"') = 0;
   Arret := ExpandConstant('{app}\Arreter AfriKaisse.vbs');
   if FileExists(Arret) then
   begin
@@ -137,4 +184,49 @@ begin
     Sleep(1500);
   end;
   Result := SauvegarderAvantMiseAJour;
+end;
+
+{ Serveur au démarrage de Windows, sans session ouverte (lanceur\tache.cjs : droits du Service local,
+  tâche planifiée, lancement immédiat). Refus : repli sur le démarrage à l'ouverture de session (phase 11). }
+procedure EnregistrerServeur;
+var
+  Code: Integer;
+begin
+  WizardForm.StatusLabel.Caption := 'Démarrage automatique du serveur AfriKaisse…';
+  if Exec(ExpandConstant('{app}\runtime\node\node.exe'), '"' + ExpandConstant('{app}\lanceur\tache.cjs') + '" installer',
+      ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, Code) and (Code = 0) then
+  begin
+    TacheEnregistree := True;
+    Exit;
+  end;
+  CreateShellLink(ExpandConstant('{commonstartup}\AfriKaisse (serveur).lnk'), 'Serveur AfriKaisse',
+    ExpandConstant('{sys}\wscript.exe'), '"' + ExpandConstant('{app}\AfriKaisse.vbs') + '" --silencieux',
+    ExpandConstant('{app}'), ExpandConstant('{app}\afrikaisse.ico'), 0, SW_SHOWNORMAL);
+  SuppressibleMsgBox(
+    'Le démarrage du serveur avec Windows n''a pas pu être enregistré.' #13#10 #13#10 +
+    'AfriKaisse démarrera à l''ouverture de session. Détail : ' +
+    ExpandConstant('{commonappdata}\AfriKaisse\journaux\installation.log'),
+    mbInformation, MB_OK, IDOK);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then EnregistrerServeur;
+end;
+
+procedure DeinitializeSetup;
+begin
+  { Mise à jour annulée après l'arrêt du serveur : l'ancienne version repart. }
+  if TacheSuspendue and not TacheEnregistree then
+  begin
+    Schtasks('/Change /TN "{#TaskName}" /ENABLE');
+    Schtasks('/Run /TN "{#TaskName}"');
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  { Démarrage de la console avec la session (entrée écrite par Electron sous le nom de son AppUserModelId). }
+  if CurUninstallStep = usPostUninstall then
+    RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', '{#ConsoleAppId}');
 end;

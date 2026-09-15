@@ -42,53 +42,61 @@ cd services/api
 AFK_PROFILE=local AFK_DB=sqlite:.data/local.sqlite npm run dev
 ```
 
-## Installation chez le client (livrée en phase 11)
+## Installation chez le client (phases 11 et 16)
 
-**Construire** (poste de développement, Inno Setup 6 installé) :
+**Construire** (poste de développement, Inno Setup 6 et Python + Pillow installés) :
 
 ```bash
-node infrastructure/windows/build.mjs
+node infrastructure/windows/build.mjs --console
 ```
 
-Produit `infrastructure/windows/sortie/AfriKaisse-Setup-<version>.exe`. La charge
-(`infrastructure/windows/charge/`) contient :
+Produit `infrastructure/windows/sortie/AfriKaisse-Setup-<version>.exe` (détail : DEPLOYMENT.md §4.3). La
+charge (`infrastructure/windows/charge/`) contient :
 
 | Élément | Rôle |
 |---|---|
 | `runtime/node/node.exe` | Node 24 embarqué (`node:sqlite`), variable `AFK_NODE_EXE` |
-| `app/server.cjs`, `app/cli.cjs` | Serveur et outil d'administration, un fichier chacun |
+| `app/server.cjs`, `app/cli.cjs` | Serveur et outil d'administration (`cli backup` pour la console), un fichier chacun |
 | `app/web/` | Application web, **servie par le serveur lui-même** (`AFK_WEB_DIR`) : ni IIS ni Apache |
-| `lanceur/demarrer.cjs` | Démarre le serveur caché, attend le port réellement retenu (`AFK_PORT_FILE`), ouvre l'application ; rouvre simplement le navigateur si AfriKaisse tourne déjà |
-| `lanceur/arreter.cjs` | Arrêt par PID mémorisé (mise à jour, désinstallation) |
+| `console/AfriKaisse.exe` | Console Electron (zone de notification, caisse, état du système, appairage). Absente si la construction s'est faite sans elle |
+| `lanceur/tache.cjs` | Enregistre (`installer`) ou supprime (`desinstaller`) la tâche planifiée « AfriKaisse\Serveur » : démarrage de Windows, compte Service local, relance |
+| `lanceur/service.cjs` | Superviseur lancé par la tâche : démarre le serveur, le relance s'il s'arrête ou ne répond plus |
+| `lanceur/commun.cjs` | Emplacements, fichier de port, santé, tâche, processus (partagé avec la console) |
+| `lanceur/demarrer.cjs` | Repli navigateur : ouvre l'application ; lance la tâche si elle existe, sinon démarre le serveur caché comme en phase 11 |
+| `lanceur/arreter.cjs` | Désactive la tâche, arrête superviseur et serveur (mise à jour, désinstallation) |
 | `AfriKaisse.vbs`, `Arreter AfriKaisse.vbs` | Lancement sans fenêtre noire |
 | `scripts/pare-feu.ps1` | Règle entrante par **programme** (le port peut varier), **sous-réseau local uniquement**, tous profils (le Wi-Fi d'un restaurant est souvent classé « Public ») |
 
 **Ce que fait l'installateur** (administrateur, Windows 10 1809 ou plus récent, 64 bits) :
 - programme dans `C:\Program Files\AfriKaisse`, données dans `C:\ProgramData\AfriKaisse` (base
-  `afrikaisse.sqlite`, `journaux/serveur.log`) ; les données sont **conservées** à la désinstallation ;
-- une icône « AfriKaisse » (menu Démarrer et Bureau) ;
-- démarrage du serveur à l'ouverture de session (case cochée, sans navigateur) ;
+  `afrikaisse.sqlite`, sauvegardes, journaux) ; les données sont **conservées** à la désinstallation ;
+- **serveur au démarrage de Windows, sans session ouverte** : tâche planifiée sous le compte Service local
+  (droits sur le dossier de données donnés par `icacls`), lancée aussitôt ; en cas de refus, démarrage à
+  l'ouverture de session comme en phase 11 (`journaux\installation.log`) ;
+- une icône « AfriKaisse » (menu Démarrer et Bureau) vers la console, et « AfriKaisse dans le navigateur » ;
 - ouverture du pare-feu pendant l'installation ;
-- arrêt d'AfriKaisse avant une mise à jour, jamais de dossier à moitié remplacé.
+- arrêt d'AfriKaisse (tâche désactivée) et copie de la base avant une mise à jour, jamais de dossier à moitié
+  remplacé ; mise à jour annulée : la tâche est réactivée.
 
 **Premier lancement** :
-1. un écran de démarrage s'ouvre **immédiatement** et bascule seul sur l'application dès que le serveur répond ;
+1. la console s'ouvre à la fin de l'installation : fenêtre d'attente, puis la caisse dès que le serveur répond ;
 2. **Créer mon restaurant** : le serveur local n'accepte qu'un seul restaurant ;
-3. la barre d'état affiche l'**adresse pour les tablettes** (ex. `192.168.1.20:7300`), à saisir dans l'application tablette, écran « Connexion au serveur ».
+3. **Appairer une tablette** (icône AfriKaisse près de l'horloge) : QR et adresse (ex. `192.168.1.20:7300`), à
+   saisir dans l'application tablette, écran « Connexion au serveur ». La barre d'état de l'application la
+   montre aussi.
 
-Le lanceur n'alerte que si le serveur s'est réellement arrêté, jamais pour une lenteur. Au premier
-lancement, il patiente jusqu'à 3 minutes.
+La console n'alerte que si le serveur ne répond toujours pas au bout de 90 s (3 minutes au premier
+lancement), jamais pour une lenteur. Quitter la console n'arrête pas le serveur.
 
-Écarts assumés avec la cible initiale, à reprendre en phase 16 :
-- démarrage à l'ouverture de session plutôt qu'un service Windows : un service exige un exécutable
-  qui dialogue avec le gestionnaire de services, ce que Node ne fait pas seul ;
-- pas encore de console Electron : l'application s'ouvre dans le navigateur, sur `http://localhost`.
+Architecture, choix de la tâche planifiée plutôt qu'un service, sécurité de la console : DESKTOP.md.
 
 ## Découverte des appareils (§52)
 
 1. **Méthode fiable (défaut)** : la console affiche un **QR d'appairage** qui contient
-   `http://<IP-LAN>:<port>`, l'identifiant du serveur et un code à usage unique. L'application
-   serveur (Capacitor) le scanne, s'enregistre comme appareil et garde l'adresse.
+   `http://<IP-LAN>:<port>` (livré en phase 16 : adresses réelles de `/api/health`, carte réelle du réseau
+   privé en premier). **Prévu** : l'identifiant du serveur et un code à usage unique, pour que l'application
+   (Capacitor) le scanne et s'enregistre comme appareil. Aujourd'hui l'application tablette n'a pas de
+   lecteur de QR : on saisit l'adresse affichée sous le QR ; un téléphone l'ouvre avec son appareil photo.
 2. **Recherche automatique** dans l'application native : diffusion UDP sur le LAN, le serveur répond
    avec son adresse. Si l'IP a changé, l'application la retrouve seule.
 3. **`afrikaisse.local`** (mDNS) en complément sur les postes qui le résolvent (Windows 10+). Pas

@@ -477,16 +477,39 @@ La **cloche** en haut de l'écran compte les notifications non lues.
 
 ## Installer AfriKaisse sur le PC du restaurant (sans Internet)
 
-1. Lancer **AfriKaisse-Setup.exe** sur le PC du comptoir (Windows 10 ou 11, 64 bits). Si Windows
-   affiche « Windows a protégé votre PC » : **Informations complémentaires**, puis **Exécuter quand même**.
-2. Laisser cochés **Démarrer le serveur AfriKaisse à l'ouverture de session** et l'icône sur le Bureau.
-3. À la fin, AfriKaisse s'ouvre dans le navigateur : **Créer mon restaurant**.
-4. En bas de l'écran, **Adresse pour les tablettes** (par exemple `192.168.1.20:7300`) : la saisir dans
-   l'application tablette, écran « Connexion au serveur », option « Serveur local du restaurant ».
-5. Conseil : demander au fournisseur d'accès de **réserver l'adresse IP** du PC sur la box, pour que
+1. Lancer **AfriKaisse-Setup.exe** sur le PC du comptoir (Windows 10 ou 11, 64 bits), avec un compte
+   administrateur. Si Windows affiche « Windows a protégé votre PC » : **Informations complémentaires**, puis
+   **Exécuter quand même**.
+2. À la fin, AfriKaisse s'ouvre : **Créer mon restaurant**.
+3. **Appairer une tablette** (voir « Le logiciel Windows ») : saisir l'adresse affichée dans l'application
+   tablette, écran « Connexion au serveur », option « Serveur local du restaurant ».
+4. Conseil : demander au fournisseur d'accès de **réserver l'adresse IP** du PC sur la box, pour que
    l'adresse des tablettes ne change jamais.
 
 Les données restent sur le PC (`C:\ProgramData\AfriKaisse`), même si l'on désinstalle le logiciel.
+
+### Le logiciel Windows
+
+Le **serveur AfriKaisse démarre avec le PC**, avant même qu'on ouvre une session Windows : les tablettes, la
+cuisine et les imprimantes fonctionnent dès que le PC est allumé. S'il s'arrête, il repart seul.
+
+La **console** est l'icône AfriKaisse à côté de l'horloge (zone de notification ; au besoin, flèche ^). Clic sur
+l'icône : la caisse. Clic droit :
+
+| Menu | Effet |
+|---|---|
+| Ouvrir la caisse | L'application en plein écran (F11 : plein écran, F5 : recharger) |
+| État du système | La **Supervision** (voir plus bas) dans sa propre fenêtre |
+| Appairer une tablette | Un **QR code** et l'adresse du serveur (par exemple `192.168.1.20:7300`) ; s'il y a plusieurs adresses, choisir celle du Wi-Fi ou du câble du restaurant |
+| Sauvegarder maintenant | Copie vérifiée de la base dans `C:\ProgramData\AfriKaisse\sauvegardes`, sans fermer la caisse ; un message indique le fichier |
+| Démarrer avec Windows | Coché : l'icône apparaît à l'ouverture de session |
+| Quitter la console | Ferme l'icône et les fenêtres ; **le serveur continue** de servir les tablettes |
+
+La première ligne du menu dit si le serveur est en marche. S'il ne répond pas, la console le relance et
+patiente ; au-delà d'une minute et demie, elle affiche **Réessayer** et **Ouvrir les journaux** (à transmettre
+au support).
+
+L'icône **AfriKaisse dans le navigateur** du menu Démarrer ouvre la même application dans le navigateur.
 
 **Relier le PC au Cloud** (pour suivre le restaurant à distance, et proposer la commande QR en ligne) :
 1. Dans AfriKaisse Cloud (navigateur, avec Internet), menu **Établissements** : choisir l'établissement, puis **Relier un serveur local**. Un code s'affiche, par exemple `K7QM-3XRA`, valable 10 minutes.

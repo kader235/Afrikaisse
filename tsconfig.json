@@ -27,6 +27,9 @@
     "apps/site/src",
     "apps/site/scripts",
     "apps/site/test",
+    "apps/desktop/src",
+    "apps/desktop/test",
+    "infrastructure/windows/test",
     "vitest.config.ts"
   ]
 }

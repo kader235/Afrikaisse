@@ -1,28 +1,25 @@
 'use strict';
-/** Arrête le serveur AfriKaisse (mise à jour, désinstallation). Les données ne sont jamais touchées. */
-const { spawnSync } = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
+/**
+ * Arrête le serveur AfriKaisse (mise à jour, désinstallation). Les données ne sont jamais touchées.
+ *
+ * Tâche planifiée présente : elle est d'abord DÉSACTIVÉE, sinon sa répétition (toutes les 5 minutes)
+ * relancerait le serveur pendant la copie des fichiers. L'installateur la recrée active ; une mise à
+ * jour annulée la réactive (AfriKaisse.iss, DeinitializeSetup).
+ * Délais et arrêt forcé partout (commun.cjs → run) : un outil qui pend ne doit jamais figer une mise à jour.
+ */
+const c = require('./commun.cjs');
 
-const DATA = process.env.AFK_HOME_DATA || path.join(process.env.ProgramData || 'C:\\ProgramData', 'AfriKaisse');
-const PID_FILE = path.join(DATA, 'serveur.pid');
-
-let pid = null;
-try {
-  pid = Number(fs.readFileSync(PID_FILE, 'utf8').trim()) || null;
-} catch {
-  /* jamais démarré */
-}
-
-if (pid) {
-  // Délai et arrêt forcé : un outil qui pend ne doit jamais figer une mise à jour.
-  spawnSync('taskkill.exe', ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true, timeout: 15_000, killSignal: 'SIGKILL' });
-  console.log(`Serveur AfriKaisse arrêté (processus ${pid}).`);
-}
-for (const file of [PID_FILE, path.join(DATA, 'port.txt')]) {
-  try {
-    fs.unlinkSync(file);
-  } catch {
-    /* déjà absent */
+async function main() {
+  const p = c.paths(c.dataDir());
+  if (await c.taskInstalled()) {
+    await c.schtasks(['/Change', '/TN', c.TASK_NAME, '/DISABLE']);
+    await c.schtasks(['/End', '/TN', c.TASK_NAME]);
   }
+  await c.stopProcesses(p);
+  console.log('Serveur AfriKaisse arrêté.');
 }
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
