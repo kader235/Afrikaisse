@@ -19,8 +19,8 @@
   width: min(1180px, 100%);
   height: min(780px, 100%);
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-panel);
+  border: 0;
+  border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-pop);
 }
@@ -29,12 +29,10 @@
   display: flex;
   flex: none;
   align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding-block: 0;
-  padding-inline: 20px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--band);
+  min-height: 52px;
+  padding: 0 6px 0 18px;
+  background: var(--topbar);
+  color: #ffffff;
 }
 
 .onb-head h1 {
@@ -42,16 +40,26 @@
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  font-size: 17px;
-  font-weight: 600;
+  font-size: 16.5px;
+  font-weight: 500;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 .onb-place {
   margin-inline-start: 12px;
-  color: var(--muted);
-  font-weight: 500;
+  color: var(--topbar-soft);
+  font-weight: 400;
+}
+
+.onb-head .icon-btn {
+  margin-inline-start: 12px;
+  color: #ffffff;
+}
+
+.onb-head .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
 }
 
 .onb-body {
