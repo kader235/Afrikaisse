@@ -3,7 +3,7 @@ import { CATALOGUE_CATEGORIES, catalogueSchema, cataloguePrice, dishesForCountry
 import { ApiError, UserFacingError, api } from '../api.ts';
 import { compressImage } from '../images.ts';
 import { COUNTRIES } from '../labels.ts';
-import { ErrorMessage } from '../ui.tsx';
+import { ErrorMessage, Icon } from '../ui.tsx';
 
 /** Données embarquées avec les écrans : servies par le Cloud, le serveur local et l'application tablette. */
 const CATALOGUE_URL = '/catalogue/catalogue.json';
@@ -203,7 +203,7 @@ export function CatalogueImport({ menu, country, onClose, onDone }: { menu: Admi
                       <img className="dish-photo" src={imageUrl(d.image)} alt="" loading="lazy" />
                     ) : (
                       <span className="dish-photo dish-initial" aria-hidden="true">
-                        {d.name.slice(0, 1).toUpperCase()}
+                        <Icon name="cutlery" />
                       </span>
                     )}
                     <span className="dish-check" aria-hidden="true" />

@@ -4408,9 +4408,13 @@ table.grid td.empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
-  font-size: 28px;
-  font-weight: 600;
+  background: var(--band);
+  color: var(--border-strong);
+}
+
+.dish-initial .ico {
+  width: 34px;
+  height: 34px;
 }
 
 .dish-check {
