@@ -2,10 +2,11 @@ import { LogoAfrikaisse } from '../logo.tsx';
 import { CLOUD_URL as CLOUD_URL_PAR_DEFAUT } from '../platform.ts';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { CURRENCY_CODES, LOCATION_TYPES, type SessionResponse } from '@afrikaisse/core';
-import { api } from '../api.ts';
+import { ApiError, api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { COUNTRIES, LOCATION_TYPE_LABELS } from '../labels.ts';
 import { APP_VERSION, ErrorMessage, Preferences } from '../ui.tsx';
+import { EMPTY_RECOVERY, RecoveryFields } from './Recovery.tsx';
 
 /** Écran d'accès : une fenêtre centrée, une barre d'état. */
 /** Sur la tablette : le serveur utilisé, et de quoi en changer depuis n'importe quel écran d'accès. */
@@ -94,6 +95,10 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
     }
   }
 
+  if (forgot) {
+    return <RecoveryScreen server={server} initialEmail={email} onSession={onSession} onCancel={() => setForgot(false)} />;
+  }
+
   if (pairing) {
     return (
       <PairScreen
@@ -167,14 +172,123 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <button type="button" className="link access-forgot" aria-expanded={forgot} onClick={() => setForgot((v) => !v)}>
+          <button type="button" className="link access-forgot" onClick={() => setForgot(true)}>
             {t('auth.forgot')}
           </button>
         </div>
-        {forgot && (
-          <div className="msg access-help" role="note">
-            {t('auth.forgotHelp')}
+      </AccessScreen>
+    </form>
+  );
+}
+
+/**
+ * Mot de passe oublié : l'adresse du compte, puis la question secrète choisie à sa création.
+ * La bonne réponse et un nouveau mot de passe suffisent : la personne est connectée aussitôt.
+ */
+function RecoveryScreen({ server, initialEmail, onSession, onCancel }: { server?: ServerSwitch; initialEmail: string; onSession: (s: SessionResponse) => void; onCancel: () => void }) {
+  const [email, setEmail] = useState(initialEmail);
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState<unknown>(null);
+  const [mismatch, setMismatch] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setMismatch(false);
+    if (question !== null && password !== confirm) {
+      setMismatch(true);
+      return;
+    }
+    setBusy(true);
+    try {
+      if (question === null) {
+        setQuestion((await api<{ question: string }>('POST', '/auth/recovery/question', { email })).question);
+      } else {
+        onSession(await api<SessionResponse>('POST', '/auth/recovery/reset', { email, answer, newPassword: password }));
+      }
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const noQuestion = error instanceof ApiError && error.code === 'NOT_FOUND';
+
+  return (
+    <form onSubmit={submit}>
+      <AccessScreen
+        server={server}
+        title="Mot de passe oublié"
+        footer={
+          <div className="access-actions">
+            <button className="btn btn-primary access-submit" disabled={busy}>
+              {busy ? 'Vérification…' : question === null ? 'Continuer' : 'Changer le mot de passe'}
+            </button>
+            <div className="access-links">
+              <button type="button" className="link" onClick={question === null ? onCancel : () => (setQuestion(null), setError(null))}>
+                {question === null ? 'Retour à la connexion' : "Changer d'adresse e-mail"}
+              </button>
+            </div>
           </div>
+        }
+      >
+        <ErrorMessage error={error} />
+        {noQuestion && (
+          <p className="access-note">
+            Compte créé avant la question secrète : sur un appareil encore connecté, choisissez-la dans Mon compte. Sinon, un administrateur du restaurant peut vous
+            donner un nouveau mot de passe (Équipe).
+          </p>
+        )}
+        {mismatch && (
+          <div className="msg msg-error" role="alert">
+            <strong>Erreur :</strong> les deux mots de passe ne sont pas identiques.
+          </div>
+        )}
+        {question === null ? (
+          <>
+            <p className="access-intro">Saisissez l'adresse e-mail de votre compte. La question secrète choisie à sa création vous sera posée.</p>
+            <div className="access-field">
+              <label htmlFor="rec-email">Adresse e-mail</label>
+              <div className="access-input">
+                <FieldIcon d="M2.5 4h11v8h-11zM2.5 4.5L8 9l5.5-4.5" />
+                <input id="rec-email" type="email" required autoFocus autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="access-question">
+              <small>Question secrète de {email}</small>
+              <strong>{question}</strong>
+            </div>
+            <div className="access-field">
+              <label htmlFor="rec-answer">Votre réponse</label>
+              <div className="access-input">
+                <FieldIcon d="M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM6.2 6.2a1.9 1.9 0 1 1 2.6 1.8c-.5.2-.8.6-.8 1.1v.4M8 11.4v.1" />
+                <input id="rec-answer" required autoFocus autoComplete="off" autoCapitalize="off" spellCheck={false} value={answer} onChange={(e) => setAnswer(e.target.value)} />
+              </div>
+            </div>
+            <div className="access-field">
+              <label htmlFor="rec-password">Nouveau mot de passe</label>
+              <div className="access-input">
+                <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
+                <input id="rec-password" type="password" required minLength={10} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+            </div>
+            <div className="access-field">
+              <label htmlFor="rec-confirm">Confirmer le nouveau mot de passe</label>
+              <div className="access-input">
+                <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
+                <input id="rec-confirm" type="password" required minLength={10} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+              </div>
+              <span className="access-note">Au moins 10 caractères. Vos autres appareils seront déconnectés.</span>
+            </div>
+          </>
         )}
       </AccessScreen>
     </form>
@@ -243,6 +357,7 @@ export function RegisterPage({ onSession, onLogin, server }: { onSession: (s: Se
     email: '',
     password: '',
   });
+  const [recovery, setRecovery] = useState(EMPTY_RECOVERY);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -257,7 +372,7 @@ export function RegisterPage({ onSession, onLogin, server }: { onSession: (s: Se
     setBusy(true);
     setError(null);
     try {
-      onSession(await api<SessionResponse>('POST', '/auth/register', form));
+      onSession(await api<SessionResponse>('POST', '/auth/register', { ...form, recoveryQuestion: recovery.question, recoveryAnswer: recovery.answer }));
     } catch (err) {
       setError(err);
     } finally {
@@ -331,6 +446,12 @@ export function RegisterPage({ onSession, onLogin, server }: { onSession: (s: Se
             <label htmlFor="r-password">{t('auth.password')}</label>
             <input id="r-password" type="password" required minLength={10} autoComplete="new-password" value={form.password} onChange={set('password')} />
             <span className="hint">{t('auth.passwordHint')}</span>
+          </div>
+        </fieldset>
+        <fieldset className="group">
+          <legend>Récupération du compte</legend>
+          <div className="form">
+            <RecoveryFields id="r-rec" value={recovery} onChange={setRecovery} />
           </div>
         </fieldset>
       </AccessScreen>

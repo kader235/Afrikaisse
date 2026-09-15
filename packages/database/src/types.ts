@@ -98,6 +98,10 @@ export interface UsersTable {
   pin_hash: string | null;
   is_platform_admin: Bool;
   status: 'ACTIVE' | 'DISABLED';
+  /** Question secrète choisie par la personne (récupération du compte), null si jamais définie. */
+  recovery_question: string | null;
+  /** Réponse normalisée puis hachée comme un mot de passe. */
+  recovery_answer_hash: string | null;
   created_at: number;
   updated_at: number;
   updated_hlc: string;

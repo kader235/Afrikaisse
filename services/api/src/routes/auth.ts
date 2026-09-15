@@ -1,10 +1,14 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 import {
   changePasswordSchema,
   loginSchema,
   meSchema,
+  recoveryLookupSchema,
+  recoveryResetSchema,
   refreshSchema,
+  setRecoverySchema,
   registerSchema,
   sessionResponseSchema,
   switchTenantSchema,
@@ -22,6 +26,7 @@ import {
   switchTenant,
   type IssuedSession,
 } from '../services/auth.ts';
+import { recoverAccount, recoveryQuestion, setRecovery } from '../services/recovery.ts';
 
 export const REFRESH_COOKIE = 'afk_refresh';
 
@@ -94,6 +99,27 @@ export function authRoutes(ctx: AppContext): FastifyPluginAsyncZod {
       '/switch-tenant',
       { preHandler: requireAuth(ctx), schema: { tags: ['auth'], summary: 'Changer d’organisation courante', security: [{ bearer: [] }], body: switchTenantSchema, response: { 200: sessionResponseSchema } } },
       async (request, reply) => respond(request, reply, await switchTenant(ctx, request.auth!, request.body.tenantId, requestMeta(request))),
+    );
+
+    app.post(
+      '/recovery/question',
+      { schema: { tags: ['auth'], summary: 'Mot de passe oublié : question secrète du compte', body: recoveryLookupSchema, response: { 200: z.object({ question: z.string() }) } } },
+      async (request) => recoveryQuestion(ctx, request.body.email),
+    );
+
+    app.post(
+      '/recovery/reset',
+      { schema: { tags: ['auth'], summary: 'Mot de passe oublié : bonne réponse, nouveau mot de passe, connexion', body: recoveryResetSchema, response: { 200: sessionResponseSchema } } },
+      async (request, reply) => respond(request, reply, await recoverAccount(ctx, request.body, requestMeta(request))),
+    );
+
+    app.put(
+      '/recovery',
+      { preHandler: requireAuth(ctx), schema: { tags: ['auth'], summary: 'Choisir ou changer sa question secrète', security: [{ bearer: [] }], body: setRecoverySchema } },
+      async (request, reply) => {
+        await setRecovery(ctx, request.auth!, request.body, requestMeta(request));
+        return reply.code(204).send();
+      },
     );
 
     app.post(

@@ -1638,6 +1638,8 @@ table.grid td.empty {
   width: 100%;
   max-width: 580px;
   max-height: 100%;
+  /* Hauteur réelle de l'écran : la zone de grille ne la donne pas à un pourcentage (boutons coupés sur la tablette). */
+  max-height: calc(100vh - 32px);
   overflow: hidden;
   background: var(--surface);
   border-radius: var(--radius);
@@ -5971,5 +5973,65 @@ table.grid td.empty {
   .qr-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-gap: 12px;
+  }
+}
+
+/* === Récupération du compte : question secrète ============================ */
+.access-intro {
+  margin: 0 0 14px;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.access-question {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-inline-start: 3px solid var(--primary);
+  background: var(--band);
+}
+
+.access-question small {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.access-question strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.access-note {
+  display: block;
+  margin: 6px 0 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.recovery-lead {
+  margin: 0 0 14px;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+@media (pointer: coarse) {
+  .access-intro,
+  .recovery-lead {
+    font-size: 16px;
+  }
+
+  .access-question strong {
+    font-size: 18px;
+  }
+
+  .access-question small,
+  .access-note {
+    font-size: 14px;
   }
 }

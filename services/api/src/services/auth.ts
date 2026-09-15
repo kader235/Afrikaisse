@@ -6,6 +6,7 @@ import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { hashPassword, verifyPassword } from '../lib/passwords.ts';
 import { generateRefreshToken, hashToken, signAccessToken } from '../lib/tokens.ts';
 import { createDefaultStations } from './kitchen.ts';
+import { hashAnswer } from './recovery.ts';
 
 export interface IssuedSession {
   userId: string;
@@ -32,7 +33,11 @@ export async function register(ctx: AppContext, input: RegisterInput, meta: Requ
     throw new AppError('CONFLICT', 'Un compte existe déjà avec cette adresse e-mail. Connectez-vous.');
   }
 
+  if (!input.recoveryQuestion !== !input.recoveryAnswer) {
+    throw new AppError('VALIDATION', 'Choisissez une question secrète et écrivez sa réponse.');
+  }
   const passwordHash = await hashPassword(input.password);
+  const recoveryAnswerHash = input.recoveryAnswer ? await hashAnswer(input.recoveryAnswer) : null;
   const now = ctx.now();
   const tenantId = uuidv7();
   const locationId = uuidv7();
@@ -76,6 +81,8 @@ export async function register(ctx: AppContext, input: RegisterInput, meta: Requ
         pin_hash: null,
         is_platform_admin: 0,
         status: 'ACTIVE',
+        recovery_question: input.recoveryQuestion ?? null,
+        recovery_answer_hash: recoveryAnswerHash,
         ...stamp,
       } as const;
       await trx.insertInto('users').values(user).execute();
@@ -107,19 +114,23 @@ export async function register(ctx: AppContext, input: RegisterInput, meta: Requ
   return createSession(ctx, userId, tenantId, meta);
 }
 
-async function assertNotLockedOut(ctx: AppContext, email: string): Promise<void> {
+/**
+ * Échecs consécutifs depuis le dernier succès. Une récupération réussie remet aussi le compteur
+ * de connexion à zéro : sinon le nouveau mot de passe resterait bloqué 15 minutes.
+ */
+export async function assertNotLockedOut(ctx: AppContext, email: string, success = 'auth.login', failure = 'auth.login_failed'): Promise<void> {
   const since = ctx.now() - ctx.config.loginWindowSec * 1000;
+  const successes = success === 'auth.login' ? ['auth.login', 'auth.recovered'] : [success];
   const recent = await ctx.db
     .selectFrom('audit_logs')
     .select('action')
     .where('subject', '=', email)
-    .where('action', 'in', ['auth.login', 'auth.login_failed'])
+    .where('action', 'in', [...successes, failure])
     .where('created_at', '>=', since)
     .orderBy('created_at', 'desc')
     .limit(ctx.config.loginMaxFailures)
     .execute();
-  // Échecs consécutifs depuis la dernière connexion réussie.
-  const failures = recent.findIndex((r) => r.action === 'auth.login');
+  const failures = recent.findIndex((r) => r.action !== failure);
   const consecutive = failures === -1 ? recent.length : failures;
   if (consecutive >= ctx.config.loginMaxFailures) {
     throw new AppError('TOO_MANY_ATTEMPTS', 'Trop de tentatives. Réessayez dans 15 minutes.');
@@ -286,6 +297,7 @@ export async function changeOwnPassword(ctx: AppContext, auth: AuthState, curren
 }
 
 export async function loadMe(ctx: AppContext, auth: AuthState): Promise<Me> {
+  const recovery = await ctx.db.selectFrom('users').select('recovery_answer_hash').where('id', '=', auth.userId).executeTakeFirst();
   const memberships = await ctx.db
     .selectFrom('memberships as m')
     .innerJoin('tenants as t', 't.id', 'm.tenant_id')
@@ -306,7 +318,7 @@ export async function loadMe(ctx: AppContext, auth: AuthState): Promise<Me> {
   }
 
   return {
-    user: { id: auth.userId, email: auth.email, displayName: auth.displayName, isPlatformAdmin: auth.isPlatformAdmin },
+    user: { id: auth.userId, email: auth.email, displayName: auth.displayName, isPlatformAdmin: auth.isPlatformAdmin, hasRecovery: !!recovery?.recovery_answer_hash },
     tenant:
       auth.tenantId && auth.tenantName && auth.tenantStatus
         ? { id: auth.tenantId, name: auth.tenantName, status: auth.tenantStatus, isDemo: auth.tenantIsDemo, plan: auth.tenantPlan ?? 'STARTER', planExpiresAt: auth.tenantPlanExpiresAt }

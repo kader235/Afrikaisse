@@ -21,6 +21,8 @@ export const RATE_RULES: RateRule[] = [
   { method: 'POST', url: '/api/auth/register', max: 10, windowSec: 3600 },
   { method: 'POST', url: '/api/auth/login', max: 30, windowSec: 600 },
   { method: 'POST', url: '/api/auth/refresh', max: 120, windowSec: 600 },
+  { method: 'POST', url: '/api/auth/recovery/question', max: 30, windowSec: 600 },
+  { method: 'POST', url: '/api/auth/recovery/reset', max: 20, windowSec: 600 },
   { method: 'POST', url: '/api/public/menu/:token/orders', max: 30, windowSec: 600, perParam: 'token' },
   { method: 'POST', url: '/api/public/menu/:token/requests', max: 30, windowSec: 600, perParam: 'token' },
   // Codes promo : pas de devinette en rafale depuis une table.

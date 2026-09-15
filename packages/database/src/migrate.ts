@@ -16,6 +16,7 @@ import { notifications } from './migrations/0012_notifications.ts';
 import { platform } from './migrations/0013_platform.ts';
 import { client } from './migrations/0014_client.ts';
 import { onboarding } from './migrations/0015_onboarding.ts';
+import { recovery } from './migrations/0016_recovery.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -40,6 +41,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0013_platform': platform(c),
     '0014_client': client(c),
     '0015_onboarding': onboarding(c),
+    '0016_recovery': recovery(c),
   };
 }
 

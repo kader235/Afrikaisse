@@ -33,6 +33,8 @@ export const meSchema = z.object({
     email: z.string().nullable(),
     displayName: z.string(),
     isPlatformAdmin: z.boolean(),
+    /** Question secrète définie : sinon l'application propose de la choisir. */
+    hasRecovery: z.boolean(),
   }),
   tenant: z
     .object({

@@ -22,6 +22,7 @@ import { AUDIT_ACTION_LABELS, ROLE_LABELS, formatDateTime } from '../labels.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
 import { BackupsPanel } from './Backups.tsx';
 import { SyncPanel } from './Sync.tsx';
+import { RecoverySection } from './Recovery.tsx';
 
 interface TenantDetails {
   id: string;
@@ -235,7 +236,7 @@ export function AuditPage() {
   );
 }
 
-export function AccountPage({ me }: { me: Me }) {
+export function AccountPage({ me, onChanged }: { me: Me; onChanged?: () => void }) {
   const { t } = useI18n();
   const [currentPassword, setCurrent] = useState('');
   const [newPassword, setNext] = useState('');
@@ -283,6 +284,7 @@ export function AccountPage({ me }: { me: Me }) {
             </div>
           </fieldset>
         </form>
+        <RecoverySection me={me} onSaved={onChanged} />
       </div>
     </Window>
   );

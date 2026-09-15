@@ -17,6 +17,9 @@ export const passwordSchema = z
   .min(10, 'Au moins 10 caractères')
   .max(200, 'Mot de passe trop long');
 
+export const recoveryQuestionSchema = z.string().trim().min(8, 'Question trop courte').max(160, 'Question trop longue');
+export const recoveryAnswerSchema = z.string().trim().min(2, 'Réponse trop courte').max(120, 'Réponse trop longue');
+
 export const registerSchema = z.object({
   organizationName: z.string().trim().min(2).max(120),
   locationName: z.string().trim().min(2).max(120),
@@ -27,8 +30,27 @@ export const registerSchema = z.object({
   ownerName: z.string().trim().min(2).max(120),
   email: emailSchema,
   password: passwordSchema,
+  // Posées à la création du compte : elles permettent de le récupérer seul en cas d'oubli.
+  recoveryQuestion: recoveryQuestionSchema.optional(),
+  recoveryAnswer: recoveryAnswerSchema.optional(),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
+
+export const recoveryLookupSchema = z.object({ email: emailSchema });
+
+export const recoveryResetSchema = z.object({
+  email: emailSchema,
+  answer: z.string().min(1).max(120),
+  newPassword: passwordSchema,
+});
+export type RecoveryResetInput = z.infer<typeof recoveryResetSchema>;
+
+export const setRecoverySchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+  question: recoveryQuestionSchema,
+  answer: recoveryAnswerSchema,
+});
+export type SetRecoveryInput = z.infer<typeof setRecoverySchema>;
 
 export const loginSchema = z.object({
   email: emailSchema,

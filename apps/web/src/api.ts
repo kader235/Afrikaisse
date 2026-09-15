@@ -103,7 +103,7 @@ export function refreshSession(): Promise<SessionResponse | null> {
   return refreshing;
 }
 
-const NO_RETRY = ['/auth/login', '/auth/register', '/auth/refresh'];
+const NO_RETRY = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/recovery/question', '/auth/recovery/reset'];
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res = await send(method, path, body);

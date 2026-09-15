@@ -19,6 +19,7 @@ import { DashboardPage } from './pages/Dashboard.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
 import { OnboardingWizard } from './pages/Onboarding.tsx';
+import { RecoveryPrompt } from './pages/Recovery.tsx';
 import { useActivityFeed } from './activity.ts';
 import { useNotifications } from './notifications.ts';
 import { NotificationPanel } from './pages/Notifications.tsx';
@@ -253,6 +254,23 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   // Assistant de mise en route : s'ouvre seul sur un restaurant neuf (une fois par session), se rouvre depuis Paramètres.
   const setupLocationId = can('location.manage') && me.tenantAccess === 'OK' ? (me.locations[0]?.id ?? null) : null;
   const [setupOpen, setSetupOpen] = useState(false);
+  // Compte sans question secrète : proposée une fois par session, « Plus tard » la repousse au prochain démarrage.
+  const laterKey = `afk.recovery.later.${me.user.id}`;
+  const [recoveryLater, setRecoveryLater] = useState(() => {
+    try {
+      return sessionStorage.getItem(laterKey) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const postponeRecovery = () => {
+    setRecoveryLater(true);
+    try {
+      sessionStorage.setItem(laterKey, '1');
+    } catch {
+      /* rappel au prochain affichage */
+    }
+  };
   useEffect(() => {
     if (!setupLocationId || setupDismissed(setupLocationId)) return;
     api<SetupStatus>('GET', `/locations/${setupLocationId}/setup`).then(
@@ -369,7 +387,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'menu' && <MenuPage me={me} />}
         {current === 'team' && <TeamPage me={me} />}
         {current === 'audit' && <AuditPage />}
-        {current === 'account' && <AccountPage me={me} />}
+        {current === 'account' && <AccountPage me={me} onChanged={reloadMe} />}
         {current === 'platform' && <PlatformPage />}
         {current === 'monitoring' && <MonitoringPage me={me} />}
       </main>
@@ -401,6 +419,16 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         <StatusClock locale={lang === 'ar' ? 'ar-TD' : lang === 'en' ? 'en-GB' : 'fr-FR'} />
         <span>AfriKaisse {health?.version ?? APP_VERSION}</span>
       </footer>
+
+      {!me.user.hasRecovery && !!me.user.email && !recoveryLater && !setupOpen && (
+        <RecoveryPrompt
+          onLater={postponeRecovery}
+          onSaved={() => {
+            postponeRecovery();
+            void reloadMe();
+          }}
+        />
+      )}
 
       {setupOpen && setupLocationId && (
         <OnboardingWizard
