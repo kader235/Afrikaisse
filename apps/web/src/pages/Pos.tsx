@@ -42,7 +42,6 @@ import {
 import { api } from '../api.ts';
 import { useDishPhoto } from '../dishPhotos.ts';
 import { isNativeApp, mediaSrc } from '../platform.ts';
-import { isTablet } from '../touch.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
 import { zoneVars } from '../zoneColors.ts';
 import '../styles/pricing.css';
@@ -485,8 +484,8 @@ export function SaleTab({
     const list = q ? menu.products.filter((p) => p.name.toLowerCase().includes(q)) : menu.products.filter((p) => p.categoryId === activeCategory);
     return [...list].sort((a, b) => a.sort - b.sort);
   }, [menu, activeCategory, query]);
-  // Plat sans photo sur la tablette : photo d'exemple du catalogue (une vraie photo n'est jamais remplacée).
-  const samplePhoto = useDishPhoto(isTablet());
+  // Plat sans photo : photo d'exemple du catalogue (une vraie photo n'est jamais remplacée).
+  const samplePhoto = useDishPhoto();
   const photoOf = (p: Product) => (p.photoUrl ? mediaSrc(p.photoUrl) : samplePhoto(p.name));
   // Sans aucune photo dans la liste, des tuiles de texte : pas de cadres vides.
   const withPhotos = products.some((p) => photoOf(p));

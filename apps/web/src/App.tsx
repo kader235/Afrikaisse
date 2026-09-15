@@ -19,7 +19,7 @@ import { DashboardPage } from './pages/Dashboard.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
 import { TakeOrderPage } from './pages/TakeOrder.tsx';
-import { isTablet } from './touch.ts';
+import { isTouchDevice } from './touch.ts';
 import { clearCache, readCache, saveCache, useOutboxSender } from './offline.ts';
 import { OnboardingWizard } from './pages/Onboarding.tsx';
 import { RecoveryPrompt } from './pages/Recovery.tsx';
@@ -183,19 +183,19 @@ const NAV_GROUPS: [NavGroup, string][] = [
   ['admin', 'Administration'],
 ];
 
-/** Accès rapides du téléphone (barre du bas), par métier : chacun ouvre son outil. */
-const TAB_PRIORITY: Record<Role, Section[]> = {
-  OWNER: ['dashboard', 'orders', 'pos', 'menu'],
-  ADMIN: ['dashboard', 'orders', 'pos', 'menu'],
-  MANAGER: ['dashboard', 'orders', 'pos', 'floor'],
-  CASHIER: ['pos', 'orders'],
-  WAITER: ['take', 'orders'],
+/** Onglets du bandeau sur PC : plus de place qu'à la tablette, la gestion d'abord ; le reste sous « Plus ». */
+const PC_NAV: Record<Role, Section[]> = {
+  OWNER: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu', 'reports'],
+  ADMIN: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu', 'reports'],
+  MANAGER: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu'],
+  CASHIER: ['pos', 'take', 'orders', 'floor'],
+  WAITER: ['take', 'orders', 'floor'],
   KITCHEN: ['kitchen'],
   BAR: ['kitchen'],
-  STOCK_MANAGER: ['stock', 'menu'],
+  STOCK_MANAGER: ['stock', 'menu', 'reports'],
 };
 
-/** Onglets du bandeau sur la tablette : l'outil du métier d'abord, tout le reste sous « Plus ». */
+/** Onglets du bandeau sur la tablette et le téléphone : l'outil du métier d'abord, tout le reste sous « Plus ». */
 const TABLET_NAV: Record<Role, Section[]> = {
   OWNER: ['take', 'orders', 'pos', 'dashboard'],
   ADMIN: ['take', 'orders', 'pos', 'dashboard'],
@@ -245,19 +245,15 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'organization', label: t('nav.organization'), icon: 'gear', visible: can('tenant.read'), group: 'admin' },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
     { id: 'monitoring', label: 'Supervision', icon: 'server', visible: can('devices.manage'), group: 'admin' },
-    { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin && !isTablet(), group: 'admin' },
+    { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin && !isTouchDevice(), group: 'admin' },
   ];
   const visible = sections.filter((s) => s.visible);
-  const quick = TAB_PRIORITY[me.role ?? 'OWNER']
-    .map((id) => visible.find((s) => s.id === id))
-    .filter((s): s is NavItem => !!s)
-    .slice(0, 4);
-  if (quick.length === 0 && visible[0]) quick.push(visible[0]);
-  const tablet = isTablet();
-  const tabletNav = TABLET_NAV[me.role ?? 'OWNER'].map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s);
-  if (tabletNav.length === 0 && visible[0]) tabletNav.push(visible[0]);
+  // Même bandeau à onglets partout ; l'appareil ne décide que du nombre d'onglets et de ce qui reste au PC.
+  const touch = isTouchDevice();
+  const topNav = (touch ? TABLET_NAV : PC_NAV)[me.role ?? 'OWNER'].map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s);
+  if (topNav.length === 0 && visible[0]) topNav.push(visible[0]);
   const [panel, setPanel] = useState<'account' | 'nav' | 'notifications' | null>(null);
-  const [section, setSection] = useState<Section>(() => sectionFromHash() ?? (tablet ? tabletNav[0]?.id : quick[0]?.id) ?? 'account');
+  const [section, setSection] = useState<Section>(() => sectionFromHash() ?? topNav[0]?.id ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
   const roleLabel = me.role ? ROLE_LABELS[lang][me.role] : '';
   const place = me.locations.length === 1 ? me.locations[0]!.name : (me.tenant?.name ?? 'AfriKaisse');
@@ -352,30 +348,26 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   return (
     <div className="app">
       <header className="topbar">
-        <button className="topbar-menu" aria-label="Menu" aria-haspopup="dialog" onClick={() => setPanel('nav')}>
-          <Icon name="list" />
-        </button>
         <div className="topbar-brand">
           <LogoAfrikaisse />
           <span className="topbar-product">
             Afri<span>Kaisse</span>
           </span>
         </div>
-        {tablet && (
-          <nav className="topnav" aria-label="Navigation principale">
-            {tabletNav.map((s) => (
-              <button key={s.id} className="topnav-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
-                <Icon name={s.icon} />
-                <span>{s.label}</span>
-                {!!s.badge && <span className="topnav-count">{s.badge}</span>}
-              </button>
-            ))}
-            <button className="topnav-item" aria-haspopup="dialog" aria-current={tabletNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
-              <Icon name="more" />
-              <span>Plus</span>
+        <nav className="topnav" aria-label="Navigation principale">
+          {topNav.map((s, i) => (
+            // Au-delà du cinquième, l'onglet se replie sous « Plus » sur un petit écran de PC (styles/pc.css).
+            <button key={s.id} className={i >= 5 ? 'topnav-item topnav-extra' : 'topnav-item'} aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
+              <Icon name={s.icon} />
+              <span>{s.label}</span>
+              {!!s.badge && <span className="topnav-count">{s.badge}</span>}
             </button>
-          </nav>
-        )}
+          ))}
+          <button className="topnav-item" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
+            <Icon name="more" />
+            <span>Plus</span>
+          </button>
+        </nav>
         <div className="topbar-context">
           <span className="topbar-place">{place}</span>
           {me.tenant && place !== me.tenant.name && <span className="topbar-org">{me.tenant.name}</span>}
@@ -412,22 +404,8 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         </div>
       </header>
 
-      <nav className="sidebar" aria-label="Navigation">
-        <NavList items={visible} current={current} onPick={open} />
-        {/* Rail de la tablette : l'administration passe sous « Plus » pour garder des libellés entiers. */}
-        <button
-          className="nav-item nav-more"
-          aria-haspopup="dialog"
-          aria-current={visible.some((s) => s.group === 'admin' && s.id === current) ? 'page' : undefined}
-          onClick={() => setPanel('nav')}
-        >
-          <Icon name="more" />
-          <span className="nav-label">Plus</span>
-        </button>
-      </nav>
-
       <main className={current === 'take' ? 'workspace workspace-bleed' : 'workspace'}>
-        {can('tenant.read') && !tablet && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
+        {can('tenant.read') && !touch && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
         {!!error && <ErrorMessage error={error} />}
         {current === 'dashboard' && <DashboardPage me={me} feed={can('orders.read') ? feed : undefined} onNavigate={open} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
@@ -446,34 +424,6 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'platform' && <PlatformPage />}
         {current === 'monitoring' && <MonitoringPage me={me} />}
       </main>
-
-      <nav className="bottombar" aria-label="Accès rapide">
-        {quick.map((s) => (
-          <NavButton key={s.id} item={s} current={current} onPick={open} />
-        ))}
-        <button className="nav-item" aria-haspopup="dialog" onClick={() => setPanel('nav')}>
-          <Icon name="list" />
-          <span className="nav-label">Plus</span>
-        </button>
-      </nav>
-
-      <footer className="status-strip" aria-label="Barre d'état">
-        <span>
-          <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
-          {online ? t('status.connected') : t('status.offline')}
-        </span>
-        {health && <span>{health.profile === 'cloud' ? t('status.cloud') : t('status.local')}</span>}
-        <span className="status-grow">
-          {place}
-          {me.tenant && place !== me.tenant.name ? ` · ${me.tenant.name}` : ''}
-        </span>
-        <span>
-          {me.user.displayName}
-          {roleLabel ? ` · ${roleLabel}` : ''}
-        </span>
-        <StatusClock locale={lang === 'ar' ? 'ar-TD' : lang === 'en' ? 'en-GB' : 'fr-FR'} />
-        <span>AfriKaisse {health?.version ?? APP_VERSION}</span>
-      </footer>
 
       {me.user.hasRecovery === false && !!me.user.email && !recoveryLater && !setupOpen && (
         <RecoveryPrompt
@@ -549,7 +499,7 @@ function NavList({ items, current, onPick }: { items: NavItem[]; current: Sectio
   );
 }
 
-/** Panneau latéral : compte et réglages ; sur téléphone (« Plus »), toute la navigation en plus. */
+/** Panneau latéral : compte et réglages ; avec « Plus », toute la navigation en plus. */
 function SidePanel({
   mode,
   me,
@@ -642,21 +592,6 @@ function SidePanel({
         </button>
       </aside>
     </div>
-  );
-}
-
-/** Date et heure de la barre d'état, remises à jour chaque minute. */
-function StatusClock({ locale }: { locale: string }) {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 20_000);
-    return () => window.clearInterval(id);
-  }, []);
-  return (
-    <span className="num">
-      {now.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}{' '}
-      {now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
-    </span>
   );
 }
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ORDER_STATUS_LABELS, businessDate, formatDuration, formatMoney, moneyToInput, shiftDate, type KitchenReport, type LocationDetails, type Me, type Order, type SalesReport } from '@afrikaisse/core';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
-import { isTablet } from '../touch.ts';
+import { isTouchDevice } from '../touch.ts';
 import { ErrorMessage, Icon } from '../ui.tsx';
 import '../styles/reports.css';
 
@@ -106,7 +106,8 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const dateLabel = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   // Tablette : tout tient dans l'écran, seulement les chiffres utiles, sans comparaison ni détail.
-  if (isTablet()) {
+  // PC : le même bandeau bleu des chiffres clés, avec la comparaison à hier et le détail en dessous.
+  if (isTouchDevice()) {
     return (
       <section className="dash dash-tablette">
         <ErrorMessage error={error} />
@@ -174,17 +175,17 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
 
       <ErrorMessage error={error} />
 
-      <section className="kpi-strip" aria-label="Aujourd'hui">
-        <Kpi label="Chiffre d'affaires" value={t ? money(t.revenue) : '—'} change={t && y ? change(t.revenue, y.revenue) : null} before={y ? `hier à ${hourNow} h : ${money(y.revenue)}` : null} />
-        <Kpi label="Commandes" value={t ? String(t.orders) : '—'} change={t && y ? change(t.orders, y.orders) : null} before={y ? `hier à ${hourNow} h : ${y.orders}` : null} />
-        <Kpi label="Panier moyen" value={t ? money(t.averageTicket) : '—'} change={t && y ? change(t.averageTicket, y.averageTicket) : null} before={y ? `hier à ${hourNow} h : ${money(y.averageTicket)}` : null} />
-        <Kpi
+      <section className="dash-hero dash-hero-pc" aria-label="Aujourd'hui">
+        <HeroFigure label="Chiffre d'affaires" value={t ? money(t.revenue) : '—'} change={t && y ? change(t.revenue, y.revenue) : null} before={y ? `hier à ${hourNow} h : ${money(y.revenue)}` : null} />
+        <HeroFigure label="Commandes" value={t ? String(t.orders) : '—'} change={t && y ? change(t.orders, y.orders) : null} before={y ? `hier à ${hourNow} h : ${y.orders}` : null} />
+        <HeroFigure label="Panier moyen" value={t ? money(t.averageTicket) : '—'} change={t && y ? change(t.averageTicket, y.averageTicket) : null} before={y ? `hier à ${hourNow} h : ${money(y.averageTicket)}` : null} />
+        <HeroFigure
           label="Temps moyen"
           value={kitchen && kitchen.totals.measured > 0 ? formatDuration(kitchen.totals.averageMs) : '—'}
           before={kitchen ? (kitchen.totals.measured > 0 ? `${kitchen.totals.lateCount} en retard sur ${kitchen.totals.measured}` : 'Aucune commande prête') : null}
         />
         {tablesTotal !== null && (
-          <Kpi label="Tables occupées" value={`${occupied} / ${tablesTotal}`} before={tablesTotal > 0 ? `${Math.round((occupied * 100) / tablesTotal)} % de la salle` : null} />
+          <HeroFigure label="Tables occupées" value={`${occupied} / ${tablesTotal}`} before={tablesTotal > 0 ? `${Math.round((occupied * 100) / tablesTotal)} % de la salle` : null} />
         )}
       </section>
 
@@ -294,24 +295,18 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   );
 }
 
-function HeroFigure({ label, value }: { label: string; value: string }) {
+/** Chiffre du bandeau bleu ; sur PC, l'écart avec hier et le rappel en petit dessous. */
+function HeroFigure({ label, value, change, before }: { label: string; value: string; change?: string | null; before?: string | null }) {
   return (
     <div className="hero-fig">
       <strong>{value}</strong>
       <span>{label}</span>
-    </div>
-  );
-}
-
-function Kpi({ label, value, change, before }: { label: string; value: string; change?: string | null; before?: string | null }) {
-  return (
-    <div className="kpi">
-      <span className="kpi-label">{label}</span>
-      <strong className="kpi-value">{value}</strong>
-      <span className="kpi-context">
-        {change && <b>{change}</b>}
-        {before}
-      </span>
+      {(change || before) && (
+        <small>
+          {change && <b>{change}</b>}
+          {before}
+        </small>
+      )}
     </div>
   );
 }

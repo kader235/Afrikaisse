@@ -1,20 +1,34 @@
 import { isNativeApp } from './platform.ts';
 
 /**
- * Version tablette (styles/tablette.css) : l'application Android, tout écran tactile, ou
- * `localStorage['afk.tablette'] = '1'` pour la vérifier depuis un PC.
+ * Deux marques sur <html>, posées au démarrage :
+ * - `tablette` : le design commun « Savane bleu » (styles/tablette.css, tablette-doux.css), posé PARTOUT —
+ *   tablette, téléphone et PC ont le même langage visuel (validé par Kader le 15/09/2026). Le nom est
+ *   historique : il est gardé pour ne pas renommer toutes les règles.
+ * - `tactile` ou `souris` : l'appareil. `tactile` = l'application Android, tout écran tactile, ou
+ *   `localStorage['afk.tablette'] = '1'` pour vérifier la version tablette depuis un PC. `souris` resserre
+ *   les tailles (styles/pc.css) : même allure, cibles moins grandes qu'au doigt.
  */
-export function markTablet(): void {
+export function markDevice(): void {
   let forced = false;
   try {
     forced = localStorage.getItem('afk.tablette') === '1';
   } catch {
     /* stockage indisponible */
   }
-  if (isNativeApp() || forced || window.matchMedia('(pointer: coarse)').matches) document.documentElement.classList.add('tablette');
+  const root = document.documentElement.classList;
+  root.add('tablette');
+  root.add(isNativeApp() || forced || window.matchMedia('(pointer: coarse)').matches ? 'tactile' : 'souris');
 }
 
-export const isTablet = (): boolean => document.documentElement.classList.contains('tablette');
+/**
+ * Appareil tactile (tablette, téléphone) : pour le COMPORTEMENT seulement (onglets du métier, tableau de bord
+ * qui tient dans l'écran, abonnement et back-office laissés au PC). Le design, lui, est le même partout.
+ */
+export const isTouchDevice = (): boolean => document.documentElement.classList.contains('tactile');
+
+/** Ancien nom de isTouchDevice (appareil tactile), gardé pour les branches en cours. */
+export const isTablet = isTouchDevice;
 
 /**
  * Tailles tactiles imposées dans l'application tablette.

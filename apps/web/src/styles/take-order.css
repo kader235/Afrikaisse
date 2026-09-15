@@ -208,7 +208,7 @@
   flex-direction: column;
 }
 
-/* Photo et bouton rond : réservés à la tablette (voir la fin du fichier). */
+/* Photo et bouton rond : affichés par le design commun (voir la fin du fichier). */
 .take-product-photo,
 .take-product-add {
   display: none;
@@ -483,7 +483,7 @@
 /* === Tablette : langage du menu client (cartes blanches arrondies, ombres douces) ===========
  * Validé avec le menu QR : fond #F5F7FB, cartes 16 à 22 px, prix en bleu foncé, « + » rond bleu.
  * La colonne de commande reste bleu nuit ; ses lignes deviennent des cartes translucides.
- * Tout est sous `.tablette` : la prise de commande dans un navigateur de PC ne change pas.
+ * Tout est sous `.tablette` : le design commun, sur la tablette comme sur le PC.
  */
 .tablette .take {
   grid-template-columns: 300px minmax(0, 1fr) 380px;

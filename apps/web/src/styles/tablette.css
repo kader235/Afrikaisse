@@ -3,7 +3,8 @@
  * Bandeau bleu nuit à onglets, police Plus Jakarta Sans, textes grands et lisibles.
  * Règle : pas de texte sur une pastille colorée — le texte change de couleur, le fond reste blanc.
  * Exceptions voulues : la barre du haut, les boutons d'action pleins et la colonne de droite bleu nuit.
- * Tout est rangé sous `.tablette` (posée par touch.ts) : la version PC n'est pas touchée.
+ * Tout est rangé sous `.tablette`, posée par touch.ts sur TOUS les appareils (PC compris) : c'est le design commun.
+ * Les tailles au doigt sont resserrées pour la souris dans styles/pc.css.
  */
 
 .topnav,
