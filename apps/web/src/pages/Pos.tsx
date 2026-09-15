@@ -40,7 +40,9 @@ import {
   type Receipt,
 } from '@afrikaisse/core';
 import { api } from '../api.ts';
+import { useDishPhoto } from '../dishPhotos.ts';
 import { isNativeApp, mediaSrc } from '../platform.ts';
+import { isTablet } from '../touch.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
 import '../styles/pricing.css';
 import { GuestShares, guestShares } from './TableGuests.tsx';
@@ -482,8 +484,11 @@ export function SaleTab({
     const list = q ? menu.products.filter((p) => p.name.toLowerCase().includes(q)) : menu.products.filter((p) => p.categoryId === activeCategory);
     return [...list].sort((a, b) => a.sort - b.sort);
   }, [menu, activeCategory, query]);
+  // Plat sans photo sur la tablette : photo d'exemple du catalogue (une vraie photo n'est jamais remplacée).
+  const samplePhoto = useDishPhoto(isTablet());
+  const photoOf = (p: Product) => (p.photoUrl ? mediaSrc(p.photoUrl) : samplePhoto(p.name));
   // Sans aucune photo dans la liste, des tuiles de texte : pas de cadres vides.
-  const withPhotos = products.some((p) => p.photoUrl);
+  const withPhotos = products.some((p) => photoOf(p));
   const inTicket = useMemo(() => {
     const counts = new Map<string, number>();
     for (const l of lines) counts.set(l.productId, (counts.get(l.productId) ?? 0) + l.quantity);
@@ -575,8 +580,8 @@ export function SaleTab({
             return (
               <button key={p.id} className={qty > 0 ? 'pos-tile in-ticket' : 'pos-tile'} disabled={!p.isAvailable} onClick={() => tap(p)}>
                 {withPhotos &&
-                  (p.photoUrl ? (
-                    <img className="pos-tile-photo" src={mediaSrc(p.photoUrl)} alt="" loading="lazy" />
+                  (photoOf(p) ? (
+                    <img className="pos-tile-photo" src={photoOf(p)!} alt="" loading="lazy" />
                   ) : (
                     <span className="pos-tile-photo pos-tile-blank" aria-hidden="true">
                       <Icon name="kitchen" />

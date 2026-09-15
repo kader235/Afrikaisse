@@ -7,6 +7,7 @@ import { priceLine, type PricedLine } from '@afrikaisse/core/pricing';
 import { bestProductPromotion, isScheduled, lineDiscount, localMoment, priceOrder, promoCodeMessage, promotionBadge, type OrderPricing, type PromotionRule } from '@afrikaisse/core/promotions';
 import { formatRate } from '@afrikaisse/core/taxes';
 import { mdiArrowLeft, mdiBellRing, mdiCash, mdiClockOutline, mdiHeart, mdiHeartOutline, mdiInformationOutline, mdiMagnify, mdiMinus, mdiPlus, mdiReceipt, mdiSilverwareForkKnife, mdiTableFurniture, mdiTrashCanOutline } from '@mdi/js';
+import { useDishPhoto } from '../dishPhotos.ts';
 import { Announcements } from './Announcements.tsx';
 import { errorText, isNetworkError, request } from './api.ts';
 import { ACTIVE_STATUSES, ChoiceRow, GuestFields, LanguageSwitch, OfflineBanner, PaySheet, Sheet, TableSheet, type Blocked, type Money } from './ClientSheets.tsx';
@@ -95,6 +96,10 @@ function useMinute(): number {
   return now;
 }
 
+function withSamplePhotos(menu: PublicMenu, photo: (name: string) => string | null): PublicMenu {
+  return { ...menu, categories: menu.categories.map((c) => ({ ...c, products: c.products.map((p) => (p.photoUrl ? p : { ...p, photoUrl: photo(p.name) })) })) };
+}
+
 export function MenuApp() {
   return (
     <LangProvider>
@@ -109,7 +114,10 @@ function Menu() {
   tRef.current = t;
   const token = /^\/m\/([A-Za-z0-9_-]+)/.exec(window.location.pathname)?.[1] ?? '';
   const me = useMemo(clientToken, []);
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  const [loadedState, setState] = useState<State>({ kind: 'loading' });
+  // Plats sans photo : photo d'exemple du catalogue livré avec l'application ; une vraie photo n'est jamais remplacée.
+  const samplePhoto = useDishPhoto();
+  const state = useMemo<State>(() => (loadedState.kind === 'ready' ? { kind: 'ready', menu: withSamplePhotos(loadedState.menu, samplePhoto) } : loadedState), [loadedState, samplePhoto]);
   const [query, setQuery] = useState('');
   const [sheet, setSheet] = useState<SheetState>(null);
   const [active, setActive] = useState<string | null>(null);

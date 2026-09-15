@@ -19,6 +19,7 @@ import '@fontsource/plus-jakarta-sans/latin-ext-800.css';
 import './styles.css';
 import './styles/client.css';
 import './styles/tablette.css';
+import './styles/tablette-doux.css';
 import { enforceTouchLayout, markTablet } from './touch.ts';
 
 markTablet();
