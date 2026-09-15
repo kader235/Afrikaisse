@@ -37,6 +37,10 @@ export interface LocationsTable {
   business_day_cutoff_min: number;
   /** CLOUD : le Cloud est l'autorité opérationnelle ; HYBRID : le serveur local (ADR-004). */
   operating_mode: OperatingMode;
+  /** 1 : le client saisit le code de la table avant sa première commande (I-9). */
+  table_code_required: Generated<Bool>;
+  /** SHARED : une addition pour la table ; PER_CUSTOMER : chaque client voit et demande sa part. */
+  bill_mode: Generated<'SHARED' | 'PER_CUSTOMER'>;
   address: string | null;
   phone: string | null;
   /** Logo (media) : reçus, chevalets QR, menu client. */
@@ -357,6 +361,21 @@ export interface TableSessionsTable {
   opened_by: string | null;
   closed_at: number | null;
   closed_by: string | null;
+  /** Code à 4 chiffres pour rejoindre la table depuis le QR (montré au personnel, imprimé sur l'addition). */
+  join_code: Generated<string | null>;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+/** Client d'une table ouverte : un téléphone (client_token), un surnom facultatif. */
+export interface SessionGuestsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  table_session_id: string;
+  client_token: string;
+  nickname: string | null;
+  joined_at: number;
   updated_at: number;
   updated_hlc: string;
 }
@@ -486,6 +505,10 @@ export interface ServiceRequestsTable {
   created_at: number;
   handled_at: number | null;
   handled_by: string | null;
+  /** Addition : moyen de paiement annoncé par le client. */
+  payment_method: Generated<'CASH' | 'MOBILE_MONEY' | 'CARD' | null>;
+  /** Addition : TABLE (toute la table) ou MINE (la part du client). */
+  bill_scope: Generated<'TABLE' | 'MINE' | null>;
   updated_hlc: string;
 }
 
@@ -831,6 +854,7 @@ export interface Database {
   media: MediaTable;
   qr_codes: QrCodesTable;
   table_sessions: TableSessionsTable;
+  session_guests: SessionGuestsTable;
   orders: OrdersTable;
   order_items: OrderItemsTable;
   order_item_modifiers: OrderItemModifiersTable;

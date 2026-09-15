@@ -1,0 +1,56 @@
+/*
+ * Clients d'une table (§23), côté personnel : code de table, parts par client, détail des appels.
+ * Jetons de couleur de styles.css ; grille plutôt que gap sur flexbox (Chrome 83).
+ */
+
+.table-code {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-column-gap: 10px;
+  align-items: center;
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line, #c9d1db);
+  border-radius: 3px;
+  background: var(--surface, #fff);
+}
+
+.table-code-label {
+  color: var(--muted);
+}
+
+.table-code-value {
+  font-size: 22px;
+  letter-spacing: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-code-inline {
+  margin-inline-start: 8px;
+  color: var(--muted);
+}
+
+.table-code-inline strong {
+  color: var(--text, inherit);
+  letter-spacing: 2px;
+}
+
+.guest-shares {
+  width: 100%;
+  margin: 6px 0 8px;
+}
+
+.request-detail {
+  display: block;
+  color: var(--muted);
+}
+
+.guest-name {
+  color: var(--muted);
+}
+
+@media print {
+  .ticket .ticket-code {
+    letter-spacing: 2px;
+  }
+}

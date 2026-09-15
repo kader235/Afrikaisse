@@ -31,6 +31,7 @@ import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { inspectImage } from '../lib/images.ts';
 import { recordChange, writeAudit } from '../lib/journal.ts';
+import { popularProductIds } from './guests.ts';
 
 /**
  * Menu d'un établissement. Portée : organisation de la session et, pour un membre
@@ -675,7 +676,20 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
     .innerJoin('dining_tables as t', 't.id', 'q.table_id')
     .innerJoin('locations as l', 'l.id', 'q.location_id')
     .innerJoin('tenants as o', 'o.id', 'q.tenant_id')
-    .select(['q.location_id', 't.label', 't.status as table_status', 'l.name as location_name', 'l.type', 'l.currency', 'l.logo_media_id', 'l.status as location_status', 'o.name as tenant_name', 'o.status as tenant_status'])
+    .select([
+      'q.location_id',
+      't.label',
+      't.status as table_status',
+      'l.name as location_name',
+      'l.type',
+      'l.currency',
+      'l.logo_media_id',
+      'l.status as location_status',
+      'l.table_code_required',
+      'l.bill_mode',
+      'o.name as tenant_name',
+      'o.status as tenant_status',
+    ])
     .where('q.token', '=', token)
     .where('q.revoked_at', 'is', null)
     .executeTakeFirst();
@@ -684,10 +698,15 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
   const m = await readLocationMenu(ctx.db, found.location_id);
   const visibleCategories = m.categories.filter((c) => c.is_visible === 1);
   const option = (o: { id: string; name: string; price_delta: number; is_available: 0 | 1 }) => ({ id: o.id, name: o.name, priceDelta: o.price_delta, isAvailable: bool(o.is_available) });
+  // Recommandations : seulement parmi ce que le client peut commander maintenant.
+  const visibleIds = new Set(visibleCategories.map((c) => c.id));
+  const eligible = new Set(m.products.filter((p) => visibleIds.has(p.category_id) && p.is_available === 1).map((p) => p.id));
 
   return {
     restaurant: { name: found.location_name, organization: found.tenant_name, type: found.type, currency: found.currency, logoUrl: mediaUrl(found.logo_media_id) },
     table: { label: found.label },
+    popular: await popularProductIds(ctx.db, found.location_id, ctx.now(), eligible),
+    service: { tableCodeRequired: found.table_code_required === 1, billMode: found.bill_mode },
     categories: visibleCategories
       .map((c) => ({
         id: c.id,

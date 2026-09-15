@@ -12,8 +12,10 @@ import {
   type Check,
   type DiningTable,
   type Floor,
+  type CurrencyCode,
   type LocationDetails,
   type Me,
+  type OpenTableResult,
   type Order,
   type Receipt,
   type ServiceRequest,
@@ -27,6 +29,7 @@ import { SHAPE_LABELS } from '../labels.ts';
 import { isNativeApp } from '../platform.ts';
 import { Dialog, ErrorMessage, FloatMessage, Icon, OkMessage, Window } from '../ui.tsx';
 import { BillTicket, PayDialog, ReceiptTicket, SaleTab, TransferDialog } from './Pos.tsx';
+import { GuestShares, TableCode, requestDetail } from './TableGuests.tsx';
 
 /**
  * Plan de salle, pensé pour la tablette : on touche une table pour la sélectionner ;
@@ -200,6 +203,18 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
     try {
       const { session } = await api<{ session: CashSession | null }>('GET', `/locations/${locationId}/cash-session`);
       setPaying({ check, drawerOpen: !!session });
+    } catch (err) {
+      setError(err);
+    }
+  }
+
+  /** Installer des clients avant toute commande : la table s'ouvre et reçoit son code. */
+  async function openTable(table: DiningTable) {
+    setError(null);
+    try {
+      const result = await api<OpenTableResult>('POST', `/tables/${table.id}/open`);
+      setNotice(result.joinCode ? `Table ${table.label} ouverte · code ${result.joinCode}.` : `Table ${table.label} ouverte.`);
+      void loadChecks();
     } catch (err) {
       setError(err);
     }
@@ -487,6 +502,14 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
                     onPrint={isNativeApp() ? null : (check) => setPrinting(<BillTicket check={check} locationName={floor?.location.name ?? ''} />)}
                     onTransfer={setTransfer}
                     onFree={freeTable}
+                    codeRequired={!!floor?.location.tableCodeRequired}
+                    currency={floor?.location.currency ?? 'XAF'}
+                    onOpenTable={() => openTable(selected)}
+                    onCodeChanged={(code) => {
+                      setNotice(`Table ${selected.label} : nouveau code ${code ?? ''}.`);
+                      void loadChecks();
+                    }}
+                    onError={setError}
                   />
                 ) : (
                   <ZoneSummary zone={zone} tables={tables} liveFor={liveFor} onPick={pick} />
@@ -844,6 +867,11 @@ function ServicePanel({
   onPrint,
   onTransfer,
   onFree,
+  codeRequired,
+  currency,
+  onOpenTable,
+  onCodeChanged,
+  onError,
 }: {
   table: DiningTable;
   info: TableLive;
@@ -855,6 +883,12 @@ function ServicePanel({
   onPrint: ((check: Check) => void) | null;
   onTransfer: (check: Check) => void;
   onFree: (check: Check) => void;
+  /** Établissement à code de table (I-9). */
+  codeRequired: boolean;
+  currency: CurrencyCode;
+  onOpenTable: () => void;
+  onCodeChanged: (code: string | null) => void;
+  onError: (err: unknown) => void;
 }) {
   const has = (p: Me['permissions'][number]) => me.permissions.includes(p);
   const { check } = info;
@@ -871,6 +905,7 @@ function ServicePanel({
           <span className={LIVE_DOT[info.state]}>{LIVE_LABELS[info.state]}</span> · {table.capacity} places
           {check && ` · depuis ${minutesSince(check.openedAt)} min`}
         </span>
+        {codeRequired && check && <TableCode check={check} canManage={has('orders.create')} onChanged={onCodeChanged} onError={onError} />}
       </div>
 
       <div className="check-detail-body">
@@ -879,6 +914,7 @@ function ServicePanel({
             <div className="alert-text">
               <strong>{SERVICE_REQUEST_LABELS[r.kind]}</strong>
               <span>il y a {minutesSince(r.createdAt)} min</span>
+              {requestDetail(r, currency) && <span className="request-detail">{requestDetail(r, currency)}</span>}
             </div>
             {has('orders.create') && (
               <button className="btn" onClick={() => onResolve(r)}>
@@ -919,7 +955,8 @@ function ServicePanel({
               <li key={o.id}>
                 <div className="order-line-head">
                   <span>
-                    n°{o.number} · {ORDER_STATUS_LABELS[o.status]}
+                    n°{o.number}
+                    {o.guestName && <span className="guest-name"> · {o.guestName}</span>} · {ORDER_STATUS_LABELS[o.status]}
                   </span>
                   <span className="num">{formatMoney(o.total, o.currency)}</span>
                 </div>
@@ -934,6 +971,7 @@ function ServicePanel({
       <div className="check-detail-foot">
         {hasOrders && (
           <>
+            <GuestShares check={check!} />
             <div className="order-line-head">
               <span>Total</span>
               <span className="num">{formatMoney(check!.total, check!.currency)}</span>
@@ -955,6 +993,11 @@ function ServicePanel({
             <button className="btn btn-primary" onClick={onNewOrder}>
               <Icon name="add" />
               Nouvelle commande
+            </button>
+          )}
+          {!check && codeRequired && has('orders.create') && (
+            <button className="btn" onClick={onOpenTable}>
+              Ouvrir la table
             </button>
           )}
           {(canPay || canPrint) && (
@@ -979,7 +1022,7 @@ function ServicePanel({
                 <Icon name="move" />
                 Changer de table
               </button>
-              {info.state === 'settled' && (
+              {(info.state === 'settled' || (check.orders.length === 0 && info.pending.length === 0)) && (
                 <button className="btn" onClick={() => onFree(check)}>
                   Libérer
                 </button>

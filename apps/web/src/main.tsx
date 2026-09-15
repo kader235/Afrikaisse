@@ -9,6 +9,7 @@ import '@fontsource/roboto/latin-ext-400.css';
 import '@fontsource/roboto/latin-ext-500.css';
 import '@fontsource/roboto/latin-ext-700.css';
 import './styles.css';
+import './styles/client.css';
 import { enforceTouchLayout } from './touch.ts';
 
 enforceTouchLayout();

@@ -29,3 +29,5 @@ export * from './platform.ts';
 export * from './prep.ts';
 export * from './analytics.ts';
 export * from './notifications.ts';
+export * from './guests.ts';
+export * from './client.ts';

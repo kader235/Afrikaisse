@@ -120,6 +120,11 @@ Menu **Établissements** (propriétaire, administrateur).
 - **Mode d'exploitation** :
   - *Cloud* : tout passe par Internet, sans PC sur place ;
   - *Serveur local* : le PC du restaurant fait tourner AfriKaisse, qui continue sans Internet.
+- **Addition** :
+  - *Une addition pour la table* : les clients voient et demandent l'addition de toute la table ;
+  - *Une addition par client* : chaque téléphone voit sa part et demande sa propre addition.
+- **Code de table** : coché, un client ne peut commander par QR qu'avec le code à 4 chiffres de sa
+  table, donné par le serveur. Une photo du QR ne permet plus de commander depuis chez soi.
 - **Archiver** : l'établissement disparaît des écrans de travail, son historique est gardé, et on peut
   le **réactiver**. Impossible pour le dernier établissement actif, ou si des membres ne travaillent
   que là (réaffectez-les d'abord depuis **Personnel**).
@@ -157,6 +162,20 @@ Toucher une table ouvre sa **fiche de service** :
 - l'addition en cours : commandes, total, déjà payé, reste ;
 - **Nouvelle commande** : la prise de commande s'ouvre en plein écran pour cette table, puis **Envoyer la commande** ;
 - **Encaisser** (caissier, responsable), **Imprimer l'addition**, **Changer de table**, **Libérer la table**.
+- chaque commande QR porte le **prénom** du client (ou « Client 2 ») ; une **addition demandée** indique
+  qui la demande, le **moyen de paiement choisi** (espèces, Mobile Money, carte) et le montant : venez
+  avec le terminal ou la monnaie ;
+- en addition par client, le tableau des **parts** montre ce que chacun doit.
+
+**Code de table** (si l'option est cochée pour l'établissement) :
+1. À l'arrivée des clients, touchez la table libre puis **Ouvrir la table** : le code à 4 chiffres
+   s'affiche en haut de la fiche.
+2. Donnez le code aux clients. Chaque téléphone le saisit une fois, avant sa première commande.
+3. **Nouveau code** si le code a circulé : les clients déjà installés ne sont pas déconnectés.
+4. Le code figure aussi sur l'addition imprimée et dans la **Caisse** (onglet Encaissement).
+
+Une table ouverte sans commande se libère avec **Libérer la table**. Après 10 codes faux en
+10 minutes, la table refuse tout code pendant 10 minutes.
 
 ## Le menu
 
@@ -251,10 +270,34 @@ options et allergènes. Les articles épuisés restent visibles, marqués « Ép
    « −20 % », « 2 + 1 offert ») et déduites dans le panier ; en mode hors taxe, la TVA s'y ajoute.
 3. La commande part au restaurant, **qui la confirme**. Le client suit les étapes sur son
    téléphone : Envoyée, Confirmée, En cuisine, Prête, Servie.
-4. **Appeler un serveur** et **Demander l'addition** préviennent le personnel sur ses tablettes.
+4. **Appeler un serveur** prévient le personnel sur ses tablettes.
 
 Si l'établissement fonctionne avec un serveur local injoignable, le téléphone affiche « commande en
 ligne momentanément indisponible » : le client commande alors auprès d'un serveur.
+
+### Plusieurs clients à la même table
+Chacun scanne le même QR avec son téléphone et commande de son côté. **Ma table** montre les
+personnes installées, toutes les commandes de la table (avec le prénom de qui a commandé) et leur
+avancement. Le prénom est facultatif. Si l'établissement exige le **code de table**, le téléphone le
+demande une fois (champ « Code de table » du panier ou de « Ma table »), puis s'en souvient pour ce
+repas.
+
+### Payer
+Le paiement en ligne n'est pas disponible : **Payer** montre le reste à payer (la table, ou sa part en
+addition par client), le client choisit **Espèces**, **Mobile Money** ou **Carte**, puis **Demander
+l'addition**. Le serveur arrive avec l'addition et le bon moyen d'encaissement.
+
+### Populaires, favoris, langue
+- **Populaires** : les plats les plus commandés ces 30 derniers jours dans ce restaurant (ventes
+  réelles). La section n'apparaît qu'avec assez de ventes.
+- **Favoris** : l'étoile d'un plat le garde en tête du menu, sur ce téléphone seulement.
+- **Langue** : français, anglais ou arabe (écriture de droite à gauche). Les noms des plats restent
+  ceux saisis par le restaurant.
+
+### Sans connexion
+Le menu déjà ouvert une fois reste **consultable sans Internet** (photos vues comprises), et peut être
+ajouté à l'écran d'accueil du téléphone comme une application. Hors connexion, la commande est
+coupée : « Commande indisponible hors connexion, appelez un serveur ».
 
 ## Les commandes (personnel)
 

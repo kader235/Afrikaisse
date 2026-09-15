@@ -3,9 +3,12 @@ import {
   ACTIVE_ORDER_STATUSES,
   AppError,
   ORDER_STATUS_LABELS,
+  billShares,
   businessDate,
   canTransition,
   formatMoney,
+  generateTableCode,
+  normalizeNickname,
   permissionsForTransition,
   priceLine,
   roleCan,
@@ -25,6 +28,7 @@ import type { AppContext, Db, RequestMeta } from '../context.ts';
 import { requireTenant, type AuthState, type TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { notifyOrder, notifyRequest } from '../lib/notify.ts';
+import { findGuest, loadGuests, onlineOrderingOpen, upsertGuest, verifyTableCode } from './guests.ts';
 import { enqueueKitchenTickets } from './printing.ts';
 import { consumeStock, restoreStock } from './stock.ts';
 import { orderPricingColumns, parseApplied, parseTaxes, priceOrderLines, reserveUses, type LinePricing } from './pricing.ts';
@@ -46,7 +50,6 @@ export type Priced = { productId: string; variantId: string | null; product: Pri
 const MAX_ORDERS_PER_CLIENT_PER_MINUTE = 5;
 const MAX_PENDING_PER_TABLE = 10;
 const MAX_REQUESTS_PER_CLIENT_PER_MINUTE = 10;
-const LOCAL_SERVER_SILENCE_MS = 20_000;
 
 // --- QR ---------------------------------------------------------------------
 
@@ -67,6 +70,9 @@ export async function resolveQr(db: Db, token: string) {
       'l.timezone',
       'l.business_day_cutoff_min',
       'l.operating_mode',
+      'l.name as location_name',
+      'l.table_code_required',
+      'l.bill_mode',
       'o.status as tenant_status',
     ])
     .where('q.token', '=', token)
@@ -160,7 +166,7 @@ export async function openSession(trx: Db, ctx: AppContext, where: { tenantId: s
   const now = ctx.now();
   await trx
     .insertInto('table_sessions')
-    .values({ id, tenant_id: where.tenantId, location_id: where.locationId, table_id: where.tableId, status: 'OPEN', opened_at: now, opened_by: where.userId, closed_at: null, closed_by: null, updated_at: now, updated_hlc: hlc })
+    .values({ id, tenant_id: where.tenantId, location_id: where.locationId, table_id: where.tableId, status: 'OPEN', opened_at: now, opened_by: where.userId, closed_at: null, closed_by: null, join_code: generateTableCode(), updated_at: now, updated_hlc: hlc })
     .execute();
   const row = await trx.selectFrom('table_sessions').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
   await recordChange(trx, ctx, { tenantId: where.tenantId, locationId: where.locationId, entityType: 'table_session', entityId: id, operation: 'UPSERT', payload: row, hlc });
@@ -210,7 +216,8 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   const tableIds = [...new Set(rows.map((r) => r.table_id).filter((x): x is string => x !== null))];
-  const [items, history, tables] = await Promise.all([
+  const sessionIds = rows.filter((r) => r.client_token && r.table_session_id).map((r) => r.table_session_id!);
+  const [items, history, tables, guests] = await Promise.all([
     db.selectFrom('order_items').selectAll().where('order_id', 'in', ids).orderBy('sort').execute(),
     db
       .selectFrom('order_status_history as h')
@@ -221,6 +228,7 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
       .orderBy('h.hlc')
       .execute(),
     tableIds.length ? db.selectFrom('dining_tables').select(['id', 'label']).where('id', 'in', tableIds).execute() : Promise.resolve([]),
+    loadGuests(db, sessionIds),
   ]);
   const itemIds = items.map((i) => i.id);
   const modifiers = itemIds.length ? await db.selectFrom('order_item_modifiers').selectAll().where('order_item_id', 'in', itemIds).execute() : [];
@@ -240,6 +248,7 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
       tableId: o.table_id,
       tableLabel: tables.find((t) => t.id === o.table_id)?.label ?? null,
       sessionId: o.table_session_id,
+      guestName: (o.client_token && o.table_session_id && guests.get(o.table_session_id)?.find((g) => g.clientToken === o.client_token)?.name) || null,
       note: o.note,
       serviceType: o.service_type,
       customerName: o.customer_name,
@@ -281,12 +290,14 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
   });
 }
 
-function toPublic(order: Order): PublicOrder {
+export function toPublic(order: Order, mine: boolean): PublicOrder {
   return {
     id: order.id,
     number: order.number,
     status: order.status,
     tableLabel: order.tableLabel,
+    guestName: order.guestName,
+    mine,
     currency: order.currency,
     subtotal: order.subtotal,
     promotionDiscount: order.promotionDiscount,
@@ -309,16 +320,19 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
 
   // Établissement exploité par un serveur local : le Cloud ne peut pas faire préparer une
   // commande que la cuisine ne recevra pas (SYNC.md §6).
-  if (ctx.config.profile === 'cloud' && qr.operating_mode === 'HYBRID') {
-    const alive = await ctx.db
-      .selectFrom('devices')
-      .select('id')
-      .where('location_id', '=', qr.location_id)
-      .where('kind', '=', 'LOCAL_SERVER')
-      .where('status', '=', 'ACTIVE')
-      .where('last_seen_at', '>', ctx.now() - LOCAL_SERVER_SILENCE_MS)
-      .executeTakeFirst();
-    if (!alive) throw new AppError('SERVICE_UNAVAILABLE', 'La commande en ligne est momentanément indisponible. Adressez-vous à un serveur.');
+  if (!(await onlineOrderingOpen(ctx, qr))) {
+    throw new AppError('SERVICE_UNAVAILABLE', 'La commande en ligne est momentanément indisponible. Adressez-vous à un serveur.', { reason: 'ORDERING_UNAVAILABLE' });
+  }
+
+  // Code de table (I-9) : la table doit être ouverte par le personnel, et ce téléphone l'avoir
+  // rejointe avec le code, ou le joindre à cette commande.
+  const nickname = normalizeNickname(input.nickname);
+  let codeSession: string | null = null;
+  if (qr.table_code_required === 1) {
+    const session = await ctx.db.selectFrom('table_sessions').select(['id', 'tenant_id', 'location_id', 'join_code']).where('table_id', '=', qr.table_id).where('status', '=', 'OPEN').executeTakeFirst();
+    if (!session) throw new AppError('CONFLICT', "La table n'est pas encore ouverte. Demandez le code de table au serveur.", { reason: 'TABLE_NOT_OPEN' });
+    if (!(await findGuest(ctx.db, session.id, input.clientToken))) await verifyTableCode(ctx, session, input.tableCode, meta);
+    codeSession = session.id;
   }
 
   const now = ctx.now();
@@ -344,6 +358,8 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
         const hlc = ctx.clock.now();
         await reserveUses(trx, ctx, quote);
         const sessionId = await openSession(trx, ctx, { tenantId: qr.tenant_id, locationId: qr.location_id, tableId: qr.table_id, userId: null }, hlc);
+        if (codeSession && sessionId !== codeSession) throw new AppError('CONFLICT', 'La table vient d’être libérée. Demandez le nouveau code au serveur.', { reason: 'TABLE_NOT_OPEN' });
+        await upsertGuest(trx, ctx, { id: sessionId, tenant_id: qr.tenant_id, location_id: qr.location_id }, input.clientToken, nickname, hlc);
         const date = businessDate(now, qr.timezone, qr.business_day_cutoff_min);
         // Établissement hybride : le Cloud numérote ses commandes QR à partir de 901, le serveur local
         // garde 1, 2, 3… : les deux ne se marchent jamais dessus en se synchronisant.
@@ -385,7 +401,7 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
         await writeAudit(trx, ctx, { tenantId: qr.tenant_id, locationId: qr.location_id, action: 'order.qr_placed', subject: `table ${qr.table_label}`, entityType: 'order', entityId: orderId, data: { number, total, lines: priced.length, promoCode: quote.pricing.code?.code ?? null }, meta });
       });
       const [order] = await hydrateOrders(ctx.db, await ctx.db.selectFrom('orders').selectAll().where('id', '=', orderId).execute());
-      return toPublic(order!);
+      return toPublic(order!, true);
     } catch (err) {
       if (attempt < 2 && isUniqueViolation(err)) continue;
       throw err;
@@ -471,7 +487,7 @@ export async function listClientOrders(ctx: AppContext, token: string, clientTok
     .where('created_at', '>', ctx.now() - 12 * 3600_000)
     .orderBy('created_at', 'desc')
     .execute();
-  return (await hydrateOrders(ctx.db, rows)).map(toPublic);
+  return (await hydrateOrders(ctx.db, rows)).map((o) => toPublic(o, true));
 }
 
 export async function createServiceRequest(ctx: AppContext, token: string, input: ServiceRequestInput): Promise<ServiceRequest> {
@@ -480,9 +496,27 @@ export async function createServiceRequest(ctx: AppContext, token: string, input
   if ((await countSince(ctx.db, 'service_requests', qr.location_id, input.clientToken, now - 60_000)) >= MAX_REQUESTS_PER_CLIENT_PER_MINUTE) {
     throw new AppError('TOO_MANY_ATTEMPTS', 'Votre demande a déjà été transmise. Patientez un instant.');
   }
-  // Déjà signalé et pas encore traité : on ne fait pas sonner deux fois.
-  const existing = await ctx.db.selectFrom('service_requests').select('id').where('table_id', '=', qr.table_id).where('kind', '=', input.kind).where('status', '=', 'OPEN').executeTakeFirst();
-  if (existing) return (await loadRequests(ctx.db, (q) => q.where('r.id', '=', existing.id)))[0]!;
+  // Addition : moyen annoncé par le client (le paiement se fait auprès du personnel, I-7) ; en
+  // addition par client, chacun demande sa part, sauf s'il demande toute la table.
+  const bill = input.kind === 'BILL';
+  const billScope = bill ? (qr.bill_mode === 'PER_CUSTOMER' ? (input.scope ?? 'MINE') : 'TABLE') : null;
+  const paymentMethod = bill ? (input.paymentMethod ?? null) : null;
+
+  // Déjà signalé et pas encore traité : on ne fait pas sonner deux fois (on met seulement à jour le moyen choisi).
+  let duplicate = ctx.db.selectFrom('service_requests').select(['id', 'payment_method', 'bill_scope']).where('table_id', '=', qr.table_id).where('kind', '=', input.kind).where('status', '=', 'OPEN');
+  if (billScope === 'MINE') duplicate = duplicate.where('client_token', '=', input.clientToken).where('bill_scope', '=', 'MINE');
+  if (billScope === 'TABLE' && qr.bill_mode === 'PER_CUSTOMER') duplicate = duplicate.where('bill_scope', '=', 'TABLE');
+  const existing = await duplicate.executeTakeFirst();
+  if (existing) {
+    if (bill && paymentMethod && paymentMethod !== existing.payment_method) {
+      await ctx.db.transaction().execute(async (trx) => {
+        const hlc = ctx.clock.now();
+        await trx.updateTable('service_requests').set({ payment_method: paymentMethod, updated_hlc: hlc }).where('id', '=', existing.id).execute();
+        await emitRequest(trx, ctx, existing.id, hlc);
+      });
+    }
+    return (await loadRequests(ctx.db, (q) => q.where('r.id', '=', existing.id)))[0]!;
+  }
 
   const id = uuidv7();
   await ctx.db.transaction().execute(async (trx) => {
@@ -490,7 +524,22 @@ export async function createServiceRequest(ctx: AppContext, token: string, input
     const session = await trx.selectFrom('table_sessions').select('id').where('table_id', '=', qr.table_id).where('status', '=', 'OPEN').executeTakeFirst();
     await trx
       .insertInto('service_requests')
-      .values({ id, tenant_id: qr.tenant_id, location_id: qr.location_id, table_id: qr.table_id, table_session_id: session?.id ?? null, kind: input.kind, status: 'OPEN', client_token: input.clientToken, created_at: now, handled_at: null, handled_by: null, updated_hlc: hlc })
+      .values({
+        id,
+        tenant_id: qr.tenant_id,
+        location_id: qr.location_id,
+        table_id: qr.table_id,
+        table_session_id: session?.id ?? null,
+        kind: input.kind,
+        status: 'OPEN',
+        client_token: input.clientToken,
+        created_at: now,
+        handled_at: null,
+        handled_by: null,
+        payment_method: paymentMethod,
+        bill_scope: billScope,
+        updated_hlc: hlc,
+      })
       .execute();
     await emitRequest(trx, ctx, id, hlc);
     await notifyRequest(trx, ctx, id);
@@ -507,17 +556,36 @@ type RequestQuery = Parameters<Parameters<typeof loadRequests>[1]>[0];
 
 async function loadRequests(db: Db, where: (q: ReturnType<typeof requestBase>) => ReturnType<typeof requestBase>): Promise<ServiceRequest[]> {
   const rows = await where(requestBase(db)).orderBy('r.created_at').execute();
-  return rows.map((r) => ({
-    id: r.id,
-    locationId: r.location_id,
-    tableId: r.table_id,
-    tableLabel: r.label,
-    kind: r.kind,
-    status: r.status,
-    createdAt: r.created_at,
-    handledAt: r.handled_at,
-    handledBy: r.display_name,
-  }));
+  // Qui appelle, et pour une addition, combien reste à payer (table ou part du client).
+  const sessionIds = [...new Set(rows.map((r) => r.table_session_id).filter((x): x is string => x !== null))];
+  const billSessions = [...new Set(rows.filter((r) => r.kind === 'BILL' && r.table_session_id).map((r) => r.table_session_id!))];
+  const [guests, billOrders] = await Promise.all([
+    loadGuests(db, sessionIds),
+    billSessions.length ? db.selectFrom('orders').select(['table_session_id', 'client_token', 'status', 'total', 'paid_amount']).where('table_session_id', 'in', billSessions).execute() : Promise.resolve([]),
+  ]);
+  return rows.map((r) => {
+    const guest = r.table_session_id && r.client_token ? guests.get(r.table_session_id)?.find((g) => g.clientToken === r.client_token) : undefined;
+    let amount: number | null = null;
+    if (r.kind === 'BILL' && r.table_session_id) {
+      const shares = billShares(billOrders.filter((o) => o.table_session_id === r.table_session_id).map((o) => ({ clientToken: o.client_token, status: o.status, total: o.total, paid: o.paid_amount })));
+      amount = r.bill_scope === 'MINE' ? (shares.byClient.get(r.client_token ?? '')?.remaining ?? 0) : shares.table.remaining;
+    }
+    return {
+      id: r.id,
+      locationId: r.location_id,
+      tableId: r.table_id,
+      tableLabel: r.label,
+      kind: r.kind,
+      status: r.status,
+      createdAt: r.created_at,
+      handledAt: r.handled_at,
+      handledBy: r.display_name,
+      paymentMethod: r.payment_method,
+      billScope: r.bill_scope,
+      guestName: guest?.name ?? null,
+      amount,
+    };
+  });
 }
 
 function requestBase(db: Db) {
@@ -525,7 +593,7 @@ function requestBase(db: Db) {
     .selectFrom('service_requests as r')
     .innerJoin('dining_tables as t', 't.id', 'r.table_id')
     .leftJoin('users as u', 'u.id', 'r.handled_by')
-    .select(['r.id', 'r.location_id', 'r.table_id', 't.label', 'r.kind', 'r.status', 'r.created_at', 'r.handled_at', 'u.display_name']);
+    .select(['r.id', 'r.location_id', 'r.table_id', 't.label', 'r.kind', 'r.status', 'r.created_at', 'r.handled_at', 'u.display_name', 'r.table_session_id', 'r.client_token', 'r.payment_method', 'r.bill_scope']);
 }
 
 export type { RequestQuery };
@@ -537,7 +605,7 @@ export async function assertLocation(db: Db, scope: TenantScope, locationId: str
   if (scope.locationId && scope.locationId !== locationId) throw notFound;
   const row = await db
     .selectFrom('locations')
-    .select(['id', 'timezone', 'business_day_cutoff_min', 'currency'])
+    .select(['id', 'timezone', 'business_day_cutoff_min', 'currency', 'table_code_required', 'bill_mode'])
     .where('id', '=', locationId)
     .where('tenant_id', '=', scope.tenantId)
     .executeTakeFirst();

@@ -184,6 +184,19 @@ Non lue = `seq > read_seq` et aucune ligne dans `notification_reads`. Rétention
 Aucune colonne nouvelle pour les temps de préparation : ils se calculent depuis `order_status_history`, `order_items.kds_updated_at` et `products.prep_time_min`.
 SQL compatible PostgreSQL 9.6 et SQLite : `bigserial` / `integer autoincrement`, `ON CONFLICT` (9.5+), clés primaires composées, index uniques simples.
 
+## Tables livrées pour le menu client (migration `0014_client`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `locations` (colonnes ajoutées) | Réglages du menu client | `table_code_required` 0/1 (défaut 0), `bill_mode` `SHARED/PER_CUSTOMER` (défaut `SHARED`) |
+| `table_sessions` (colonne ajoutée) | Code de table (I-9) | `join_code` : 4 chiffres tirés à l'ouverture (générateur cryptographique), renouvelable ; null pour les tables ouvertes avant la migration (bouton « Générer ») |
+| `session_guests` | Téléphones d'une table ouverte (§23) | table_session_id, client_token, nickname (null : « Client n », rang d'arrivée), joined_at, updated_at, updated_hlc ; **unique (table_session_id, client_token)** ; synchronisée comme donnée maître (`session_guest`, UPSERT) |
+| `service_requests` (colonnes ajoutées) | Addition demandée par le client (I-7) | `payment_method` `CASH/MOBILE_MONEY/CARD`, `bill_scope` `TABLE/MINE` |
+
+Index ajouté : `orders (location_id, created_at)` pour les recommandations « Populaires ».
+Les échecs de code sont comptés dans `audit_logs` (`table.code_failed`, par session), jamais en mémoire.
+Au regroupement de deux tables, les clients de la table d'origine rejoignent la table d'accueil.
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

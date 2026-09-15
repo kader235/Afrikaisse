@@ -33,6 +33,7 @@ export const MASTER_TABLES: Record<string, string> = {
   inventory_item: 'inventory_items',
   recipe_item: 'recipe_items',
   table_session: 'table_sessions',
+  session_guest: 'session_guests',
   service_request: 'service_requests',
   cash_session: 'cash_sessions',
   pricing_settings: 'pricing_settings',

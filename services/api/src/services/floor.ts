@@ -49,6 +49,8 @@ const toLocation = (r: LocationRow): LocationDetails => ({
   logoUrl: r.logo_media_id ? `/api/media/${r.logo_media_id}` : null,
   businessDayCutoffMin: r.business_day_cutoff_min,
   operatingMode: r.operating_mode,
+  tableCodeRequired: r.table_code_required === 1,
+  billMode: r.bill_mode,
   status: r.status,
   createdAt: r.created_at,
 });
@@ -173,6 +175,8 @@ export async function createLocation(ctx: AppContext, scope: TenantScope, input:
         logo_media_id: input.logoMediaId ?? null,
         business_day_cutoff_min: input.businessDayCutoffMin,
         operating_mode: input.operatingMode,
+        table_code_required: input.tableCodeRequired ? 1 : 0,
+        bill_mode: input.billMode,
         status: 'ACTIVE',
         created_at: now,
         updated_at: now,
@@ -214,6 +218,8 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
     ...(input.logoMediaId !== undefined && { logo_media_id: input.logoMediaId }),
     ...(input.businessDayCutoffMin !== undefined && { business_day_cutoff_min: input.businessDayCutoffMin }),
     ...(input.operatingMode !== undefined && { operating_mode: input.operatingMode }),
+    ...(input.tableCodeRequired !== undefined && { table_code_required: input.tableCodeRequired ? (1 as const) : (0 as const) }),
+    ...(input.billMode !== undefined && { bill_mode: input.billMode }),
   };
   const modeChanged = input.operatingMode !== undefined && input.operatingMode !== before.operating_mode;
 

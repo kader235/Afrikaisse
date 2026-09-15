@@ -14,6 +14,7 @@ import { plans } from './migrations/0010_plans.ts';
 import { pricing } from './migrations/0011_pricing.ts';
 import { notifications } from './migrations/0012_notifications.ts';
 import { platform } from './migrations/0013_platform.ts';
+import { client } from './migrations/0014_client.ts';
 import { onboarding } from './migrations/0015_onboarding.ts';
 
 /**
@@ -37,6 +38,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0011_pricing': pricing(c),
     '0012_notifications': notifications(c),
     '0013_platform': platform(c),
+    '0014_client': client(c),
     '0015_onboarding': onboarding(c),
   };
 }

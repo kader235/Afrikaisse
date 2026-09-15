@@ -55,12 +55,18 @@ réinitialisation de mot de passe, renommage d'organisation, suspension et réac
   non déclaré, comme `password_hash`, est rejetée par le sérialiseur).
 - **Limites par adresse IP** (phase 18, `services/api/src/lib/rateLimit.ts`) : inscription 10 par heure,
   connexion 30 par 10 min, renouvellement de session 120 par 10 min, commandes et appels QR 30 par
-  10 min **par table**, appairage 20 par 10 min ; au-delà, 429 avec `Retry-After`. Les lectures ne sont
+  10 min **par table** (y compris rejoindre une table), appairage 20 par 10 min ; au-delà, 429 avec `Retry-After`. Les lectures ne sont
   pas limitées : les téléphones d'un même Wi-Fi partagent une adresse publique et suivent leur
   commande en boucle. Compteurs en mémoire (un seul processus). S'ajoute au verrouillage par compte.
 - **Politique de sécurité du contenu** sur les pages servies par le serveur local : scripts, styles,
-  images et connexions du serveur lui-même uniquement, `frame-ancestors 'none'`. Dans le Cloud, Apache
+  images, connexions, manifeste et service worker du serveur lui-même uniquement (`manifest-src` et
+  `worker-src 'self'` pour le menu installable), `frame-ancestors 'none'`. Dans le Cloud, Apache
   pose le même en-tête (DEPLOYMENT.md §6).
+- **Code de table** (I-9, option par établissement) : 4 chiffres tirés par `crypto.getRandomValues`
+  à l'ouverture de la table, comparés à temps constant. Un téléphone qui n'a pas rejoint la table ne
+  peut ni commander ni voir les commandes des autres. 10 codes faux en 10 min sur une table ouverte
+  (comptés dans `audit_logs`, pas en mémoire) bloquent tout code jusqu'à la fin de la fenêtre ; s'y
+  ajoute la limite par adresse IP. Les commandes QR restent en attente de confirmation du personnel.
 - **Serveurs locaux révocables** (phase 17) : `POST /api/devices/{id}/revoke` efface l'empreinte du
   secret ; le PC est refusé dès sa requête suivante.
 

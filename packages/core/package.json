@@ -8,7 +8,8 @@
     "./money": "./src/money.ts",
     "./pricing": "./src/pricing.ts",
     "./taxes": "./src/taxes.ts",
-    "./promotions": "./src/promotions.ts"
+    "./promotions": "./src/promotions.ts",
+    "./guests": "./src/guests.ts"
   },
   "dependencies": {
     "zod": "^4.1.0"

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CURRENCY_CODES, LOCATION_TYPES } from './currency.ts';
+import { BILL_MODES } from './guests.ts';
 import { stationSchema } from './kitchen.ts';
 import { MONEY_MAX } from './money.ts';
 
@@ -292,5 +293,9 @@ export const publicMenuSchema = z.object({
   }),
   table: z.object({ label: z.string() }),
   categories: z.array(z.object({ id: z.string(), name: z.string(), products: z.array(publicProductSchema) })),
+  /** Produits les plus commandés sur 30 jours (ventes terminées) ; vide s'il n'y a pas assez de ventes. */
+  popular: z.array(z.string()),
+  /** Réglages de l'établissement utiles au client. */
+  service: z.object({ tableCodeRequired: z.boolean(), billMode: z.enum(BILL_MODES) }),
 });
 export type PublicMenu = z.infer<typeof publicMenuSchema>;

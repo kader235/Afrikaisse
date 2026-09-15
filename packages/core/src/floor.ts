@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CURRENCY_CODES, LOCATION_TYPES } from './currency.ts';
+import { BILL_MODES } from './guests.ts';
 
 /**
  * Établissements, zones et plan de salle.
@@ -53,6 +54,9 @@ const locationFields = {
   operatingMode: z.enum(OPERATING_MODES),
   /** Logo : une image déjà téléversée (`POST /locations/:id/media`) ; null le retire. */
   logoMediaId: z.uuid().nullable(),
+  /** Le client saisit le code de la table avant sa première commande QR (I-9). */
+  tableCodeRequired: z.boolean(),
+  billMode: z.enum(BILL_MODES),
 };
 
 export const createLocationSchema = z.object({
@@ -62,6 +66,8 @@ export const createLocationSchema = z.object({
   logoMediaId: locationFields.logoMediaId.default(null),
   businessDayCutoffMin: locationFields.businessDayCutoffMin.default(300),
   operatingMode: locationFields.operatingMode.default('CLOUD'),
+  tableCodeRequired: locationFields.tableCodeRequired.default(false),
+  billMode: locationFields.billMode.default('SHARED'),
 });
 export type CreateLocationInput = z.infer<typeof createLocationSchema>;
 
@@ -176,6 +182,8 @@ export const locationDetailsSchema = z.object({
   logoUrl: z.string().nullable(),
   businessDayCutoffMin: z.number(),
   operatingMode: z.enum(OPERATING_MODES),
+  tableCodeRequired: z.boolean(),
+  billMode: z.enum(BILL_MODES),
   status: z.enum(RECORD_STATUSES),
   createdAt: z.number(),
 });

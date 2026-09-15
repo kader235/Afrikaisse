@@ -57,8 +57,49 @@ arrondies, emoji).
 | Sombre | Même structure, gris neutres (exigé pour le KDS, §65) |
 | Logo | Ticket de caisse à bord dentelé, bleu sur blanc |
 
+## Menu client (`/m/<jeton>`)
+
+Point d'entrée séparé (`menu.html`, `src/menu/`), sans Zod : il n'importe du cœur que des types et
+les sous-modules sans dépendance `@afrikaisse/core/money`, `/pricing` et `/guests`.
+
+| Fichier | Rôle |
+|---|---|
+| `src/menu/MenuApp.tsx` | Carte, recherche, Populaires, Favoris, fiche produit, panier, commande |
+| `src/menu/ClientSheets.tsx` | Ma table (clients, commandes de la table, code, surnom), Payer (moyen de paiement), bandeau hors ligne, langue |
+| `src/menu/i18n.tsx` | Dictionnaire du menu : français, anglais, arabe (`dir="rtl"`, chiffres latins pour les montants) ; langue du navigateur, puis choix gardé sur le téléphone |
+| `src/menu/pwa.ts` | Manifeste, enregistrement du service worker, favoris / surnom / code de table en `localStorage` |
+| `src/menu/menu-extra.css` | Styles des ajouts ; `menu.css` reste la base (refonte visuelle en parallèle) |
+| `public/m/sw.js` | Service worker, portée `/m/` |
+| `public/m/icon-*.png` | Icônes, produites par `node apps/web/scripts/menu-icons.mjs` (PNG en JavaScript pur) |
+
+**PWA (§49)**. Manifeste servi par l'API (`/api/public/menu/<jeton>/manifest.webmanifest`, nom de
+l'établissement). Le service worker n'est enregistré qu'en production et en contexte sécurisé
+(HTTPS du Cloud, I-14) :
+
+| Ressource | Stratégie | Borne |
+|---|---|---|
+| Page `/m/<jeton>` (même HTML pour toutes les tables) | Réseau d'abord, copie de secours | 1 |
+| `/assets/*` (noms à empreinte), icônes | Cache d'abord | 40 entrées |
+| Photos `/api/media/*` | Cache d'abord, chargées paresseusement (`loading="lazy"`) | 80 entrées |
+| Carte `/api/public/menu/<jeton>` | Copie immédiate + mise à jour en arrière-plan ; la page recharge la carte si elle a changé | 5 cartes |
+| Commandes, « Ma table », appels | Réseau seulement | — |
+
+Réponses de plus de 1 Mo jamais mises en cache. Ce que la page a chargé avant l'installation du
+service worker lui est signalé (`afk-menu-warm`) pour être disponible hors ligne dès la première visite.
+
+**Hors ligne (I-1)**. Le menu reste consultable ; panier, appel et addition sont coupés avec « Commande
+indisponible hors connexion, appelez un serveur ». « Ma table » est relue toutes les 8 s tant qu'une
+commande de ce téléphone est en cours ou qu'une addition est demandée, toutes les 30 s pour détecter
+le retour de la connexion, jamais quand la page est masquée. `orderingAvailable: false` (serveur local
+muet) affiche « Commande en ligne momentanément indisponible ».
+
+Côté personnel : `src/pages/TableGuests.tsx` (code de table, parts par client, détail des appels),
+styles dans `src/styles/client.css`.
+
 ## Mesures
 
 Build phase 1 : 350 Ko de JS (106 Ko gzip), 7 Ko de CSS. Le poids vient surtout de Zod, importé via
-les contrats partagés. Acceptable pour le personnel. **Le menu client aura son propre point
-d'entrée**, qui n'importera que les types.
+les contrats partagés. Acceptable pour le personnel.
+
+Menu client (15/09/2026) : 38,8 Ko de JS propre (13,7 Ko gzip) + 4,7 Ko de calcul des prix, React
+partagé avec le logiciel (69 Ko gzip, mis en cache une fois), 14 Ko de CSS (3,5 Ko gzip). Aucun Zod.
