@@ -1,23 +1,30 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
-import type { QrList } from '@afrikaisse/core';
+import type { AdminMenu, QrList } from '@afrikaisse/core';
 import { api } from '../api.ts';
+import { useDishPhoto } from '../dishPhotos.ts';
 import { useI18n } from '../i18n.tsx';
 import { LogoAfrikaisse } from '../logo.tsx';
 import { isNativeApp, mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage } from '../ui.tsx';
-import { A4, buildPdf, canvasJpeg, deliverPdf, type PdfImage, type PdfPage } from '../pdf.ts';
+import { A4, buildPdf, canvasJpeg, deliverPdf, type PdfImage, type PdfLine, type PdfPage } from '../pdf.ts';
+import { CARD_MODELS, PHOTO_SIZE, drawPhotoCard, loadImage, type CardModel } from '../qrCards.ts';
+import '../styles/qr-photo.css';
 
 type Code = QrList['codes'][number];
 
+/** Photo par défaut quand le menu n'en a aucune : une grillade du catalogue livré avec l'application. */
+const DEFAULT_PHOTO = '/catalogue/images/grillade-mixte.webp';
+const PREVIEW_SCALE = 0.3;
+
 /**
  * QR codes des tables, présentés comme les chevalets posés sur les tables :
- * aperçu de chaque carte par zone, affichage en grand (le client scanne l'écran de la tablette),
- * image haute définition pour l'imprimeur, planche A4 de quatre chevalets à découper,
- * PDF A4 à imprimer (quatre chevalets par page, ou une table en grand) : téléchargé sur ordinateur,
- * partagé depuis la tablette (WhatsApp, e-mail, Fichiers) pour l'imprimer ailleurs ;
- * régénération d'un QR compromis.
+ * - trois modèles : « Photo » (grand présentoir avec la photo d'un plat), « Photo petit » et « Classique » ;
+ * - aperçu de chaque carte par zone, affichage en grand (le client scanne l'écran de la tablette) ;
+ * - PDF A4 à imprimer (4 ou 9 chevalets par page avec traits de coupe, ou une table en grand) :
+ *   téléchargé sur ordinateur, partagé depuis la tablette (WhatsApp, e-mail, Fichiers) pour l'imprimer ailleurs ;
+ * - image haute définition et impression directe (modèle classique, sur ordinateur) ; régénération d'un QR compromis.
  */
 export function QrTab({ locationId, canManage }: { locationId: string; canManage: boolean }) {
   const { t } = useI18n();
@@ -28,7 +35,14 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
   const [printing, setPrinting] = useState<Code[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [model, setModel] = useState<CardModel>('photo');
+  const [menu, setMenu] = useState<AdminMenu | null>(null);
+  const [photoSrc, setPhotoSrc] = useState<string | null>(null);
+  const [choosingPhoto, setChoosingPhoto] = useState(false);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
+  const [pdfBusy, setPdfBusy] = useState(false);
   const native = isNativeApp();
+  const samplePhoto = useDishPhoto(true);
 
   const load = useCallback(async () => {
     setError(null);
@@ -45,7 +59,26 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
   }, [locationId]);
   useEffect(() => {
     void load();
-  }, [load]);
+    api<AdminMenu>('GET', `/locations/${locationId}/menu`).then(setMenu, () => setMenu(null));
+  }, [load, locationId]);
+
+  // Photos proposées : les vraies photos des plats d'abord, puis les photos d'exemple, sans doublon.
+  const photos = useMemo(() => {
+    const seen = new Set<string>();
+    const out: { src: string; name: string; sample: boolean }[] = [];
+    for (const p of menu?.products ?? []) {
+      const real = p.photoUrl ? mediaSrc(p.photoUrl) : null;
+      const src = real ?? samplePhoto(p.name);
+      if (src && !seen.has(src)) {
+        seen.add(src);
+        out.push({ src, name: p.name, sample: !real });
+      }
+    }
+    out.sort((a, b) => Number(a.sample) - Number(b.sample));
+    if (!seen.has(DEFAULT_PHOTO)) out.push({ src: DEFAULT_PHOTO, name: 'Grillade (photo d’exemple)', sample: true });
+    return out;
+  }, [menu, samplePhoto]);
+  const photo = photoSrc ?? photos[0]?.src ?? DEFAULT_PHOTO;
 
   useEffect(() => {
     if (!printing) return;
@@ -57,6 +90,26 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
   }, [printing]);
 
   const codes = list?.codes ?? [];
+
+  // Aperçus des chevalets photo, dessinés comme le PDF mais en petite définition.
+  useEffect(() => {
+    if (!list || model === 'classique') return;
+    let alive = true;
+    void (async () => {
+      const image = await loadImage(photo).catch(() => null);
+      const next: Record<string, string> = {};
+      for (const c of list.codes) {
+        if (!alive) return;
+        const canvas = await drawPhotoCard(model, { url: c.url, restaurant: list.locationName, table: c.tableLabel, photo: image }, PREVIEW_SCALE);
+        next[c.token] = canvas.toDataURL('image/jpeg', 0.85);
+      }
+      if (alive) setPreviews(next);
+    })().catch(setError);
+    return () => {
+      alive = false;
+    };
+  }, [list, model, photo]);
+
   const zones = useMemo(() => {
     const groups = new Map<string, Code[]>();
     for (const c of codes) groups.set(c.zoneName, [...(groups.get(c.zoneName) ?? []), c]);
@@ -64,15 +117,21 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
   }, [codes]);
   const openIndex = codes.findIndex((c) => c.tableId === openId);
   const open = openIndex >= 0 ? codes[openIndex]! : null;
-  const card = (c: Code) => <TableCard code={c} list={list!} svg={svgs[c.token]} />;
-  const [pdfBusy, setPdfBusy] = useState(false);
+  const card = (c: Code) =>
+    model === 'classique' ? (
+      <TableCard code={c} list={list!} svg={svgs[c.token]} />
+    ) : previews[c.token] ? (
+      <img className={`qr-photo-preview qr-photo-${model}`} src={previews[c.token]} alt="" />
+    ) : (
+      <span className={`qr-photo-preview qr-photo-${model} qr-photo-wait`} />
+    );
 
   async function makePdf(items: Code[], single: boolean) {
     if (!list || items.length === 0 || pdfBusy) return;
     setPdfBusy(true);
     setError(null);
     try {
-      await saveCardsPdf(list, items, single);
+      await saveCardsPdf(list, items, single, model, photo);
     } catch (err) {
       // Partage fermé sans choisir d'application : ce n'est pas une erreur.
       if (!(err instanceof Error && /cancel/i.test(err.message))) setError(err);
@@ -96,12 +155,25 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
 
   return (
     <>
-      <div className="toolbar">
+      <div className="toolbar qr-toolbar">
+        <span className="segmented qr-models" role="group" aria-label="Modèle de chevalet">
+          {CARD_MODELS.map((m) => (
+            <button key={m.id} type="button" className="btn" aria-pressed={model === m.id} title={m.hint} onClick={() => setModel(m.id)}>
+              {m.label}
+            </button>
+          ))}
+        </span>
+        {model !== 'classique' && (
+          <button className="btn qr-photo-button" onClick={() => setChoosingPhoto(true)}>
+            <img src={photo} alt="" />
+            Changer la photo
+          </button>
+        )}
         <button className="btn btn-primary" disabled={codes.length === 0 || pdfBusy} onClick={() => void makePdf(codes, false)}>
           <Icon name="pdf" />
           {pdfBusy ? 'Préparation du PDF…' : 'PDF à imprimer'}
         </button>
-        {!native && (
+        {!native && model === 'classique' && (
           <button className="btn" disabled={codes.length === 0} onClick={() => setPrinting(codes)}>
             <Icon name="print" />
             Imprimer les chevalets
@@ -112,6 +184,7 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
           {t('common.refresh')}
         </button>
       </div>
+      <p className="qr-model-hint">{CARD_MODELS.find((m) => m.id === model)?.hint}</p>
 
       {(!!error || notice || (list && !list.reachableFromInternet)) && (
         <div className="window-body qr-messages">
@@ -125,7 +198,7 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
         </div>
       )}
 
-      <div className="qr-board">
+      <div className={`qr-board qr-board-${model}`}>
         {list && codes.length === 0 && <p className="empty-state">Aucune table.</p>}
         {zones.map(([zone, items]) => (
           <section key={zone} className="qr-zone">
@@ -151,13 +224,48 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
           onPrev={openIndex > 0 ? () => setOpenId(codes[openIndex - 1]!.tableId) : undefined}
           onNext={openIndex < codes.length - 1 ? () => setOpenId(codes[openIndex + 1]!.tableId) : undefined}
           onClose={() => setOpenId(null)}
-          onPrint={native ? undefined : () => setPrinting([open])}
+          onPrint={native || model !== 'classique' ? undefined : () => setPrinting([open])}
           onPdf={pdfBusy ? undefined : () => void makePdf([open], true)}
-          onSaveImage={native ? undefined : () => void saveCardImage(list, open).catch(setError)}
+          onSaveImage={native ? undefined : () => void saveCardImage(list, open, model, photo).catch(setError)}
           onRegenerate={canManage ? () => setConfirm(true) : undefined}
         >
           {card(open)}
         </QrPresenter>
+      )}
+
+      {choosingPhoto && (
+        <Dialog
+          wide
+          title="Photo des chevalets"
+          onClose={() => setChoosingPhoto(false)}
+          footer={
+            <button type="button" className="btn" onClick={() => setChoosingPhoto(false)}>
+              Fermer
+            </button>
+          }
+        >
+          <div className="dialog-body">
+            <p className="qr-photos-hint">Choisissez la photo affichée en haut des chevalets. Vos propres photos de plats apparaissent en premier.</p>
+            <div className="qr-photos">
+              {photos.map((p) => (
+                <button
+                  key={p.src}
+                  type="button"
+                  className="qr-photo-choice"
+                  aria-pressed={p.src === photo}
+                  onClick={() => {
+                    setPhotoSrc(p.src);
+                    setChoosingPhoto(false);
+                  }}
+                >
+                  <img src={p.src} alt="" loading="lazy" />
+                  <span>{p.name}</span>
+                  {p.sample && <small>Photo d’exemple</small>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Dialog>
       )}
 
       {confirm && open && (
@@ -197,7 +305,7 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
   );
 }
 
-/** Le chevalet tel qu'il sera posé sur la table (format A6 : 105 × 148 mm). Tailles en em : même dessin à toute échelle. */
+/** Le chevalet classique tel qu'il sera posé sur la table (format A6 : 105 × 148 mm). Tailles en em : même dessin à toute échelle. */
 function TableCard({ code, list, svg }: { code: Code; list: QrList; svg: string | undefined }) {
   const place = list.organizationName !== list.locationName ? list.organizationName : null;
   return (
@@ -322,7 +430,7 @@ function QrPresenter({
   );
 }
 
-/** Chevalet dessiné en A6 à 300 dpi (1240 × 1748 px) : image pour un imprimeur, pages du PDF. */
+/** Chevalet classique dessiné en A6 à 300 dpi (1240 × 1748 px) : image pour un imprimeur, pages du PDF. */
 async function drawCard(list: QrList, code: Code): Promise<HTMLCanvasElement> {
   const W = 1240;
   const H = 1748;
@@ -385,10 +493,17 @@ async function drawCard(list: QrList, code: Code): Promise<HTMLCanvasElement> {
   return canvas;
 }
 
+/** Dessine le chevalet d'un modèle, en pleine définition ; la photo est chargée une fois par l'appelant. */
+async function renderCard(model: CardModel, list: QrList, code: Code, photo: HTMLImageElement | null): Promise<HTMLCanvasElement> {
+  if (model === 'classique') return drawCard(list, code);
+  return drawPhotoCard(model, { url: code.url, restaurant: list.locationName, table: code.tableLabel, photo });
+}
+
 /** Image PNG du chevalet, pour un imprimeur ou un partage. */
-async function saveCardImage(list: QrList, code: Code) {
-  const canvas = await drawCard(list, code);
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Image impossible à créer."))), 'image/png'));
+async function saveCardImage(list: QrList, code: Code, model: CardModel, photoSrc: string) {
+  const photo = model === 'classique' ? null : await loadImage(photoSrc).catch(() => null);
+  const canvas = await renderCard(model, list, code, photo);
+  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Image impossible à créer.'))), 'image/png'));
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -399,44 +514,47 @@ async function saveCardImage(list: QrList, code: Code) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-const CARD_RATIO = 1748 / 1240;
 const fileName = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9.-]+/g, '-');
 
 /**
- * PDF A4 : toutes les tables, quatre chevalets par page séparés par des traits de coupe ;
+ * PDF A4 : toutes les tables en planche avec traits de coupe (2 × 2, ou 3 × 3 pour le petit modèle photo) ;
  * une seule table, son chevalet en grand au centre de la page.
  */
-async function saveCardsPdf(list: QrList, codes: Code[], single: boolean) {
+async function saveCardsPdf(list: QrList, codes: Code[], single: boolean, model: CardModel, photoSrc: string) {
+  const photo = model === 'classique' ? null : await loadImage(photoSrc).catch(() => null);
+  const size = model === 'classique' ? { w: 1240, h: 1748, perRow: 2 } : PHOTO_SIZE[model];
+  const ratio = size.h / size.w;
   const pages: PdfPage[] = [];
   const image = async (code: Code, x: number, y: number, width: number, height: number): Promise<PdfImage> => {
-    const canvas = await drawCard(list, code);
+    const canvas = await renderCard(model, list, code, photo);
     return { jpeg: await canvasJpeg(canvas), pixelWidth: canvas.width, pixelHeight: canvas.height, x, y, width, height };
   };
   if (single) {
-    const width = A4.width - 120;
-    const height = width * CARD_RATIO;
+    const width = Math.min(A4.width - 120, (A4.height - 120) / ratio);
+    const height = width * ratio;
     for (const code of codes) pages.push({ images: [await image(code, (A4.width - width) / 2, (A4.height - height) / 2, width, height)] });
   } else {
+    const n = size.perRow;
     const margin = 24;
-    const cellW = (A4.width - 2 * margin) / 2;
-    const cellH = (A4.height - 2 * margin) / 2;
-    const width = Math.min(cellW - 16, (cellH - 16) / CARD_RATIO);
-    const height = width * CARD_RATIO;
-    for (let first = 0; first < codes.length; first += 4) {
+    const cellW = (A4.width - 2 * margin) / n;
+    const cellH = (A4.height - 2 * margin) / n;
+    const width = Math.min(cellW - 12, (cellH - 12) / ratio);
+    const height = width * ratio;
+    const cuts: PdfLine[] = [];
+    for (let i = 1; i < n; i++) {
+      cuts.push({ x1: margin + cellW * i, y1: margin / 2, x2: margin + cellW * i, y2: A4.height - margin / 2 });
+      cuts.push({ x1: margin / 2, y1: margin + cellH * i, x2: A4.width - margin / 2, y2: margin + cellH * i });
+    }
+    const perPage = n * n;
+    for (let first = 0; first < codes.length; first += perPage) {
       const images: PdfImage[] = [];
-      const group = codes.slice(first, first + 4);
+      const group = codes.slice(first, first + perPage);
       for (let k = 0; k < group.length; k++) {
-        const cx = margin + cellW * (k % 2) + cellW / 2;
-        const cy = A4.height - margin - cellH * Math.floor(k / 2) - cellH / 2;
+        const cx = margin + cellW * (k % n) + cellW / 2;
+        const cy = A4.height - margin - cellH * Math.floor(k / n) - cellH / 2;
         images.push(await image(group[k]!, cx - width / 2, cy - height / 2, width, height));
       }
-      pages.push({
-        images,
-        cuts: [
-          { x1: A4.width / 2, y1: margin / 2, x2: A4.width / 2, y2: A4.height - margin / 2 },
-          { x1: margin / 2, y1: A4.height / 2, x2: A4.width - margin / 2, y2: A4.height / 2 },
-        ],
-      });
+      pages.push({ images, cuts });
     }
   }
   const one = single && codes.length === 1 ? codes[0]! : null;
