@@ -32,6 +32,7 @@ describe("Photos d'exemple des plats sans photo", () => {
     expect(photo('Salade avocat-crevettes')).toBeNull();
     expect(photo('Sauce kanda')).toBeNull();
     expect(photo('Tacos')).toBeNull();
+    expect(photo('Soupe de poisson')).toBeNull();
   });
 
   it('ignore les plats du catalogue sans image et les noms vides', () => {

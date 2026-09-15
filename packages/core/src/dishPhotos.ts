@@ -3,8 +3,10 @@
  * l'application (apps/web/public/catalogue). Sans Zod : le menu client l'importe par « @afrikaisse/core/dish-photos ».
  *
  * Prudence avant tout : une mauvaise photo est pire que pas de photo. On n'accepte qu'un nom identique,
- * ou au moins la moitié des mots en commun dont un mot significatif (4 lettres ou plus, autre que « sauce »).
- * « Jus de bissap » ne prend donc pas la photo du jus de baobab : seul « jus » est commun.
+ * ou au moins la moitié des mots en commun avec, en plus : soit tous les mots du plat du catalogue présents
+ * dans le nom (« Classic Burger » → burger), soit au moins deux mots significatifs communs (4 lettres ou plus,
+ * autres que « sauce »). « Jus de bissap » ne prend donc pas la photo du jus de baobab, ni « Soupe de poisson »
+ * celle de l'attiéké poisson : un seul mot commun.
  */
 
 export interface DishPhotoSource {
@@ -42,7 +44,11 @@ function score(a: string[], b: string[]): number {
   if (a.join(' ') === b.join(' ')) return 2; // nom identique : meilleur que tout recouvrement partiel
   const inB = new Set(b);
   const shared = a.filter((t) => inB.has(t));
-  if (!shared.some((t) => t.length >= 4 && !WEAK.has(t))) return 0;
+  const significant = shared.filter((t) => t.length >= 4 && !WEAK.has(t));
+  if (significant.length === 0) return 0;
+  // Un seul mot en commun ne suffit que si le plat du catalogue est tout entier dans le nom.
+  const inA = new Set(a);
+  if (significant.length < 2 && !b.every((t) => inA.has(t))) return 0;
   const sum = (list: string[]) => list.reduce((s, t) => s + weight(t), 0);
   const value = sum(shared) / Math.max(sum(a), sum(b));
   return value >= 0.5 ? value : 0;
