@@ -14,6 +14,7 @@ import { ACTIVE_STATUSES, ChoiceRow, GuestFields, LanguageSwitch, OfflineBanner,
 import { Icon } from './Icon.tsx';
 import { LangProvider, MONEY_LOCALE, choiceRuleText, useLang } from './i18n.tsx';
 import { nicknameStore, setupPwa, tableCodeStore, useFavorites, useOnline } from './pwa.ts';
+import { applyMenuTheme } from './theme.ts';
 import '../styles/pricing.css';
 
 /**
@@ -137,6 +138,7 @@ function Menu() {
     request<PublicMenu>('GET', `/api/public/menu/${token}`)
       .then((menu) => {
         document.title = menu.restaurant.name;
+        applyMenuTheme(menu.restaurant.theme, token);
         setState({ kind: 'ready', menu });
         setActive((current) => current ?? menu.categories[0]?.id ?? null);
       })

@@ -33,3 +33,4 @@ export * from './guests.ts';
 export * from './client.ts';
 export * from './announcements.ts';
 export * from './dishPhotos.ts';
+export * from './menuThemes.ts';

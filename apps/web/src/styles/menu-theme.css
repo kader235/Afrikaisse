@@ -1,0 +1,390 @@
+/* === Thème du menu client (onglet du Menu) ===============================
+ * Six cartes ; chacune dessine un petit téléphone avec les variables --m-* du thème
+ * (posées en style sur .mt-phone, les mêmes que le vrai menu client).
+ * WebView Chrome 83 : pas de gap sur flexbox (marges), grid-gap accepté ; propriétés logiques.
+ */
+.mt {
+  padding: 16px 20px 24px;
+}
+
+.mt-head p {
+  max-width: 820px;
+  margin: 0 0 14px;
+  color: var(--text-soft);
+  line-height: 1.5;
+}
+
+.mt-messages {
+  margin-bottom: 12px;
+}
+
+.mt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  grid-gap: 16px;
+}
+
+.mt-card {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.mt-card.current {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-tonal);
+}
+
+.mt-stage {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 18px;
+  background: var(--band);
+  border-inline-end: 1px solid var(--line);
+}
+
+.mt-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px;
+}
+
+.mt-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mt-name strong {
+  margin-inline-end: 10px;
+  color: var(--text);
+  font-size: 17px;
+}
+
+.mt-swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-inline-end: 8px;
+  border-radius: 50%;
+}
+
+.mt-current {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.mt-info p {
+  margin: 10px 0 6px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.mt-info small {
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.mt-info .btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.mt-info small + .btn {
+  margin-top: 16px;
+}
+
+@media (max-width: 1000px) {
+  .mt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .mt-card {
+    flex-direction: column;
+  }
+
+  .mt-stage {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+.tablette .mt-card {
+  border-radius: 18px;
+}
+
+.tablette .mt-info .btn {
+  min-height: 48px;
+}
+
+/* --- Téléphone miniature ------------------------------------------------- */
+.mt-phone {
+  position: relative;
+  width: 200px;
+  height: 356px;
+  overflow: hidden;
+  border: 5px solid #1c2230;
+  border-radius: 26px;
+  background: var(--m-bg);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  color: var(--m-text);
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, Arial, sans-serif;
+  font-size: 9px;
+  line-height: 1.3;
+  text-align: start;
+  user-select: none;
+}
+
+.mt-top {
+  display: flex;
+  align-items: center;
+  padding: 10px 9px 6px;
+}
+
+.mt-logo {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-inline-end: 6px;
+  border-radius: 7px;
+  background: var(--m-accent);
+  color: var(--m-on-accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.mt-brand {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mt-brand small {
+  color: var(--m-muted);
+  font-size: 7.5px;
+  font-weight: 600;
+}
+
+.mt-brand strong {
+  overflow: hidden;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-round {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: var(--m-card);
+  box-shadow: var(--m-shadow);
+  color: var(--m-text);
+}
+
+.mt-banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: 78px;
+  margin: 4px 9px 0;
+  padding: 10px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--m-banner-end);
+  background: linear-gradient(120deg, var(--m-banner-start) 0%, var(--m-banner-end) 100%);
+  color: var(--m-banner-text);
+}
+
+[dir='rtl'] .mt-banner {
+  background: linear-gradient(240deg, var(--m-banner-start) 0%, var(--m-banner-end) 100%);
+}
+
+.mt-banner strong {
+  position: relative;
+  z-index: 1;
+  width: 60%;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.mt-banner-body {
+  position: relative;
+  z-index: 1;
+  width: 60%;
+  margin-top: 2px;
+  color: var(--m-banner-soft);
+  font-size: 7.5px;
+  font-weight: 600;
+}
+
+.mt-cta {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--m-banner-cta);
+  color: var(--m-banner-cta-text);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.mt-banner img {
+  position: absolute;
+  top: 50%;
+  right: -22px;
+  width: 92px;
+  height: 92px;
+  margin-top: -46px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+[dir='rtl'] .mt-banner img {
+  right: auto;
+  left: -22px;
+}
+
+.mt-cats {
+  display: flex;
+  padding: 9px 9px 2px;
+  white-space: nowrap;
+}
+
+.mt-cats span {
+  margin-inline-end: 5px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: var(--m-card);
+  box-shadow: var(--m-shadow);
+  color: var(--m-text);
+  font-size: 8.5px;
+  font-weight: 700;
+}
+
+.mt-cats span.on {
+  background: var(--m-soft);
+  box-shadow: none;
+  color: var(--m-accent-dark);
+}
+
+.mt-item {
+  display: flex;
+  align-items: center;
+  margin: 7px 9px 0;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--m-card);
+  box-shadow: var(--m-shadow);
+}
+
+.mt-item img {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  margin-inline-end: 7px;
+  border-radius: 9px;
+  background: var(--m-fill);
+  object-fit: cover;
+}
+
+.mt-item-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mt-item-text strong {
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.mt-item-text small {
+  overflow: hidden;
+  color: var(--m-muted);
+  font-size: 7.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-item-text b {
+  margin-top: 2px;
+  color: var(--m-accent-dark);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.mt-plus {
+  display: flex;
+  flex: none;
+  align-self: flex-end;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-inline-start: 6px;
+  border-radius: 7px;
+  background: var(--m-accent);
+  color: var(--m-on-accent);
+}
+
+.mt-bar {
+  position: absolute;
+  right: 9px;
+  bottom: 10px;
+  left: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 11px;
+  background: var(--m-accent);
+  box-shadow: 0 5px 12px rgba(var(--m-accent-rgb), 0.3);
+  color: var(--m-on-accent);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.mt-bar span {
+  display: flex;
+  align-items: center;
+}
+
+.mt-bar i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  margin-inline-end: 6px;
+  border-radius: 5px;
+  background: rgba(var(--m-on-accent-rgb), 0.25);
+  font-style: normal;
+}

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CURRENCY_CODES, LOCATION_TYPES } from './currency.ts';
 import { BILL_MODES } from './guests.ts';
+import { MENU_THEMES } from './menuThemes.ts';
 
 /**
  * Établissements, zones et plan de salle.
@@ -72,7 +73,14 @@ export const createLocationSchema = z.object({
 export type CreateLocationInput = z.infer<typeof createLocationSchema>;
 
 // Sans valeurs par défaut : un PATCH ne doit jamais remettre un champ absent à zéro.
-export const updateLocationSchema = z.object(locationFields).partial().refine(nonEmpty, NO_CHANGE);
+export const updateLocationSchema = z
+  .object({
+    ...locationFields,
+    /** Thème du menu client (QR) : un identifiant de MENU_THEMES. */
+    menuTheme: z.enum(MENU_THEMES),
+  })
+  .partial()
+  .refine(nonEmpty, NO_CHANGE);
 export type UpdateLocationInput = z.infer<typeof updateLocationSchema>;
 
 const planWidth = z.number().int().min(PLAN.minWidth).max(PLAN.maxWidth);
@@ -184,6 +192,8 @@ export const locationDetailsSchema = z.object({
   operatingMode: z.enum(OPERATING_MODES),
   tableCodeRequired: z.boolean(),
   billMode: z.enum(BILL_MODES),
+  /** Thème du menu client (QR) ; « bleu » quand l'établissement n'en a pas choisi. */
+  menuTheme: z.enum(MENU_THEMES),
   status: z.enum(RECORD_STATUSES),
   createdAt: z.number(),
 });

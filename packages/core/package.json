@@ -10,7 +10,8 @@
     "./taxes": "./src/taxes.ts",
     "./promotions": "./src/promotions.ts",
     "./guests": "./src/guests.ts",
-    "./dish-photos": "./src/dishPhotos.ts"
+    "./dish-photos": "./src/dishPhotos.ts",
+    "./menu-themes": "./src/menuThemes.ts"
   },
   "dependencies": {
     "zod": "^4.1.0"
