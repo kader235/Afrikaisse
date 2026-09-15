@@ -7,10 +7,15 @@ import {
   findLayoutIssues,
   rectInside,
   rectsOverlap,
+  resolveZoneColor,
   uuidv7,
+  ZONE_COLORS,
   type CreateLocationInput,
   type CreateTableInput,
+  type CreateTablesRangeInput,
   type CreateZoneInput,
+  type TableShape,
+  type TablesRangeResult,
   type DiningTable,
   type LayoutInput,
   type LocationDetails,
@@ -62,6 +67,7 @@ const toZone = (r: ZoneRow): Zone => ({
   sort: r.sort,
   planWidth: r.plan_width,
   planHeight: r.plan_height,
+  color: resolveZoneColor(r.color, r.sort),
   status: r.status,
 });
 
@@ -315,6 +321,11 @@ export async function createZone(ctx: AppContext, scope: TenantScope, locationId
   const now = ctx.now();
   return ctx.db.transaction().execute(async (trx) => {
     const last = await trx.selectFrom('zones').select((eb) => eb.fn.max('sort').as('m')).where('location_id', '=', locationId).executeTakeFirst();
+    const sort = last?.m === null || last?.m === undefined ? 0 : Number(last.m) + 1;
+    // Couleur non choisie : la première teinte que les zones actives n'utilisent pas encore.
+    const others = await trx.selectFrom('zones').select(['color', 'sort']).where('location_id', '=', locationId).where('status', '=', 'ACTIVE').execute();
+    const used = new Set(others.map((z) => resolveZoneColor(z.color, z.sort)));
+    const color = input.color ?? ZONE_COLORS.find((c) => !used.has(c)) ?? resolveZoneColor(null, others.length);
     const hlc = ctx.clock.now();
     await trx
       .insertInto('zones')
@@ -323,9 +334,10 @@ export async function createZone(ctx: AppContext, scope: TenantScope, locationId
         tenant_id: scope.tenantId,
         location_id: locationId,
         name: input.name,
-        sort: last?.m === null || last?.m === undefined ? 0 : Number(last.m) + 1,
+        sort,
         plan_width: input.planWidth,
         plan_height: input.planHeight,
+        color,
         status: 'ACTIVE',
         created_at: now,
         updated_at: now,
@@ -340,7 +352,7 @@ export async function createZone(ctx: AppContext, scope: TenantScope, locationId
       action: 'floor.zone_created',
       entityType: 'zone',
       entityId: id,
-      data: { name: input.name, planWidth: input.planWidth, planHeight: input.planHeight },
+      data: { name: input.name, planWidth: input.planWidth, planHeight: input.planHeight, color },
       meta,
     });
     return toZone(row);
@@ -368,6 +380,7 @@ export async function updateZone(ctx: AppContext, scope: TenantScope, zoneId: st
       .set({
         ...(input.name !== undefined && { name: input.name }),
         ...(input.sort !== undefined && { sort: input.sort }),
+        ...(input.color !== undefined && { color: input.color }),
         plan_width: width,
         plan_height: height,
         updated_at: ctx.now(),
@@ -443,53 +456,72 @@ async function occupiedRects(db: Db, zoneId: string, exceptId?: string) {
   return q.execute();
 }
 
+const FULL_ZONE = 'Plus de place libre dans cette zone : agrandissez le plan ou déplacez des tables.';
+
+/**
+ * Insère une table dans une transaction ouverte : libellé libre, place (donnée ou trouvée), synchronisation, QR.
+ * Retourne null si aucune place libre n'a été trouvée (placement automatique seulement).
+ */
+async function insertTable(
+  trx: Db,
+  ctx: AppContext,
+  scope: TenantScope,
+  zone: ZoneRow,
+  spec: { label: string; capacity: number; shape: TableShape; x?: number; y?: number; w?: number; h?: number },
+): Promise<TableRow | null> {
+  const size = { w: spec.w ?? DEFAULT_TABLE_SIZE[spec.shape].w, h: spec.h ?? DEFAULT_TABLE_SIZE[spec.shape].h };
+  const { label, key } = normalizeLabel(spec.label);
+  await assertLabelFree(trx, zone.location_id, key);
+  const occupied = await occupiedRects(trx, zone.id);
+  let position: { x: number; y: number };
+  if (spec.x !== undefined && spec.y !== undefined) {
+    const rect = { x: spec.x, y: spec.y, ...size };
+    if (!rectInside(rect, zone.plan_width, zone.plan_height)) throw new AppError('CONFLICT', 'La table sortirait du plan de la zone.');
+    if (occupied.some((o) => rectsOverlap(rect, o))) throw new AppError('CONFLICT', 'Cet emplacement est déjà occupé par une autre table.');
+    position = { x: rect.x, y: rect.y };
+  } else {
+    const spot = findFreeSpot(occupied, size.w, size.h, zone.plan_width, zone.plan_height);
+    if (!spot) return null;
+    position = spot;
+  }
+  const id = uuidv7();
+  const now = ctx.now();
+  const hlc = ctx.clock.now();
+  await trx
+    .insertInto('dining_tables')
+    .values({
+      id,
+      tenant_id: scope.tenantId,
+      location_id: zone.location_id,
+      zone_id: zone.id,
+      label,
+      label_key: key,
+      capacity: spec.capacity,
+      shape: spec.shape,
+      ...position,
+      ...size,
+      status: 'ACTIVE',
+      created_at: now,
+      updated_at: now,
+      updated_hlc: hlc,
+    })
+    .execute();
+  const row = await emitTable(trx, ctx, scope, id, hlc);
+  // Chaque table active a son QR dès sa création (menu client, phase 3).
+  await createQrCode(trx, ctx, row, hlc);
+  return row;
+}
+
 export async function createTable(ctx: AppContext, scope: TenantScope, zoneId: string, input: CreateTableInput, meta: RequestMeta): Promise<DiningTable> {
   const zone = await loadZone(ctx.db, scope, zoneId);
   assertActive(zone.status, 'Cette zone est archivée.');
-  const size = { w: input.w ?? DEFAULT_TABLE_SIZE[input.shape].w, h: input.h ?? DEFAULT_TABLE_SIZE[input.shape].h };
-  const { label, key } = normalizeLabel(input.label);
-  const id = uuidv7();
-  const now = ctx.now();
 
   return ctx.db
     .transaction()
     .execute(async (trx) => {
-      await assertLabelFree(trx, zone.location_id, key);
-      const occupied = await occupiedRects(trx, zoneId);
-      let position: { x: number; y: number };
-      if (input.x !== undefined && input.y !== undefined) {
-        const rect = { x: input.x, y: input.y, ...size };
-        if (!rectInside(rect, zone.plan_width, zone.plan_height)) throw new AppError('CONFLICT', 'La table sortirait du plan de la zone.');
-        if (occupied.some((o) => rectsOverlap(rect, o))) throw new AppError('CONFLICT', 'Cet emplacement est déjà occupé par une autre table.');
-        position = { x: rect.x, y: rect.y };
-      } else {
-        const spot = findFreeSpot(occupied, size.w, size.h, zone.plan_width, zone.plan_height);
-        if (!spot) throw new AppError('CONFLICT', 'Plus de place libre dans cette zone : agrandissez le plan ou déplacez des tables.');
-        position = spot;
-      }
-      const hlc = ctx.clock.now();
-      await trx
-        .insertInto('dining_tables')
-        .values({
-          id,
-          tenant_id: scope.tenantId,
-          location_id: zone.location_id,
-          zone_id: zoneId,
-          label,
-          label_key: key,
-          capacity: input.capacity,
-          shape: input.shape,
-          ...position,
-          ...size,
-          status: 'ACTIVE',
-          created_at: now,
-          updated_at: now,
-          updated_hlc: hlc,
-        })
-        .execute();
-      const row = await emitTable(trx, ctx, scope, id, hlc);
-      // Chaque table active a son QR dès sa création (menu client, phase 3).
-      await createQrCode(trx, ctx, row, hlc);
+      const row = await insertTable(trx, ctx, scope, zone, input);
+      if (!row) throw new AppError('CONFLICT', FULL_ZONE);
+      const { id, label } = row;
       await writeAudit(trx, ctx, {
         tenantId: scope.tenantId,
         locationId: zone.location_id,
@@ -503,6 +535,67 @@ export async function createTable(ctx: AppContext, scope: TenantScope, zoneId: s
       return toTable(row);
     })
     .catch(labelConflict);
+}
+
+/**
+ * « T1 à T20 » en une fois : chaque table placée automatiquement comme une table seule (une transaction par table).
+ * Libellé déjà pris dans l'établissement → passé ; plan plein → on s'arrête et on rend les libellés restants.
+ */
+export async function createTablesRange(ctx: AppContext, scope: TenantScope, zoneId: string, input: CreateTablesRangeInput, meta: RequestMeta): Promise<TablesRangeResult> {
+  const zone = await loadZone(ctx.db, scope, zoneId);
+  assertActive(zone.status, 'Cette zone est archivée.');
+  const labels: string[] = [];
+  for (let n = input.from; n <= input.to; n++) labels.push(`${input.prefix}${n}`);
+
+  const taken = await ctx.db.selectFrom('dining_tables').select('label_key').where('location_id', '=', zone.location_id).where('status', '=', 'ACTIVE').execute();
+  const takenKeys = new Set(taken.map((r) => r.label_key));
+  const created: DiningTable[] = [];
+  const skipped: string[] = [];
+  const full: string[] = [];
+
+  for (const [index, label] of labels.entries()) {
+    if (takenKeys.has(normalizeLabel(label).key)) {
+      skipped.push(label);
+      continue;
+    }
+    try {
+      const row = await ctx.db.transaction().execute((trx) => insertTable(trx, ctx, scope, zone, { label, capacity: input.capacity, shape: input.shape }));
+      if (!row) {
+        full.push(...labels.slice(index));
+        break;
+      }
+      created.push(toTable(row));
+    } catch (err) {
+      // Libellé pris entre-temps (autre appareil) : passé comme les autres.
+      if (isUniqueViolation(err) || (err instanceof AppError && err.code === 'CONFLICT')) {
+        skipped.push(label);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  await writeAudit(ctx.db, ctx, {
+    tenantId: scope.tenantId,
+    locationId: zone.location_id,
+    actorUserId: scope.userId,
+    action: 'floor.tables_range_created',
+    entityType: 'zone',
+    entityId: zone.id,
+    data: {
+      zone: zone.name,
+      prefix: input.prefix,
+      from: input.from,
+      to: input.to,
+      capacity: input.capacity,
+      shape: input.shape,
+      created: created.length,
+      skipped: skipped.length,
+      full: full.length,
+    },
+    meta,
+  });
+  return { created, skipped, full };
 }
 
 export async function updateTable(ctx: AppContext, scope: TenantScope, tableId: string, input: UpdateTableInput, meta: RequestMeta): Promise<DiningTable> {

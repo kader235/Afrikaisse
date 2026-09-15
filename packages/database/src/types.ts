@@ -63,6 +63,8 @@ export interface ZonesTable {
   /** Taille du plan en cases. */
   plan_width: number;
   plan_height: number;
+  /** #RRGGBB ; null : teinte de la palette selon l'ordre (zones d'avant la migration 0018). */
+  color: string | null;
   status: 'ACTIVE' | 'ARCHIVED';
   created_at: number;
   updated_at: number;

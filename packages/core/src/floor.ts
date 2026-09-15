@@ -79,15 +79,35 @@ const planWidth = z.number().int().min(PLAN.minWidth).max(PLAN.maxWidth);
 const planHeight = z.number().int().min(PLAN.minHeight).max(PLAN.maxHeight);
 const zoneName = z.string().trim().min(1).max(60);
 
+/**
+ * Couleur de zone : un liseré ou une pastille à côté des tables, jamais un fond sous du texte.
+ * Huit teintes nettement distinctes, lisibles en trait sur fond blanc comme sous un texte blanc (AA).
+ */
+export const ZONE_COLORS = ['#1D4ED8', '#15803D', '#C2410C', '#7C3AED', '#0F766E', '#B91C1C', '#B45309', '#BE185D'] as const;
+
+export const zoneColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'Couleur attendue au format #RRGGBB')
+  .transform((v) => v.toUpperCase());
+
+/** Couleur affichée : celle choisie, sinon une teinte de la palette selon l'ordre de la zone. */
+export function resolveZoneColor(color: string | null | undefined, sort: number): string {
+  const n = ZONE_COLORS.length;
+  return color ?? ZONE_COLORS[((sort % n) + n) % n]!;
+}
+
 export const createZoneSchema = z.object({
   name: zoneName,
   planWidth: planWidth.default(PLAN.defaultWidth),
   planHeight: planHeight.default(PLAN.defaultHeight),
+  /** Absente : la première couleur de la palette que les autres zones n'utilisent pas. */
+  color: zoneColorSchema.optional(),
 });
 export type CreateZoneInput = z.infer<typeof createZoneSchema>;
 
 export const updateZoneSchema = z
-  .object({ name: zoneName, planWidth, planHeight, sort: z.number().int().min(0).max(1000) })
+  .object({ name: zoneName, planWidth, planHeight, sort: z.number().int().min(0).max(1000), color: zoneColorSchema })
   .partial()
   .refine(nonEmpty, NO_CHANGE);
 export type UpdateZoneInput = z.infer<typeof updateZoneSchema>;
@@ -107,6 +127,22 @@ export const createTableSchema = z.object({
   h: side.optional(),
 });
 export type CreateTableInput = z.infer<typeof createTableSchema>;
+
+/** Plusieurs tables d'un coup : « T1 à T20 ». Les libellés déjà pris sont passés. */
+export const TABLES_RANGE_MAX = 100;
+const rangeNumber = z.number().int().min(0).max(999);
+
+export const createTablesRangeSchema = z
+  .object({
+    prefix: z.string().trim().max(6).default('T'),
+    from: rangeNumber,
+    to: rangeNumber,
+    capacity: capacity.default(4),
+    shape: z.enum(TABLE_SHAPES).default('SQUARE'),
+  })
+  .refine((v) => v.to >= v.from, { message: 'Le dernier numéro doit être supérieur ou égal au premier.', path: ['to'] })
+  .refine((v) => v.to - v.from + 1 <= TABLES_RANGE_MAX, { message: `${TABLES_RANGE_MAX} tables au plus en une fois.`, path: ['to'] });
+export type CreateTablesRangeInput = z.infer<typeof createTablesRangeSchema>;
 
 export const updateTableSchema = z
   .object({ label: tableLabel, capacity, shape: z.enum(TABLE_SHAPES), zoneId: z.uuid() })
@@ -196,6 +232,8 @@ export const zoneSchema = z.object({
   sort: z.number(),
   planWidth: z.number(),
   planHeight: z.number(),
+  /** Toujours renseignée : couleur choisie, sinon teinte de la palette selon l'ordre. */
+  color: z.string(),
   status: z.enum(RECORD_STATUSES),
 });
 export type Zone = z.infer<typeof zoneSchema>;
@@ -214,6 +252,15 @@ export const diningTableSchema = z.object({
   status: z.enum(RECORD_STATUSES),
 });
 export type DiningTable = z.infer<typeof diningTableSchema>;
+
+export const tablesRangeResultSchema = z.object({
+  created: z.array(diningTableSchema),
+  /** Libellés déjà utilisés dans l'établissement : passés. */
+  skipped: z.array(z.string()),
+  /** Libellés non créés faute de place dans le plan de la zone. */
+  full: z.array(z.string()),
+});
+export type TablesRangeResult = z.infer<typeof tablesRangeResultSchema>;
 
 export const floorSchema = z.object({
   location: locationDetailsSchema,

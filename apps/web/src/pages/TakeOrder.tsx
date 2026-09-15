@@ -20,6 +20,7 @@ import { useDishPhoto } from '../dishPhotos.ts';
 import { mediaSrc } from '../platform.ts';
 import { isTablet } from '../touch.ts';
 import { ErrorMessage, Icon } from '../ui.tsx';
+import { zoneVars } from '../zoneColors.ts';
 import { OptionsDialog, nextKey, ticketPricing, toPricing, type TicketLine } from './Pos.tsx';
 import '../styles/take-order.css';
 
@@ -221,14 +222,20 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
           {floor && zones.length === 0 && <p className="take-none">Aucune table. Ajoutez-les dans Plus → Tables.</p>}
           {zones.map(({ zone, tables }) => (
             <div key={zone.id} className="take-zone-block">
-              {zones.length > 1 && <h3 className="take-zone">{zone.name}</h3>}
+              {zones.length > 1 && (
+                <h3 className="take-zone">
+                  <i className="zone-dot" style={zoneVars(zone)} aria-hidden="true" />
+                  {zone.name}
+                </h3>
+              )}
               <div className="take-table-grid">
                 {tables.map((t) => {
                   const s = stateOf(t);
                   return (
                     <button
                       key={t.id}
-                      className={`take-table ${s.state}`}
+                      className={`take-table zone-stripe ${s.state}`}
+                      style={zoneVars(zone)}
                       aria-pressed={t.id === tableId}
                       onClick={() => {
                         setTableId(t.id);

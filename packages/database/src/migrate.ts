@@ -18,6 +18,7 @@ import { client } from './migrations/0014_client.ts';
 import { onboarding } from './migrations/0015_onboarding.ts';
 import { recovery } from './migrations/0016_recovery.ts';
 import { announcements } from './migrations/0017_announcements.ts';
+import { zoneColors } from './migrations/0018_zone_colors.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -44,6 +45,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0015_onboarding': onboarding(c),
     '0016_recovery': recovery(c),
     '0017_announcements': announcements(c),
+    '0018_zone_colors': zoneColors(c),
   };
 }
 

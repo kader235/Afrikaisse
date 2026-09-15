@@ -5,6 +5,8 @@ import {
   PLAN,
   SERVICE_REQUEST_LABELS,
   TABLE_SHAPES,
+  TABLES_RANGE_MAX,
+  ZONE_COLORS,
   findLayoutIssues,
   formatMoney,
   type AdminMenu,
@@ -20,8 +22,10 @@ import {
   type Receipt,
   type ServiceRequest,
   type TableShape,
+  type TablesRangeResult,
   type Zone,
 } from '@afrikaisse/core';
+import { ZONE_COLOR_NAMES, colorVars, zoneColor, zoneVars } from '../zoneColors.ts';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
@@ -373,6 +377,7 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
                     pick(null);
                   }}
                 >
+                  <i className="zone-dot" style={zoneVars(z)} aria-hidden="true" />
                   {z.name}
                 </button>
               ))}
@@ -492,6 +497,7 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
               {!arranging ? (
                 selected && live ? (
                   <ServicePanel
+                    zone={zone}
                     table={selected}
                     info={liveFor(selected)!}
                     me={me}
@@ -517,7 +523,10 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
               ) : (
                 <>
                   <fieldset className="group">
-                    <legend>{zone.name}</legend>
+                    <legend>
+                      <i className="zone-dot" style={zoneVars(zone)} aria-hidden="true" />
+                      {zone.name}
+                    </legend>
                     <dl className="facts">
                       <dt>{t('floor.tables')}</dt>
                       <dd className="num">{tables.length}</dd>
@@ -586,6 +595,7 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
         <ZoneDialog
           locationId={locationId}
           zone={dialog.zone}
+          zones={floor?.zones ?? []}
           onClose={() => setDialog(null)}
           onSaved={(saved) => {
             setFloor((f) => f && { ...f, zones: f.zones.some((z) => z.id === saved.id) ? f.zones.map((z) => (z.id === saved.id ? saved : z)) : [...f.zones, saved] });
@@ -607,6 +617,12 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
             setSelectedId(saved.zoneId === zone.id ? saved.id : null);
             setNotice(t('common.saved'));
             setDialog(null);
+          }}
+          onRangeSaved={(result) => {
+            setDialog(null);
+            setError(null);
+            setNotice(rangeNotice(result));
+            if (locationId) void loadFloor(locationId);
           }}
         />
       )}
@@ -797,9 +813,10 @@ function PlanCanvas({
           <button
             key={table.id}
             type="button"
-            className={`plan-table shape-${table.shape.toLowerCase()}${conflicts.has(table.id) ? ' conflict' : ''}${info ? ` live-${info.state}` : ''}`}
+            className={`plan-table zone-stripe shape-${table.shape.toLowerCase()}${conflicts.has(table.id) ? ' conflict' : ''}${info ? ` live-${info.state}` : ''}`}
             aria-pressed={table.id === selectedId}
             style={{
+              ...zoneVars(zone),
               left: (table.x - view.x) * cell,
               top: (table.y - view.y) * cell,
               width: table.w * cell,
@@ -857,6 +874,7 @@ const LIVE_DOT: Record<TableLive['state'], string> = {
 
 /** Fiche d'une table en service : tout ce qu'un serveur fait sans quitter le plan ; les boutons restent en bas. */
 function ServicePanel({
+  zone,
   table,
   info,
   me,
@@ -873,6 +891,7 @@ function ServicePanel({
   onCodeChanged,
   onError,
 }: {
+  zone: Zone;
   table: DiningTable;
   info: TableLive;
   me: Me;
@@ -899,8 +918,12 @@ function ServicePanel({
 
   return (
     <div className="check-detail service-panel">
-      <div className="check-detail-head">
+      <div className="check-detail-head zone-head" style={zoneVars(zone)}>
         <strong>Table {table.label}</strong>
+        <span className="zone-name">
+          <i className="zone-dot" aria-hidden="true" />
+          {zone.name}
+        </span>
         <span className="muted">
           <span className={LIVE_DOT[info.state]}>{LIVE_LABELS[info.state]}</span> · {table.capacity} places
           {check && ` · depuis ${minutesSince(check.openedAt)} min`}
@@ -1047,8 +1070,11 @@ function ZoneSummary({ zone, tables, liveFor, onPick }: { zone: Zone; tables: Di
 
   return (
     <div className="check-detail floor-summary">
-      <div className="check-detail-head">
-        <strong>{zone.name}</strong>
+      <div className="check-detail-head zone-head" style={zoneVars(zone)}>
+        <strong>
+          <i className="zone-dot" aria-hidden="true" />
+          {zone.name}
+        </strong>
         <span className="muted">
           {tables.length} tables · {seats} places
         </span>
@@ -1084,11 +1110,22 @@ function ZoneSummary({ zone, tables, liveFor, onPick }: { zone: Zone; tables: Di
   );
 }
 
-function ZoneDialog({ locationId, zone, onSaved, onClose }: { locationId: string; zone?: Zone; onSaved: (z: Zone) => void; onClose: () => void }) {
+function ZoneDialog({ locationId, zone, zones, onSaved, onClose }: { locationId: string; zone?: Zone; zones: Zone[]; onSaved: (z: Zone) => void; onClose: () => void }) {
   const { t } = useI18n();
-  const [form, setForm] = useState({ name: zone?.name ?? '', planWidth: zone?.planWidth ?? PLAN.defaultWidth, planHeight: zone?.planHeight ?? PLAN.defaultHeight });
+  // Nouvelle zone : la première couleur que les autres zones n'utilisent pas encore.
+  const [form, setForm] = useState(() => {
+    const used = new Set(zones.map((z) => zoneColor(z)));
+    return {
+      name: zone?.name ?? '',
+      planWidth: zone?.planWidth ?? PLAN.defaultWidth,
+      planHeight: zone?.planHeight ?? PLAN.defaultHeight,
+      color: zone ? zoneColor(zone) : (ZONE_COLORS.find((c) => !used.has(c)) ?? ZONE_COLORS[zones.length % ZONE_COLORS.length]!),
+    };
+  });
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  // Couleur posée par l'API hors palette : proposée en plus, pour ne pas la perdre.
+  const palette: string[] = (ZONE_COLORS as readonly string[]).includes(form.color) ? [...ZONE_COLORS] : [...ZONE_COLORS, form.color];
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -1129,6 +1166,27 @@ function ZoneDialog({ locationId, zone, onSaved, onClose }: { locationId: string
           <div className="form">
             <label htmlFor="z-name">{t('floor.zoneName')}</label>
             <input id="z-name" required maxLength={60} autoFocus value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <span className="form-label" id="z-color">
+              Couleur
+            </span>
+            <div>
+              <div className="swatches" role="radiogroup" aria-labelledby="z-color">
+                {palette.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    role="radio"
+                    className="swatch"
+                    style={colorVars(color)}
+                    aria-checked={form.color === color}
+                    aria-label={ZONE_COLOR_NAMES[color as keyof typeof ZONE_COLOR_NAMES] ?? `Couleur ${color}`}
+                    title={ZONE_COLOR_NAMES[color as keyof typeof ZONE_COLOR_NAMES] ?? color}
+                    onClick={() => setForm({ ...form, color })}
+                  />
+                ))}
+              </div>
+              <p className="hint swatch-hint">Liseré des tables de cette zone.</p>
+            </div>
             <label htmlFor="z-width">{t('floor.planWidth')}</label>
             <input id="z-width" type="number" inputMode="numeric" required min={PLAN.minWidth} max={PLAN.maxWidth} value={form.planWidth} onChange={(e) => setForm({ ...form, planWidth: Number(e.target.value) })} />
             <label htmlFor="z-height">{t('floor.planHeight')}</label>
@@ -1140,12 +1198,27 @@ function ZoneDialog({ locationId, zone, onSaved, onClose }: { locationId: string
   );
 }
 
+/** « T3, T4 » ; au-delà de quatre libellés : « T12 à T20 (9) ». */
+function labelList(labels: string[]) {
+  if (labels.length <= 4) return labels.join(', ');
+  return `${labels[0]} à ${labels[labels.length - 1]} (${labels.length})`;
+}
+
+function rangeNotice(result: TablesRangeResult) {
+  const n = result.created.length;
+  const parts = [n === 0 ? 'Aucune table créée.' : n === 1 ? '1 table créée.' : `${n} tables créées.`];
+  if (result.skipped.length > 0) parts.push(`Déjà utilisées, passées : ${labelList(result.skipped)}.`);
+  if (result.full.length > 0) parts.push(`Plus de place dans la zone pour ${labelList(result.full)} : agrandissez le plan puis recommencez.`);
+  return parts.join(' ');
+}
+
 function TableDialog({
   zone,
   zones,
   table,
   suggestion,
   onSaved,
+  onRangeSaved,
   onClose,
 }: {
   zone: Zone;
@@ -1153,6 +1226,7 @@ function TableDialog({
   table?: DiningTable;
   suggestion: string;
   onSaved: (t: DiningTable) => void;
+  onRangeSaved: (result: TablesRangeResult) => void;
   onClose: () => void;
 }) {
   const { t } = useI18n();
@@ -1162,14 +1236,36 @@ function TableDialog({
     shape: table?.shape ?? ('SQUARE' as TableShape),
     zoneId: table?.zoneId ?? zone.id,
   });
+  // Plusieurs tables : la suite commence au prochain numéro libre (« T21 à T30 »).
+  const [many, setMany] = useState(false);
+  const [range, setRange] = useState(() => {
+    const next = Number(/(\d+)$/.exec(suggestion)?.[1] ?? 1);
+    return { prefix: 'T', from: next, to: Math.min(999, next + 9) };
+  });
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+
+  const count = range.to - range.from + 1;
+  const rangeProblem =
+    !Number.isInteger(range.from) || !Number.isInteger(range.to)
+      ? 'Indiquez deux numéros entiers.'
+      : count < 1
+        ? 'Le dernier numéro doit être supérieur ou égal au premier.'
+        : count > TABLES_RANGE_MAX
+          ? `${TABLES_RANGE_MAX} tables au plus en une fois.`
+          : null;
+  const prefix = range.prefix.trim();
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
+      if (!table && many) {
+        if (rangeProblem) return;
+        onRangeSaved(await api<TablesRangeResult>('POST', `/zones/${zone.id}/tables/range`, { prefix, from: range.from, to: range.to, capacity: form.capacity, shape: form.shape }));
+        return;
+      }
       if (!table) {
         onSaved(await api<DiningTable>('POST', `/zones/${zone.id}/tables`, { label: form.label, capacity: form.capacity, shape: form.shape }));
         return;
@@ -1186,12 +1282,12 @@ function TableDialog({
   return (
     <form onSubmit={submit}>
       <Dialog
-        title={table ? `${t('floor.editTable')} — ${table.label}` : `${t('floor.addTable')} — ${zone.name}`}
+        title={table ? `${t('floor.editTable')} — ${table.label}` : `${many ? 'Nouvelles tables' : t('floor.addTable')} — ${zone.name}`}
         onClose={onClose}
         footer={
           <>
-            <button className="btn btn-primary" disabled={busy}>
-              {t('common.save')}
+            <button className="btn btn-primary" disabled={busy || (!table && many && !!rangeProblem)}>
+              {!table && many && !rangeProblem ? `Créer ${count} table${count > 1 ? 's' : ''}` : t('common.save')}
             </button>
             <button type="button" className="btn" onClick={onClose}>
               {t('common.cancel')}
@@ -1201,9 +1297,32 @@ function TableDialog({
       >
         <div className="dialog-body">
           <ErrorMessage error={error} />
+          {!table && (
+            <span className="segmented table-count-choice" role="group" aria-label="Nombre de tables">
+              <button type="button" className="btn" aria-pressed={!many} onClick={() => setMany(false)}>
+                Une table
+              </button>
+              <button type="button" className="btn" aria-pressed={many} onClick={() => setMany(true)}>
+                Plusieurs tables
+              </button>
+            </span>
+          )}
           <div className="form">
-            <label htmlFor="t-label">{t('floor.label')}</label>
-            <input id="t-label" required maxLength={12} autoFocus value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
+            {!table && many ? (
+              <>
+                <label htmlFor="t-prefix">Préfixe</label>
+                <input id="t-prefix" maxLength={6} autoFocus value={range.prefix} onChange={(e) => setRange({ ...range, prefix: e.target.value })} />
+                <label htmlFor="t-from">De</label>
+                <input id="t-from" type="number" inputMode="numeric" required min={0} max={999} value={Number.isNaN(range.from) ? '' : range.from} onChange={(e) => setRange({ ...range, from: e.target.value === '' ? NaN : Number(e.target.value) })} />
+                <label htmlFor="t-to">À</label>
+                <input id="t-to" type="number" inputMode="numeric" required min={0} max={999} value={Number.isNaN(range.to) ? '' : range.to} onChange={(e) => setRange({ ...range, to: e.target.value === '' ? NaN : Number(e.target.value) })} />
+              </>
+            ) : (
+              <>
+                <label htmlFor="t-label">{t('floor.label')}</label>
+                <input id="t-label" required maxLength={12} autoFocus value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} />
+              </>
+            )}
             <label htmlFor="t-capacity">{t('floor.capacity')}</label>
             <input id="t-capacity" type="number" inputMode="numeric" required min={1} max={50} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: Number(e.target.value) })} />
             <label htmlFor="t-shape">{t('floor.shape')}</label>
@@ -1214,6 +1333,20 @@ function TableDialog({
                 </option>
               ))}
             </select>
+            {!table && many && (
+              <p className={rangeProblem ? 'full range-preview range-preview-error' : 'full range-preview'} role="status">
+                {rangeProblem ?? (
+                  <>
+                    <strong>
+                      {prefix}
+                      {range.from}
+                      {count > 1 && ` à ${prefix}${range.to}`}
+                    </strong>{' '}
+                    · {count} table{count > 1 ? 's' : ''} · les libellés déjà utilisés seront passés
+                  </>
+                )}
+              </p>
+            )}
             {table && zones.length > 1 && (
               <>
                 <label htmlFor="t-zone">{t('floor.zone')}</label>

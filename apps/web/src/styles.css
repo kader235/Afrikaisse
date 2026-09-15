@@ -6035,3 +6035,125 @@ table.grid td.empty {
     font-size: 14px;
   }
 }
+
+/* === Couleurs de zone ====================================================
+   Pastille à côté du nom de la zone, liseré en haut des tables. Jamais de texte posé
+   sur la couleur : l'état en service garde la bordure et le texte, la zone a son propre trait. */
+.zone-dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-inline-end: 8px;
+  border-radius: 50%;
+  background: var(--zone, var(--muted));
+  vertical-align: middle;
+}
+
+/* Le plan place ses tables en absolu : seules les tuiles en grille deviennent relatives. */
+.zone-stripe {
+  overflow: hidden;
+}
+
+.take-table.zone-stripe,
+.pick-table.zone-stripe {
+  position: relative;
+}
+
+.zone-stripe::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--zone, transparent);
+  pointer-events: none;
+}
+
+/* Table ronde : un trait court sous le haut du cercle, sinon il serait rogné. */
+.plan-table.shape-round.zone-stripe::before {
+  top: 12%;
+  left: 34%;
+  right: 34%;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.zone-head {
+  box-shadow: inset 0 4px 0 var(--zone, transparent);
+}
+
+.zone-name {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.form > .form-label {
+  color: var(--text-soft);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: -8px;
+}
+
+.swatch {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  margin: 0 0 8px;
+  margin-inline-end: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--zone);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.swatch[aria-checked='true'] {
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--zone);
+}
+
+.swatch:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 5px;
+}
+
+.swatch:focus:not(:focus-visible) {
+  outline: 0;
+}
+
+.form .swatch-hint {
+  grid-column: auto;
+  margin: 10px 0 0;
+}
+
+.table-count-choice {
+  display: inline-flex;
+  margin-bottom: 16px;
+}
+
+.range-preview {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--band);
+  color: var(--text-soft);
+}
+
+.range-preview strong {
+  color: var(--text);
+}
+
+.range-preview-error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
