@@ -51,12 +51,15 @@ const locationFields = {
   /** Minutes après minuit : les ventes avant cette heure comptent pour la veille. */
   businessDayCutoffMin: z.number().int().min(0).max(720),
   operatingMode: z.enum(OPERATING_MODES),
+  /** Logo : une image déjà téléversée (`POST /locations/:id/media`) ; null le retire. */
+  logoMediaId: z.uuid().nullable(),
 };
 
 export const createLocationSchema = z.object({
   ...locationFields,
   address: locationFields.address.default(null),
   phone: locationFields.phone.default(null),
+  logoMediaId: locationFields.logoMediaId.default(null),
   businessDayCutoffMin: locationFields.businessDayCutoffMin.default(300),
   operatingMode: locationFields.operatingMode.default('CLOUD'),
 });
@@ -169,6 +172,8 @@ export const locationDetailsSchema = z.object({
   country: z.string(),
   address: z.string().nullable(),
   phone: z.string().nullable(),
+  logoMediaId: z.string().nullable(),
+  logoUrl: z.string().nullable(),
   businessDayCutoffMin: z.number(),
   operatingMode: z.enum(OPERATING_MODES),
   status: z.enum(RECORD_STATUSES),

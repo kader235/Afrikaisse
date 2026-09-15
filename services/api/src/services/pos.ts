@@ -367,12 +367,12 @@ export async function getReceipt(ctx: AppContext, scope: TenantScope, paymentId:
   const place = await ctx.db
     .selectFrom('locations as l')
     .innerJoin('tenants as t', 't.id', 'l.tenant_id')
-    .select(['l.name', 'l.address', 'l.phone', 'l.currency', 't.name as organization'])
+    .select(['l.name', 'l.address', 'l.phone', 'l.currency', 'l.logo_media_id', 't.name as organization'])
     .where('l.id', '=', row.location_id)
     .executeTakeFirstOrThrow();
   return {
     payment: payment!,
-    location: { name: place.name, address: place.address, phone: place.phone, currency: place.currency },
+    location: { name: place.name, address: place.address, phone: place.phone, currency: place.currency, logoUrl: place.logo_media_id ? `/api/media/${place.logo_media_id}` : null },
     organization: place.organization,
     cashier: payment!.by,
     orders,

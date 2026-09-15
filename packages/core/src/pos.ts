@@ -223,7 +223,7 @@ export type CashSessionListItem = z.infer<typeof cashSessionListSchema>[number];
 
 export const receiptSchema = z.object({
   payment: paymentSchema,
-  location: z.object({ name: z.string(), address: z.string().nullable(), phone: z.string().nullable(), currency: z.enum(CURRENCY_CODES) }),
+  location: z.object({ name: z.string(), address: z.string().nullable(), phone: z.string().nullable(), currency: z.enum(CURRENCY_CODES), logoUrl: z.string().nullable() }),
   organization: z.string(),
   cashier: z.string().nullable(),
   orders: z.array(orderSchema),

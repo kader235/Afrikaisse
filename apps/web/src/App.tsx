@@ -1,6 +1,6 @@
 import { LogoAfrikaisse } from './logo.tsx';
 import { useEffect, useState } from 'react';
-import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse } from '@afrikaisse/core';
+import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse, type SetupStatus } from '@afrikaisse/core';
 import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
 import { useI18n } from './i18n.tsx';
 import { ROLE_LABELS } from './labels.ts';
@@ -16,6 +16,7 @@ import { KitchenPage } from './pages/Kitchen.tsx';
 import { DashboardPage } from './pages/Dashboard.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
+import { OnboardingWizard } from './pages/Onboarding.tsx';
 import { useActivityFeed } from './activity.ts';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
@@ -224,6 +225,21 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     setPanel(null);
   };
 
+  // Assistant de mise en route : s'ouvre seul sur un restaurant neuf (une fois par session), se rouvre depuis Paramètres.
+  const setupLocationId = can('location.manage') && me.tenantAccess === 'OK' ? (me.locations[0]?.id ?? null) : null;
+  const [setupOpen, setSetupOpen] = useState(false);
+  useEffect(() => {
+    if (!setupLocationId || setupDismissed(setupLocationId)) return;
+    api<SetupStatus>('GET', `/locations/${setupLocationId}/setup`).then(
+      (s) => s.completedAt === null && !s.isDemo && s.tables === 0 && s.products === 0 && setSetupOpen(true),
+      () => undefined,
+    );
+  }, [setupLocationId]);
+  const closeSetup = () => {
+    if (setupLocationId) dismissSetup(setupLocationId);
+    setSetupOpen(false);
+  };
+
   // Pas d'organisation utilisable : choix ou explication, jamais un écran vide.
   if (me.tenantAccess !== 'OK' && !(me.user.isPlatformAdmin && me.memberships.length === 0)) {
     const others = me.memberships.filter((m) => m.tenantId !== me.tenant?.id);
@@ -317,7 +333,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
         {current === 'reports' && <ReportsPage />}
         {current === 'stock' && <StockPage me={me} />}
-        {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
+        {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} onOpenSetup={setupLocationId ? () => setSetupOpen(true) : undefined} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
         {current === 'floor' && <FloorPage me={me} feed={feed} />}
         {current === 'menu' && <MenuPage me={me} />}
@@ -354,6 +370,20 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         <StatusClock locale={lang === 'ar' ? 'ar-TD' : lang === 'en' ? 'en-GB' : 'fr-FR'} />
         <span>AfriKaisse {health?.version ?? APP_VERSION}</span>
       </footer>
+
+      {setupOpen && setupLocationId && (
+        <OnboardingWizard
+          me={me}
+          locationId={setupLocationId}
+          onChanged={reloadMe}
+          onClose={closeSetup}
+          onFinished={() => {
+            closeSetup();
+            void reloadMe();
+            open('dashboard');
+          }}
+        />
+      )}
 
       {panel && (
         <SidePanel
@@ -511,6 +541,24 @@ function StatusClock({ locale }: { locale: string }) {
       {now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
     </span>
   );
+}
+
+const SETUP_DISMISSED = 'afk.setup.closed.';
+
+function setupDismissed(locationId: string): boolean {
+  try {
+    return sessionStorage.getItem(SETUP_DISMISSED + locationId) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function dismissSetup(locationId: string) {
+  try {
+    sessionStorage.setItem(SETUP_DISMISSED + locationId, '1');
+  } catch {
+    /* stockage indisponible : l'assistant pourra se rouvrir au prochain chargement */
+  }
 }
 
 const nDays = (n: number) => `${n} jour${n > 1 ? 's' : ''}`;

@@ -675,7 +675,7 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
     .innerJoin('dining_tables as t', 't.id', 'q.table_id')
     .innerJoin('locations as l', 'l.id', 'q.location_id')
     .innerJoin('tenants as o', 'o.id', 'q.tenant_id')
-    .select(['q.location_id', 't.label', 't.status as table_status', 'l.name as location_name', 'l.type', 'l.currency', 'l.status as location_status', 'o.name as tenant_name', 'o.status as tenant_status'])
+    .select(['q.location_id', 't.label', 't.status as table_status', 'l.name as location_name', 'l.type', 'l.currency', 'l.logo_media_id', 'l.status as location_status', 'o.name as tenant_name', 'o.status as tenant_status'])
     .where('q.token', '=', token)
     .where('q.revoked_at', 'is', null)
     .executeTakeFirst();
@@ -686,7 +686,7 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
   const option = (o: { id: string; name: string; price_delta: number; is_available: 0 | 1 }) => ({ id: o.id, name: o.name, priceDelta: o.price_delta, isAvailable: bool(o.is_available) });
 
   return {
-    restaurant: { name: found.location_name, organization: found.tenant_name, type: found.type, currency: found.currency },
+    restaurant: { name: found.location_name, organization: found.tenant_name, type: found.type, currency: found.currency, logoUrl: mediaUrl(found.logo_media_id) },
     table: { label: found.label },
     categories: visibleCategories
       .map((c) => ({

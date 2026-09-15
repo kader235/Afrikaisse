@@ -254,6 +254,8 @@ export type QrCode = z.infer<typeof qrCodeSchema>;
 export const qrListSchema = z.object({
   locationName: z.string(),
   organizationName: z.string(),
+  /** Logo de l'établissement pour les chevalets ; null sans logo. */
+  logoUrl: z.string().nullable(),
   menuBaseUrl: z.string(),
   /** Faux : l'adresse n'est joignable que depuis le réseau du restaurant (le client devrait rejoindre son Wi-Fi). */
   reachableFromInternet: z.boolean(),
@@ -286,6 +288,7 @@ export const publicMenuSchema = z.object({
     organization: z.string(),
     type: z.enum(LOCATION_TYPES),
     currency: z.enum(CURRENCY_CODES),
+    logoUrl: z.string().nullable(),
   }),
   table: z.object({ label: z.string() }),
   categories: z.array(z.object({ id: z.string(), name: z.string(), products: z.array(publicProductSchema) })),

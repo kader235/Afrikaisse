@@ -5,7 +5,7 @@ import type { QrList } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { LogoAfrikaisse } from '../logo.tsx';
-import { isNativeApp } from '../platform.ts';
+import { isNativeApp, mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage } from '../ui.tsx';
 
 type Code = QrList['codes'][number];
@@ -180,6 +180,7 @@ function TableCard({ code, list, svg }: { code: Code; list: QrList; svg: string 
   return (
     <div className="table-card">
       <div className="table-card-head">
+        {list.logoUrl && <img className="table-card-logo" src={mediaSrc(list.logoUrl)} alt="" />}
         <span className="table-card-name">{list.locationName}</span>
         {place && <span className="table-card-place">{place}</span>}
       </div>

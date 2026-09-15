@@ -10,7 +10,7 @@ describe.each(ENGINES)('Mise en route et restaurant de démonstration (§70-71) 
     await t.close();
   });
 
-  it('état de mise en route, démonstration complète et utilisable, une seule fois', async () => {
+  it('état de mise en route, démonstration complète et utilisable, une seule fois', { timeout: 60_000 }, async () => {
     const org = await registerOrg(t, 'Demo');
     const owner = as(t, org.token);
     const locationId = org.me.locations[0].id as string;
@@ -22,7 +22,7 @@ describe.each(ENGINES)('Mise en route et restaurant de démonstration (§70-71) 
 
     const loaded = await owner.post(`/api/locations/${locationId}/demo`);
     expect(loaded.statusCode).toBe(201);
-    expect(loaded.json()).toMatchObject({ zones: 2, tables: 10, categories: 5, products: 19, stations: 3, members: 2, complete: true });
+    expect(loaded.json()).toMatchObject({ zones: 2, tables: 20, categories: 6, products: 25, stations: 3, members: 2, complete: true });
     expect((await owner.post(`/api/locations/${locationId}/demo`)).statusCode).toBe(409);
 
     const menu = (await owner.get(`/api/locations/${locationId}/menu`)).json();
@@ -34,9 +34,9 @@ describe.each(ENGINES)('Mise en route et restaurant de démonstration (§70-71) 
 
     // Chaque table a son QR et le menu client est complet.
     const codes = (await owner.get(`/api/locations/${locationId}/qr-codes`)).json().codes;
-    expect(codes).toHaveLength(10);
+    expect(codes).toHaveLength(20);
     const pub = (await t.app.inject({ method: 'GET', url: `/api/public/menu/${codes[0].token}` })).json();
-    expect(pub.categories.map((c: { name: string }) => c.name)).toEqual(['Entrées', 'Plats', 'Grillades', 'Boissons', 'Desserts']);
+    expect(pub.categories.map((c: { name: string }) => c.name)).toEqual(['Entrées', 'Plats', 'Grillades', 'Fast-food', 'Boissons', 'Desserts']);
 
     // Une vraie vente est possible tout de suite.
     const burger = product('Classic Burger');

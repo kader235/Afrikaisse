@@ -199,6 +199,16 @@ Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` 
   `packages/core/src/plans.ts`, pas en base : changer une offre ne demande aucune migration.
 - Révocation d'un serveur local : `devices.status = 'REVOKED'` et `secret_hash` effacé.
 
+### Mise en route et démonstration — §70-71 (migration `0015_onboarding`, en place)
+- `locations.logo_media_id` : logo (une ligne de `media`), repris sur le reçu, les chevalets QR et le menu client.
+- `locations.setup_skipped` : étapes de l'assistant passées par le propriétaire (tableau JSON) ;
+  null = assistant jamais commencé. Tout le reste de l'avancement se **calcule** depuis les données
+  (tables, produits, membres, imprimantes, journal `setup.test_completed`).
+- `locations.setup_completed_at` : assistant terminé (il ne s'ouvre plus tout seul).
+- Colonnes nullables sans valeur calculée, synchronisées avec la ligne de l'établissement.
+- Démonstration : `tenants.is_demo = 1` et `plan_expires_at` null ; aucune table dédiée, tout le
+  contenu passe par les services (commandes, paiements, caisses datés dans le passé).
+
 ### Supervision — à venir
 - `sync_events` (déjà là), `sync_cursors` (device_id, stream, last_seq), `sync_conflicts` (event_id, entity, local, remote, resolution)
 - `notifications` (location_id, audience, kind, payload, read_at)

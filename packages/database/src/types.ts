@@ -39,6 +39,11 @@ export interface LocationsTable {
   operating_mode: OperatingMode;
   address: string | null;
   phone: string | null;
+  /** Logo (media) : reçus, chevalets QR, menu client. */
+  logo_media_id: string | null;
+  /** Assistant de mise en route : étapes passées (tableau JSON) ; null = jamais commencé. */
+  setup_skipped: string | null;
+  setup_completed_at: number | null;
   status: 'ACTIVE' | 'ARCHIVED';
   created_at: number;
   updated_at: number;
