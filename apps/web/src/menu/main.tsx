@@ -7,7 +7,6 @@ import '@fontsource/roboto/latin-ext-400.css';
 import '@fontsource/roboto/latin-ext-500.css';
 import '@fontsource/roboto/latin-ext-700.css';
 import './menu.css';
-import './menu-extra.css';
 
 // Point d'entrée séparé du logiciel de gestion : le client en 3G ne télécharge que le menu.
 createRoot(document.getElementById('menu-root')!).render(<MenuApp />);
