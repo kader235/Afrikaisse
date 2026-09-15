@@ -16,7 +16,9 @@ import { ALLERGEN_LABELS, choiceRule } from '../allergens.ts';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { compressImage } from '../images.ts';
+import { useDishPhoto } from '../dishPhotos.ts';
 import { mediaSrc } from '../platform.ts';
+import { isTablet } from '../touch.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
 import { QrTab } from './Qr.tsx';
 import { CatalogueImport } from './CatalogueImport.tsx';
@@ -188,6 +190,8 @@ function swap(ids: string[], index: number, dir: -1 | 1): string[] | null {
 }
 
 function ProductsTab({ menu, canManage, canAvailability, save, act, onRefresh }: { menu: AdminMenu; canManage: boolean; canAvailability: boolean; save: Save; act: Save; onRefresh: () => void }) {
+  // Tablette : un plat sans photo montre la photo d'exemple que voient les clients, pâlie et signalée.
+  const samplePhoto = useDishPhoto(isTablet());
   const { t } = useI18n();
   const [categoryId, setCategoryId] = useState<string | null>(menu.categories[0]?.id ?? null);
   const [productId, setProductId] = useState<string | null>(null);
@@ -332,9 +336,18 @@ function ProductsTab({ menu, canManage, canAvailability, save, act, onRefresh }:
               )}
               {products.map((p) => (
                 <tr key={p.id} className="selectable" aria-selected={p.id === productId} onClick={() => setProductId(p.id)} onDoubleClick={() => canManage && setDialog({ kind: 'product', product: p })}>
-                  <td>{p.photoUrl ? <img className="thumb" src={mediaSrc(p.photoUrl)} alt="" loading="lazy" /> : <span className="thumb" />}</td>
+                  <td>
+                    {p.photoUrl ? (
+                      <img className="thumb" src={mediaSrc(p.photoUrl)} alt="" loading="lazy" />
+                    ) : samplePhoto(p.name) ? (
+                      <img className="thumb thumb-sample" src={samplePhoto(p.name)!} alt="" title="Photo d'exemple" loading="lazy" />
+                    ) : (
+                      <span className="thumb" />
+                    )}
+                  </td>
                   <td>
                     {p.name}
+                    {!p.photoUrl && samplePhoto(p.name) && <span className="sample-note">Photo d'exemple</span>}
                     {p.tags.map((tag) => (
                       <span className="tag" key={tag}>
                         {tag}

@@ -203,6 +203,17 @@
   color: var(--text);
 }
 
+.take-product-foot {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Photo et bouton rond : réservés à la tablette (voir la fin du fichier). */
+.take-product-photo,
+.take-product-add {
+  display: none;
+}
+
 .take-product-qty {
   position: absolute;
   top: 12px;
@@ -467,4 +478,337 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* === Tablette : langage du menu client (cartes blanches arrondies, ombres douces) ===========
+ * Validé avec le menu QR : fond #F5F7FB, cartes 16 à 22 px, prix en bleu foncé, « + » rond bleu.
+ * La colonne de commande reste bleu nuit ; ses lignes deviennent des cartes translucides.
+ * Tout est sous `.tablette` : la prise de commande dans un navigateur de PC ne change pas.
+ */
+.tablette .take {
+  grid-template-columns: 300px minmax(0, 1fr) 380px;
+  background: var(--bg);
+}
+
+.tablette .take-tables {
+  background: transparent;
+  border-inline-end: 0;
+}
+
+.tablette .take-head {
+  padding: 18px 18px 8px;
+}
+
+.tablette .take-head h2 {
+  font-size: 21px;
+}
+
+.tablette .take-zone {
+  margin: 12px 18px 8px;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.tablette .take-table-grid {
+  grid-gap: 12px;
+  padding: 2px 18px 16px;
+}
+
+.tablette .take-table {
+  height: 88px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .take-table span {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+/* État en texte de couleur ; un fin liseré intérieur distingue les tables occupées au premier coup d'œil. */
+.tablette .take-table.busy {
+  box-shadow: inset 0 0 0 2px var(--border-strong), var(--shadow-card);
+}
+
+.tablette .take-table.busy span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tablette .take-table.ready {
+  box-shadow: inset 0 0 0 2px var(--ok), var(--shadow-card);
+}
+
+.tablette .take-table.ready span {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.tablette .take-table.call {
+  box-shadow: inset 0 0 0 2px var(--danger), var(--shadow-card);
+}
+
+.tablette .take-table.call span {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.tablette .take-table[aria-pressed='true'] {
+  border: 0;
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 3px var(--primary), var(--shadow-card);
+}
+
+/* Catégories : boutons blancs arrondis, la catégorie ouverte en bleu plein (comme le menu client). */
+.tablette .take-cats {
+  padding: 14px 12px 6px;
+  background: transparent;
+  border-bottom: 0;
+}
+
+.tablette .take-cats button {
+  height: 50px;
+  margin-inline-end: 10px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  font-size: 16px;
+}
+
+.tablette .take-cats button[aria-pressed='true'] {
+  background: var(--primary);
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.22);
+  color: #ffffff;
+}
+
+.tablette .take-products {
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  grid-gap: 14px;
+  padding: 12px 18px 20px;
+}
+
+.tablette .take-product {
+  justify-content: flex-start;
+  min-height: 118px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .take-product:active:not(:disabled),
+.tablette .take-product.in-ticket {
+  box-shadow: inset 0 0 0 2px var(--primary), var(--shadow-card);
+}
+
+.tablette .take-product-photo {
+  display: block;
+  flex: none;
+  width: 100%;
+  height: 118px;
+  background: var(--fill);
+  object-fit: cover;
+}
+
+.tablette .take-product-name {
+  display: -webkit-box;
+  margin: 12px 14px 0;
+  padding: 0;
+  overflow: hidden;
+  font-size: 17px;
+  line-height: 1.3;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.tablette .take-product-foot {
+  flex-direction: row;
+  align-items: center;
+  margin-top: auto;
+  padding: 8px 12px 12px 14px;
+}
+
+.tablette .take-product-price,
+.tablette .take-product-out {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--primary-strong);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tablette .take-product-out {
+  color: var(--danger);
+  font-size: 16px;
+}
+
+.tablette .take-product-add {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin-inline-start: 8px;
+  border-radius: 15px;
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.tablette .take-product-add .ico {
+  width: 26px;
+  height: 26px;
+}
+
+.tablette .take-product:disabled .take-product-add {
+  background: var(--border-strong);
+}
+
+.tablette .take-product.out .take-product-photo,
+.tablette .take-product.out .take-product-name {
+  opacity: 0.5;
+}
+
+.tablette .take-product-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border-strong);
+}
+
+.tablette .take-product-blank .ico {
+  width: 34px;
+  height: 34px;
+}
+
+/* Quantité déjà commandée : chiffre bleu à gauche du bouton « + », sans pastille. */
+.tablette .take-product-qty {
+  top: auto;
+  bottom: 23px;
+  inset-inline-end: 68px;
+  color: var(--primary);
+  font-size: 18px;
+}
+
+.tablette .take-product.in-ticket .take-product-price {
+  padding-inline-end: 44px;
+}
+
+/* Colonne de commande bleu nuit : lignes en cartes translucides, sélecteur de quantité arrondi. */
+.tablette .take-ticket-head {
+  padding: 20px 22px 10px;
+  background: transparent;
+  border-bottom: 0;
+}
+
+.tablette .take-ticket-head h2 {
+  font-size: 26px;
+}
+
+.tablette .take-lines {
+  padding: 4px 0 8px;
+}
+
+.tablette .take-line {
+  margin: 0 14px 10px;
+  padding: 14px 14px 12px 16px;
+  border-bottom: 0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.tablette .take-line-top {
+  align-items: baseline;
+}
+
+.tablette .take-line-top span {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.tablette .take-qty {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tablette .take-qty button {
+  width: 52px;
+  height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tablette .take-qty b {
+  min-width: 52px;
+}
+
+.tablette .take-foot {
+  padding: 14px 20px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tablette .take-send {
+  height: 68px;
+  border-radius: 20px;
+  background: #2563eb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  font-size: 20px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .take-send:disabled {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+.tablette .take-queue-error button {
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 1000px) {
+  .tablette .take {
+    grid-template-columns: minmax(0, 1fr) 330px;
+  }
+
+  .tablette .take-tables {
+    border-bottom: 0;
+  }
+
+  .tablette .take-table-grid {
+    padding: 14px 0 6px 14px;
+  }
+
+  .tablette .take-table {
+    width: 100px;
+    height: 80px;
+    margin-inline-end: 10px;
+  }
+
+  .tablette .take-cats {
+    padding-top: 8px;
+  }
+
+  .tablette .take-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 10px 14px 18px;
+  }
+
+  .tablette .take-product-photo {
+    height: 104px;
+  }
 }

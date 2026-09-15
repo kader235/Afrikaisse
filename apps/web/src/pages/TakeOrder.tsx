@@ -16,6 +16,9 @@ import {
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { dropQueuedOrder, isOffline, queueOrder, readCache, saveCache, useQueuedOrders } from '../offline.ts';
+import { useDishPhoto } from '../dishPhotos.ts';
+import { mediaSrc } from '../platform.ts';
+import { isTablet } from '../touch.ts';
 import { ErrorMessage, Icon } from '../ui.tsx';
 import { OptionsDialog, nextKey, ticketPricing, toPricing, type TicketLine } from './Pos.tsx';
 import '../styles/take-order.css';
@@ -133,6 +136,11 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
   const categories = useMemo(() => (menu ? [...menu.categories].sort((a, b) => a.sort - b.sort) : []), [menu]);
   const activeCategory = categoryId ?? categories[0]?.id ?? null;
   const products = useMemo(() => (menu ? menu.products.filter((p) => p.categoryId === activeCategory).sort((a, b) => a.sort - b.sort) : []), [menu, activeCategory]);
+  // Plat sans photo : photo d'exemple du catalogue (tablette seulement ; une vraie photo n'est jamais remplacée).
+  const samplePhoto = useDishPhoto(isTablet());
+  const photoOf = (p: Product) => (p.photoUrl ? mediaSrc(p.photoUrl) : samplePhoto(p.name));
+  // Une catégorie avec des photos garde des tuiles de même hauteur : emplacement vide pour les plats sans photo.
+  const withPhotos = products.some((p) => photoOf(p));
   const inTicket = useMemo(() => {
     const counts = new Map<string, number>();
     for (const l of lines) counts.set(l.productId, (counts.get(l.productId) ?? 0) + l.quantity);
@@ -253,10 +261,28 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
           <div className="take-products">
             {products.map((p) => {
               const qty = inTicket.get(p.id) ?? 0;
+              const photo = photoOf(p);
               return (
-                <button key={p.id} className="take-product" disabled={!p.isAvailable || !tableId} onClick={() => tap(p)}>
+                <button key={p.id} className={`take-product${p.isAvailable ? '' : ' out'}${qty > 0 ? ' in-ticket' : ''}`} disabled={!p.isAvailable || !tableId} onClick={() => tap(p)}>
+                  {/* Photo et bouton rond : affichés seulement sur la tablette (styles/take-order.css). */}
+                  {photo ? (
+                    <img className="take-product-photo" src={photo} alt="" loading="lazy" />
+                  ) : (
+                    withPhotos && (
+                      <span className="take-product-photo take-product-blank" aria-hidden="true">
+                        <Icon name="kitchen" />
+                      </span>
+                    )
+                  )}
                   <span className="take-product-name">{p.name}</span>
-                  {p.isAvailable ? <span className="take-product-price">{money(p.promoPrice ?? p.price)}</span> : <span className="take-product-out">Épuisé</span>}
+                  <span className="take-product-foot">
+                    {p.isAvailable ? <span className="take-product-price">{money(p.promoPrice ?? p.price)}</span> : <span className="take-product-out">Épuisé</span>}
+                    {p.isAvailable && (
+                      <span className="take-product-add" aria-hidden="true">
+                        <Icon name="add" />
+                      </span>
+                    )}
+                  </span>
                   {qty > 0 && <span className="take-product-qty">×{qty}</span>}
                 </button>
               );

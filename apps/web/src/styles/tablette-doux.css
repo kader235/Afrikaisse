@@ -1,0 +1,1508 @@
+/*
+ * Tablette « douce » : le langage du menu client QR (menu/menu.css, maquette-client-bleu.html) appliqué
+ * à toute l'application du personnel, avec notre bleu.
+ * Fond #F5F7FB, cartes blanches arrondies (16 à 22 px) à ombre douce au lieu des cadres gris,
+ * champs et boutons arrondis, libellés en minuscules, fenêtres à en-tête clair (plus de barre de titre bleue).
+ * Gardés : le bandeau bleu nuit à onglets, la carte bleue du tableau de bord, la colonne bleu nuit de la commande.
+ * Règles de Kader : textes grands et foncés, pas de texte sur une pastille colorée (sauf bouton principal et
+ * choix sélectionné), pas d'ornement.
+ * Chargée après tablette.css, tout sous `.tablette` : la version PC ne change pas.
+ * WebView Chrome 83 : pas de gap sur flexbox, pas de :has(), pas de inset ni de rayons logiques.
+ */
+
+/* === Jetons ============================================================= */
+:root.tablette {
+  --radius: 14px;
+  --radius-panel: 20px;
+  --radius-small: 12px;
+}
+
+:root.tablette[data-theme='light'] {
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --band: #f5f7fb;
+  --zebra: #ffffff;
+  --hover: #f1f4fa;
+  --fill: #eef1f6;
+  --column: rgba(15, 32, 68, 0.035);
+  --border: #e4e9f2;
+  --border-strong: #d5dce8;
+  --line: #e9edf4;
+  --text: #0f1f40;
+  --text-soft: #5b6478;
+  --muted: #5b6478;
+  --primary: #1d4ed8;
+  --primary-hover: #1a43bd;
+  --primary-strong: #1e3a8a;
+  --primary-soft: #eef3ff;
+  --primary-line: #bcd0fb;
+  --input: #ffffff;
+  --input-border: #d5dce8;
+  --readonly: #f5f7fb;
+  --grid-head: #ffffff;
+  --focus-ring: rgba(29, 78, 216, 0.16);
+  --overlay: rgba(15, 31, 64, 0.45);
+  --danger-line: #f1c9c9;
+  --shadow-card: 0 2px 10px rgba(15, 32, 68, 0.05);
+  --shadow-lift: 0 4px 14px rgba(15, 32, 68, 0.07);
+  --shadow-pop: 0 10px 30px rgba(15, 32, 68, 0.18);
+  --shadow-primary: 0 6px 16px rgba(29, 78, 216, 0.22);
+  --disabled: #c3cbd9;
+}
+
+:root.tablette[data-theme='dark'] {
+  --bg: #0b1220;
+  --surface: #141d30;
+  --band: #111a2b;
+  --zebra: #141d30;
+  --hover: #1b2539;
+  --fill: #1b2539;
+  --column: rgba(255, 255, 255, 0.025);
+  --border: #243049;
+  --border-strong: #34425e;
+  --line: #1f2a40;
+  --text: #e7ecf6;
+  --text-soft: #9aa5ba;
+  --muted: #9aa5ba;
+  --input: #111a2b;
+  --input-border: #34425e;
+  --readonly: #111a2b;
+  --grid-head: #141d30;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-primary: none;
+  --disabled: #34425e;
+}
+
+.tablette body {
+  background: var(--bg);
+  font-size: 16px;
+}
+
+.tablette h1,
+.tablette h2,
+.tablette h3 {
+  font-weight: 800;
+}
+
+.tablette strong,
+.tablette b {
+  font-weight: 700;
+}
+
+.tablette .hint,
+.tablette .panel-note,
+.tablette .page-meta,
+.tablette .page-head > div:first-child > p {
+  font-size: 14px;
+}
+
+/* === Bandeau bleu nuit : onglet actif en bouton clair arrondi, plus de soulignement ===== */
+.tablette .topnav {
+  align-items: center;
+  padding: 0 4px;
+}
+
+.tablette .topnav-item {
+  height: 48px;
+  margin: 0 2px;
+  padding: 0 16px;
+  border-bottom: 0;
+  border-radius: 14px;
+}
+
+.tablette .topnav-item[aria-current='page'] {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.tablette .topbar-user,
+.tablette .topbar-bell {
+  border-radius: 14px;
+}
+
+@media (max-width: 1000px) {
+  .tablette .topnav-item {
+    height: 54px;
+    padding: 0 12px;
+  }
+}
+
+/* === Boutons : blancs à ombre douce, principal en bleu plein, jamais en capitales ======= */
+.tablette .btn {
+  height: 50px;
+  padding: 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .btn .ico {
+  color: var(--primary);
+}
+
+.tablette .btn:hover:not(:disabled) {
+  background: var(--hover);
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .btn:active:not(:disabled) {
+  background: var(--primary-soft);
+}
+
+.tablette .btn:disabled {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: none;
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+.tablette .btn:disabled .ico {
+  color: inherit;
+}
+
+.tablette .btn-primary,
+.tablette .btn-primary:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
+  color: #ffffff;
+}
+
+.tablette .btn-primary .ico {
+  color: inherit;
+}
+
+.tablette .btn-primary:active:not(:disabled) {
+  border-color: var(--primary-strong);
+  background: var(--primary-strong);
+}
+
+.tablette .btn-primary:disabled {
+  border-color: var(--disabled);
+  background: var(--disabled);
+  color: #ffffff;
+  opacity: 1;
+}
+
+:root.tablette[data-theme='dark'] .btn-primary,
+:root.tablette[data-theme='dark'] .btn-primary:hover:not(:disabled) {
+  color: #0b1627;
+}
+
+.tablette .btn-danger,
+.tablette .btn-danger .ico {
+  color: var(--danger);
+}
+
+.tablette .btn-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}
+
+/* Boutons à pictogramme seul ou de taille fixe : sans la marge intérieure des boutons à libellé. */
+.tablette .btn-icon,
+.tablette .qty .btn,
+.tablette .cat-panel-head .btn,
+.tablette .nudge .btn {
+  padding: 0;
+}
+
+.tablette .pos-tools .btn {
+  padding: 0 12px;
+}
+
+.tablette .pos-tools .pos-collect {
+  min-width: 0;
+}
+
+.tablette .pos-tools .btn-icon {
+  width: 52px;
+  padding: 0;
+}
+
+.tablette .icon-btn {
+  border-radius: 14px;
+}
+
+.tablette .row-link {
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Choix exclusif : fond gris arrondi, le choix actif en bouton blanc (sélecteur de quantité du menu). */
+.tablette .segmented {
+  padding: 4px;
+  border-radius: 16px;
+  background: var(--fill);
+}
+
+.tablette .segmented .btn,
+.tablette .segmented .btn + .btn,
+.tablette .segmented .btn:first-child,
+.tablette .segmented .btn:last-child {
+  height: 44px;
+  margin: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-soft);
+}
+
+.tablette .segmented .btn[aria-pressed='true'] {
+  background: var(--surface);
+  box-shadow: 0 1px 4px rgba(15, 32, 68, 0.1);
+  color: var(--text);
+}
+
+.tablette .page-actions .segmented .btn + .btn {
+  margin: 0;
+}
+
+/* Choix à cocher : cartes arrondies ; sélection = cadre bleu sur fond bleu très pâle. */
+.tablette .chip,
+.tablette .chip-tab {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tablette .chip[aria-pressed='true'],
+.tablette .chip-tab[aria-current='true'] {
+  border: 1px solid var(--primary);
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 1px var(--primary);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tablette .chip-tab[aria-current='true'] .count-pill {
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+.tablette .chips {
+  margin: -4px;
+}
+
+.tablette .chips > * {
+  margin: 4px;
+}
+
+/* === Champs ============================================================= */
+.tablette input:not([type='checkbox']):not([type='radio']),
+.tablette select,
+.tablette textarea {
+  border: 1px solid var(--input-border);
+  border-radius: 14px;
+  background-color: var(--input);
+}
+
+.tablette input:not([type='checkbox']):not([type='radio']),
+.tablette select {
+  height: 52px;
+  padding-inline-start: 16px;
+  padding-inline-end: 12px;
+  font-size: 16px;
+}
+
+.tablette textarea {
+  padding: 12px 16px;
+  font-size: 16px;
+}
+
+.tablette input:focus,
+.tablette select:focus,
+.tablette textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.tablette input[type='checkbox'],
+.tablette input[type='radio'] {
+  width: 22px;
+  height: 22px;
+}
+
+.tablette .pos-search input:not([type='checkbox']):not([type='radio']) {
+  padding-inline-start: 46px;
+}
+
+.tablette .form .qty {
+  justify-self: start;
+}
+
+.tablette .pos-search .ico {
+  left: 16px;
+}
+
+.tablette[dir='rtl'] .pos-search .ico {
+  right: 16px;
+  left: auto;
+}
+
+.tablette .form > label {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* === Messages : carte blanche, texte coloré, sans cadre ================= */
+.tablette .msg {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 15px;
+}
+
+.tablette .msg::before {
+  top: 14px;
+}
+
+.tablette .alert-card {
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .alert-text span {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+/* === Pages, cartes, panneaux ============================================ */
+.tablette .workspace {
+  padding: 18px 20px;
+}
+
+.tablette .workspace.workspace-bleed {
+  padding: 0;
+}
+
+.tablette .page-head h1 {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.tablette .page-card,
+.tablette .panel,
+.tablette fieldset.group {
+  border: 0;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .panel-header {
+  min-height: 58px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.tablette .panel-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tablette .panel-body {
+  padding: 18px 20px;
+}
+
+.tablette .panel-empty,
+.tablette .empty-state {
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.tablette fieldset.group {
+  padding: 18px 20px;
+}
+
+.tablette fieldset.group > legend {
+  width: calc(100% + 40px);
+  margin: -18px -20px 12px;
+  padding: 16px 20px 0;
+  border-bottom: 0;
+  background: none;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette fieldset.group > legend small,
+.tablette fieldset.group > legend .muted {
+  margin-inline-start: 6px;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tablette fieldset.group + fieldset.group {
+  margin-top: 14px;
+}
+
+.tablette .kpi,
+.tablette .kpi + .kpi {
+  border: 0;
+  border-radius: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .dash-hero {
+  border-radius: 22px;
+}
+
+.tablette .toolbar {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.tablette .toolbar .btn,
+.tablette .toolbar .btn + .btn {
+  margin: 4px;
+  margin-inline-start: 0;
+  margin-inline-end: 10px;
+}
+
+/* Onglets secondaires : texte simple, l'onglet ouvert en bleu plein arrondi (catégories du menu client). */
+.tablette .subtabs {
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.tablette .subtabs button {
+  flex: none;
+  height: 46px;
+  margin: 0;
+  margin-inline-end: 6px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  color: var(--text-soft);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .subtabs button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.tablette .subtabs button[aria-current='page'] {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+:root.tablette[data-theme='dark'] .subtabs button[aria-current='page'] {
+  color: #0b1627;
+}
+
+.tablette .subtabs button .count-pill {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.tablette .pos-bar {
+  border-bottom: 1px solid var(--line);
+}
+
+.tablette .pos-bar .subtabs {
+  border-bottom: 0;
+}
+
+.tablette .pos-drawer {
+  font-size: 15px;
+}
+
+/* === Tableaux : sans zébrures ni en-tête gris, lignes aérées =========== */
+.tablette table.grid {
+  font-size: 15px;
+}
+
+.tablette table.grid th {
+  height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tablette table.grid td {
+  height: 60px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tablette table.grid tbody tr:nth-child(even) td {
+  background: transparent;
+}
+
+.tablette table.grid tbody tr[aria-selected='true'] td {
+  background: var(--primary-soft);
+}
+
+.tablette .thumb {
+  border: 0;
+  border-radius: 12px;
+  background: var(--fill);
+}
+
+.tablette .summary-counts {
+  border: 0;
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .summary-counts dd {
+  font-weight: 800;
+}
+
+/* === Fenêtres : feuille claire à grand rayon, en-tête sans barre bleue ==== */
+.tablette .overlay {
+  background: var(--overlay);
+}
+
+.tablette .dialog {
+  border-radius: 24px;
+  background: var(--bg);
+  box-shadow: var(--shadow-pop);
+}
+
+.tablette .dialog-title {
+  min-height: 72px;
+  padding: 10px 14px 4px 24px;
+  background: transparent;
+  color: var(--text);
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.tablette[dir='rtl'] .dialog-title {
+  padding: 10px 24px 4px 14px;
+}
+
+.tablette .dialog-title button {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  margin-inline-start: 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+}
+
+.tablette .dialog-title button:hover {
+  background: var(--hover);
+}
+
+.tablette .dialog-body {
+  padding: 10px 24px 20px;
+}
+
+.tablette .dialog-foot {
+  padding: 14px 24px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.tablette .dialog-foot .btn {
+  min-width: 140px;
+  height: 56px;
+  border-radius: 16px;
+  font-size: 17px;
+}
+
+/* Options d'un plat : une ligne arrondie par choix, rond coché à droite (fiche plat du menu client). */
+.tablette .dialog fieldset.group .chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-gap: 10px;
+  margin: 0;
+}
+
+.tablette .dialog fieldset.group .chips > .chip {
+  position: relative;
+  min-height: 58px;
+  margin: 0;
+  padding-inline-start: 18px;
+  padding-inline-end: 50px;
+  border-color: var(--border);
+  box-shadow: none;
+  text-align: start;
+}
+
+.tablette .dialog fieldset.group .chips > .chip::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.tablette[dir='rtl'] .dialog fieldset.group .chips > .chip::after {
+  right: auto;
+  left: 16px;
+}
+
+.tablette .dialog fieldset.group .chips > .chip[aria-pressed='true']::after {
+  border: 2px solid var(--primary);
+  background: var(--primary);
+  box-shadow: inset 0 0 0 4px var(--surface);
+}
+
+.tablette .dialog fieldset.group .chips > .chip small,
+.tablette .dialog fieldset.group .chips > .chip .muted {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.tablette .dialog .qty .btn,
+.tablette .dialog .qty .btn + .btn {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  font-size: 22px;
+}
+
+.tablette .dialog .qty .num {
+  min-width: 48px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* === Panneau « Plus » et compte : feuille claire, rubriques en lignes arrondies === */
+.tablette .panel-overlay {
+  background: var(--overlay);
+}
+
+.tablette .side-panel {
+  width: 360px;
+  border-radius: 24px 0 0 24px;
+  background: var(--bg);
+}
+
+.tablette[dir='rtl'] .side-panel {
+  border-radius: 0 24px 24px 0;
+}
+
+.tablette .panel-head {
+  min-height: 76px;
+  padding: 12px 14px 8px 22px;
+  background: transparent;
+  color: var(--text);
+}
+
+.tablette .panel-who strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tablette .panel-who span {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.tablette .panel-head .icon-btn,
+.tablette .panel-head .icon-btn:hover {
+  width: 48px;
+  height: 48px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+}
+
+.tablette .panel-section {
+  padding: 6px 12px 12px;
+  border-bottom: 0;
+}
+
+.tablette .panel-section h2 {
+  margin: 8px 10px 8px;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .panel-nav {
+  padding: 4px 12px 12px;
+}
+
+.tablette .panel-section .nav-item,
+.tablette .panel-nav .nav-item {
+  width: 100%;
+  min-height: 54px;
+  margin: 0 0 4px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tablette .panel-section .nav-item:hover,
+.tablette .panel-nav .nav-item:hover {
+  background: var(--hover);
+}
+
+.tablette .panel-nav .nav-item[aria-current='page'],
+.tablette .panel-section .nav-item[aria-current='page'] {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+}
+
+.tablette .panel-prefs > span {
+  grid-gap: 10px;
+  padding: 0 4px;
+}
+
+.tablette .panel-info {
+  padding: 8px 22px 12px;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.tablette .panel-logout {
+  width: calc(100% - 44px);
+  margin: 4px 22px 22px;
+}
+
+/* === Commandes : colonnes à peine teintées, cartes blanches ============= */
+.tablette .orders-card {
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tablette .board {
+  grid-gap: 14px;
+}
+
+.tablette .board-col,
+.tablette .board-col:first-child {
+  border: 0;
+  border-radius: 20px;
+  background: var(--column);
+}
+
+.tablette .board-head {
+  min-height: 56px;
+  padding: 0 18px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.tablette .board-head h2 {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.tablette .board-head .count-pill {
+  background: none;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+/* Les cartes gardent leur hauteur : la colonne défile au lieu de les rogner. */
+.tablette .board-list {
+  grid-auto-rows: max-content;
+  grid-gap: 12px;
+  padding: 2px 12px 14px;
+}
+
+.tablette .board-empty {
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.tablette .order-card {
+  border: 0;
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .order-card-body {
+  padding: 14px 16px 12px;
+}
+
+.tablette .order-card-body:hover {
+  background: transparent;
+}
+
+.tablette .order-card-no {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.tablette .order-card-where {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.tablette .order-card-time,
+.tablette .order-card-origin {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.tablette .order-card-items {
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.tablette .order-card .order-card-action {
+  width: calc(100% - 24px);
+  height: 54px;
+  margin: 0 12px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--primary);
+  box-shadow: none;
+  color: #ffffff;
+  font-size: 17px;
+}
+
+:root.tablette[data-theme='dark'] .order-card .order-card-action {
+  color: #0b1627;
+}
+
+.tablette .order-lines li {
+  padding: 10px 0;
+}
+
+/* === Cuisine : reste sombre (lu à distance), cartes arrondies, libellés en minuscules === */
+.tablette .kds {
+  border: 0;
+  border-radius: 22px;
+}
+
+.tablette .kds-bar {
+  padding: 10px 12px;
+  border-bottom: 0;
+}
+
+.tablette .kds-col {
+  padding: 12px;
+  border-radius: 18px;
+}
+
+.tablette .kds-col h2 {
+  padding: 2px 4px 10px;
+  border-bottom: 0;
+  color: #d5dde6;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .kds-card {
+  margin-bottom: 12px;
+  border: 0;
+  border-radius: 18px;
+}
+
+.tablette .kds-card header {
+  padding: 12px 14px 8px;
+  border-bottom: 0;
+}
+
+.tablette .kds-label {
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .kds-card ul {
+  padding: 0 14px 4px;
+}
+
+.tablette .kds-mods,
+.tablette .kds-station {
+  font-size: 14px;
+}
+
+.tablette .kds-card footer {
+  padding: 6px 12px 12px;
+}
+
+/* Portrait : trois colonnes étroites ; l'en-tête passe à la ligne, les boutons s'empilent en entier. */
+@media (max-width: 1000px) {
+  .tablette .kds-board {
+    grid-gap: 8px;
+    padding: 8px;
+  }
+
+  .tablette .kds-col {
+    padding: 8px;
+  }
+
+  .tablette .kds-card header {
+    flex-wrap: wrap;
+    padding: 10px 10px 6px;
+  }
+
+  .tablette .kds-card ul {
+    padding: 0 10px 4px;
+  }
+
+  .tablette .kds-card footer {
+    flex-direction: column;
+    padding: 6px 8px 10px;
+  }
+
+  .tablette .kds-card footer .btn,
+  .tablette .kds-card footer .btn + .btn {
+    flex: none;
+    width: 100%;
+    margin: 0;
+    padding: 0 8px;
+  }
+
+  .tablette .kds-card footer .btn + .btn {
+    margin-top: 8px;
+  }
+}
+
+.tablette .kds .btn,
+.tablette .kds .btn:disabled {
+  border: 0;
+  background: #26313c;
+  box-shadow: none;
+  color: #e6ebf0;
+}
+
+.tablette .kds .btn:hover:not(:disabled),
+.tablette .kds .btn:active:not(:disabled) {
+  background: #2f3c49;
+}
+
+.tablette .kds .btn .ico {
+  color: #b9c6d2;
+}
+
+.tablette .kds .kds-stations .btn[aria-pressed='true'] {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.tablette .kds-card footer .btn-primary {
+  background: #2f7a4c;
+  color: #ffffff;
+}
+
+/* === Caisse ============================================================= */
+.tablette .pos-browse {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.tablette .pos-cats button {
+  height: 50px;
+  margin-inline-end: 8px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tablette .pos-cats button[aria-pressed='true'] {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+:root.tablette[data-theme='dark'] .pos-cats button[aria-pressed='true'] {
+  color: #0b1627;
+}
+
+.tablette .pos-products {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-gap: 14px;
+}
+
+.tablette .pos-tile {
+  min-height: 112px;
+  border: 0;
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .pos-tile:hover:not(:disabled),
+.tablette .pos-tile.in-ticket {
+  box-shadow: inset 0 0 0 2px var(--primary), var(--shadow-card);
+}
+
+.tablette .pos-tile:active:not(:disabled) {
+  background: var(--primary-soft);
+}
+
+.tablette .pos-tile-photo {
+  height: 104px;
+  border-bottom: 0;
+  background: var(--fill);
+}
+
+.tablette .pos-tile-name {
+  padding: 12px 14px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tablette .pos-tile-foot {
+  padding: 8px 14px 12px;
+}
+
+.tablette .pos-tile-price {
+  color: var(--primary-strong);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.tablette .pos-tile-qty {
+  border-radius: 10px;
+  box-shadow: none;
+  font-weight: 800;
+}
+
+.tablette .pos-ticket,
+.tablette .check-detail {
+  border-inline-start: 1px solid var(--line);
+}
+
+.tablette .pos-dest {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.tablette .pos-pick {
+  height: 60px;
+  padding: 0 16px;
+  border: 1px solid var(--input-border);
+  border-radius: 14px;
+}
+
+.tablette .pos-pick-text small {
+  font-size: 13px;
+}
+
+.tablette .pos-line {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tablette .pos-line-name {
+  font-weight: 700;
+}
+
+.tablette .pos-line-total {
+  font-weight: 800;
+}
+
+.tablette .pos-line-detail {
+  font-size: 14px;
+}
+
+.tablette .qty {
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--fill);
+}
+
+.tablette .qty .btn,
+.tablette .qty .btn + .btn {
+  border: 0;
+  border-radius: 11px;
+}
+
+.tablette .qty .num {
+  font-weight: 800;
+}
+
+.tablette .pos-foot,
+.tablette .check-detail-foot {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.tablette .pos-total {
+  font-size: 15px;
+}
+
+.tablette .pos-total strong,
+.tablette .check-due strong {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.tablette .pos-send.btn,
+.tablette .check-actions .btn-primary {
+  height: 60px;
+  border-radius: 16px;
+  font-size: 18px;
+}
+
+.tablette .pos-tools .btn[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--text);
+}
+
+/* Encaissement : notes en lignes arrondies sur fond clair, la note choisie cerclée de bleu. */
+.tablette .check-list {
+  padding: 12px 0 6px;
+  background: var(--bg);
+}
+
+.tablette .check-row {
+  width: calc(100% - 28px);
+  min-height: 78px;
+  margin: 0 14px 10px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .check-row:hover {
+  background: var(--surface);
+}
+
+.tablette .check-row[aria-selected='true'] {
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.tablette .check-row-main strong {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.tablette .check-row-main small {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.tablette .check-row-amount {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.tablette .check-detail {
+  background: var(--surface);
+}
+
+.tablette .check-detail-head {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+
+.tablette .check-detail-head strong {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.tablette .check-order {
+  border-bottom: 1px solid var(--line);
+}
+
+/* Paiement : clavier en touches blanches arrondies, champs et modes en cartes. */
+.tablette .pay-due strong {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.tablette .pay-label {
+  margin: 18px 0 10px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tablette .pay-methods,
+.tablette .pay-split {
+  grid-gap: 10px;
+}
+
+.tablette .pay-methods .chip {
+  min-height: 60px;
+  font-size: 17px;
+}
+
+.tablette .pay-field {
+  height: 62px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  font-size: 15px;
+}
+
+.tablette .pay-field strong {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.tablette .pay-field[aria-pressed='true'] {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary), 0 0 0 3px var(--focus-ring);
+}
+
+.tablette .keypad {
+  grid-gap: 8px;
+}
+
+.tablette .keypad-key {
+  height: 58px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.tablette .keypad-key:hover {
+  background: var(--hover);
+}
+
+.tablette .keypad-key:active {
+  background: var(--primary-soft);
+}
+
+.tablette .pay-change strong {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+/* Choix de la table (caisse) */
+.tablette .pick-counter,
+.tablette .pick-table {
+  border: 0;
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .pick-counter[aria-pressed='true'],
+.tablette .pick-table[aria-pressed='true'] {
+  background: var(--primary-soft);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+/* === Tables (plan de salle) ============================================= */
+.tablette .floor-side {
+  background: var(--bg);
+  border-inline-start: 1px solid var(--line);
+}
+
+.tablette .plan {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.tablette .plan-table {
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.tablette .plan-table.shape-round {
+  border-radius: 50%;
+}
+
+.tablette .plan-table .plan-state {
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .plan-legend {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.tablette .plan-legend i {
+  border-radius: 4px;
+}
+
+/* === Menu (gestion) ===================================================== */
+.tablette .cat-panel {
+  background: var(--bg);
+  border-inline-end: 1px solid var(--line);
+}
+
+.tablette .cat-panel-head {
+  padding: 10px 8px 8px 12px;
+  border-bottom: 0;
+}
+
+.tablette .cat-panel-head .btn,
+.tablette .cat-panel-head .btn + .btn {
+  width: 42px;
+  border-radius: 12px;
+}
+
+.tablette .cat-list {
+  padding: 0 10px 10px;
+}
+
+.tablette .cat-list button {
+  min-height: 54px;
+  margin-bottom: 4px;
+  padding: 0 14px;
+  border-bottom: 0;
+  border-radius: 14px;
+  font-size: 16px;
+}
+
+.tablette .cat-list button[aria-current='true'] {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  font-weight: 800;
+}
+
+/* Photo d'exemple du catalogue (le plat n'a pas encore sa photo) : pâlie, avec une mention discrète. */
+.tablette .thumb-sample {
+  opacity: 0.55;
+}
+
+.tablette .sample-note {
+  display: block;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.tablette .ann-card {
+  border: 0;
+  box-shadow: var(--shadow-card);
+}
+
+/* === Connexion, inscription, récupération ================================ */
+.tablette .access-card {
+  max-width: 460px;
+  padding: 0 28px 26px;
+  border-radius: 24px;
+  box-shadow: var(--shadow-lift);
+}
+
+.tablette .access-card-wide {
+  max-width: 700px;
+}
+
+.tablette .access-brand {
+  margin: 0 -28px 14px;
+  padding: 26px 28px 8px;
+  background: transparent;
+  color: var(--text);
+}
+
+.tablette .access-name {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.tablette .access-name span {
+  color: var(--primary);
+}
+
+.tablette .access-product {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.tablette .access-title {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tablette .access-field label {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tablette .access-input {
+  height: 54px;
+  border: 1px solid var(--input-border);
+  border-radius: 14px;
+}
+
+.tablette .access-input:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.tablette .access-input input:not([type='checkbox']):not([type='radio']),
+.tablette .access-input input:focus {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tablette .login-screen .access-submit {
+  height: 56px;
+  border-radius: 16px;
+  font-size: 17px;
+}
+
+.tablette .access-question {
+  border-inline-start: 0;
+  border-radius: 14px;
+  background: var(--bg);
+}
