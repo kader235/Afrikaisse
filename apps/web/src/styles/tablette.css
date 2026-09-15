@@ -206,15 +206,6 @@
   height: auto;
 }
 
-/* Rappel d'essai : pas sur la tablette ; un abonnement échu reste signalé. */
-.tablette .subscription-banner.msg-warn {
-  display: none;
-}
-
-.tablette .subscription-banner.msg-warn + * {
-  margin-top: 0;
-}
-
 /* Portrait : onglets icône au-dessus du nom, le lieu et le nom passent dans « Plus ». */
 @media (max-width: 1000px) {
   .tablette .topbar-name {

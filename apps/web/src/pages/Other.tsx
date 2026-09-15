@@ -23,6 +23,7 @@ import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
 import { BackupsPanel } from './Backups.tsx';
 import { SyncPanel } from './Sync.tsx';
 import { RecoverySection } from './Recovery.tsx';
+import { isTablet } from '../touch.ts';
 
 interface TenantDetails {
   id: string;
@@ -94,7 +95,7 @@ export function OrganizationPage({ me, onRenamed, onOpenSetup }: { me: Me; onRen
         </div>
         </fieldset>
         <div className="org-side">
-        {tenant && isCloud && <SubscriptionPanel subscription={tenant.subscription} />}
+        {tenant && isCloud && !isTablet() && <SubscriptionPanel subscription={tenant.subscription} />}
         {me.permissions.includes('settings.manage') && <SyncPanel />}
         {me.permissions.includes('settings.manage') && <BackupsPanel />}
         </div>

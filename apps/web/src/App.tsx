@@ -229,7 +229,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'organization', label: t('nav.organization'), icon: 'gear', visible: can('tenant.read'), group: 'admin' },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
     { id: 'monitoring', label: 'Supervision', icon: 'server', visible: can('devices.manage'), group: 'admin' },
-    { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin, group: 'admin' },
+    { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin && !isTablet(), group: 'admin' },
   ];
   const visible = sections.filter((s) => s.visible);
   const quick = TAB_PRIORITY[me.role ?? 'OWNER']
@@ -409,7 +409,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
       </nav>
 
       <main className={current === 'take' ? 'workspace workspace-bleed' : 'workspace'}>
-        {can('tenant.read') && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
+        {can('tenant.read') && !tablet && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
         {!!error && <ErrorMessage error={error} />}
         {current === 'dashboard' && <DashboardPage me={me} feed={can('orders.read') ? feed : undefined} onNavigate={open} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
