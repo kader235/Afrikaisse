@@ -599,7 +599,7 @@ export function renderPage(page: PageDef, ctx: Ctx): string {
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 ${page.indexable ? `<link rel="canonical" href="${esc(url)}">` : '<meta name="robots" content="noindex">'}
-<meta name="theme-color" content="#065fd4">
+<meta name="theme-color" content="#0f2044">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="AfriKaisse">

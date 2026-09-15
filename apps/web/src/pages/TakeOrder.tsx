@@ -18,7 +18,6 @@ import { api } from '../api.ts';
 import { dropQueuedOrder, isOffline, queueOrder, readCache, saveCache, useQueuedOrders } from '../offline.ts';
 import { useDishPhoto } from '../dishPhotos.ts';
 import { mediaSrc } from '../platform.ts';
-import { isTablet } from '../touch.ts';
 import { ErrorMessage, Icon } from '../ui.tsx';
 import { zoneVars } from '../zoneColors.ts';
 import { OptionsDialog, nextKey, ticketPricing, toPricing, type TicketLine } from './Pos.tsx';
@@ -137,8 +136,8 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
   const categories = useMemo(() => (menu ? [...menu.categories].sort((a, b) => a.sort - b.sort) : []), [menu]);
   const activeCategory = categoryId ?? categories[0]?.id ?? null;
   const products = useMemo(() => (menu ? menu.products.filter((p) => p.categoryId === activeCategory).sort((a, b) => a.sort - b.sort) : []), [menu, activeCategory]);
-  // Plat sans photo : photo d'exemple du catalogue (tablette seulement ; une vraie photo n'est jamais remplacée).
-  const samplePhoto = useDishPhoto(isTablet());
+  // Plat sans photo : photo d'exemple du catalogue (une vraie photo n'est jamais remplacée).
+  const samplePhoto = useDishPhoto();
   const photoOf = (p: Product) => (p.photoUrl ? mediaSrc(p.photoUrl) : samplePhoto(p.name));
   // Une catégorie avec des photos garde des tuiles de même hauteur : emplacement vide pour les plats sans photo.
   const withPhotos = products.some((p) => photoOf(p));
@@ -271,7 +270,7 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
               const photo = photoOf(p);
               return (
                 <button key={p.id} className={`take-product${p.isAvailable ? '' : ' out'}${qty > 0 ? ' in-ticket' : ''}`} disabled={!p.isAvailable || !tableId} onClick={() => tap(p)}>
-                  {/* Photo et bouton rond : affichés seulement sur la tablette (styles/take-order.css). */}
+                  {/* Photo et bouton rond : styles/take-order.css. */}
                   {photo ? (
                     <img className="take-product-photo" src={photo} alt="" loading="lazy" />
                   ) : (

@@ -6,7 +6,7 @@
  * Gardés : le bandeau bleu nuit à onglets, la carte bleue du tableau de bord, la colonne bleu nuit de la commande.
  * Règles de Kader : textes grands et foncés, pas de texte sur une pastille colorée (sauf bouton principal et
  * choix sélectionné), pas d'ornement.
- * Chargée après tablette.css, tout sous `.tablette` : la version PC ne change pas.
+ * Chargée après tablette.css, tout sous `.tablette` (design commun, PC compris ; tailles souris dans pc.css).
  * WebView Chrome 83 : pas de gap sur flexbox, pas de :has(), pas de inset ni de rayons logiques.
  */
 
@@ -1538,4 +1538,89 @@
   border: 0;
   border-radius: 14px;
   background: var(--bg);
+}
+
+/* === Bandeau en thème sombre : bleu nuit, comme en clair ================== */
+:root.tablette[data-theme='dark'] {
+  --topbar: #0f1b33;
+  --topbar-brand: #0f1b33;
+}
+
+/* === Assistant de mise en route : grande feuille claire, étapes en lignes arrondies === */
+.tablette .onb-window {
+  border-radius: 24px;
+  background: var(--bg);
+}
+
+.tablette .onb-head {
+  min-height: 72px;
+  padding: 10px 14px 4px 24px;
+  background: transparent;
+  color: var(--text);
+}
+
+.tablette[dir='rtl'] .onb-head {
+  padding: 10px 24px 4px 14px;
+}
+
+.tablette .onb-head h1 {
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.tablette .onb-place {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.tablette .onb-head .icon-btn,
+.tablette .onb-head .icon-btn:hover {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+}
+
+.tablette .onb-steps {
+  padding: 4px 12px 12px;
+  border-inline-end: 0;
+  background: transparent;
+}
+
+.tablette .onb-steps button {
+  margin-bottom: 4px;
+  border-radius: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tablette .onb-steps button[aria-current='step'],
+.tablette[dir='rtl'] .onb-steps button[aria-current='step'] {
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.tablette .onb-content {
+  margin: 0 16px 0 0;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.tablette[dir='rtl'] .onb-content {
+  margin: 0 0 0 16px;
+}
+
+.tablette .onb-content > h2 {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.tablette .onb-foot {
+  border-top: 0;
+  background: transparent;
 }

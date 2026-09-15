@@ -105,12 +105,12 @@ navigateur** (menu téléphone et FAQ en `<details>`).
 | Élément | Règle |
 |---|---|
 | Pages | `/`, `/fonctionnalites/`, `/tarifs/`, `/demonstration/`, `/faq/`, `/contact/`, `404.html` |
-| Construction | `npm run build:site` → `apps/site/dist`. `src/pages.ts` écrit le HTML, puis Vite assemble `src/site.css`, Roboto (@fontsource) et `public/` |
+| Construction | `npm run build:site` → `apps/site/dist`. `src/pages.ts` écrit le HTML, puis Vite assemble `src/site.css`, Plus Jakarta Sans (@fontsource) et `public/` |
 | Adresses | `SITE_APP_URL` (défaut `DEFAULT_CLOUD_URL` de core : https://afrikaisse.dametta.com) pour **Connexion** et **Créer mon restaurant** (`<app>/#inscription` ouvre le formulaire d'inscription de `apps/web`) ; `SITE_URL` (défaut https://www.afrikaisse.dametta.com) pour les liens canoniques, Open Graph et `sitemap.xml` |
 | Coordonnées | `apps/site/src/config.ts`, seul fichier à modifier. Téléphone et WhatsApp à `null` = ligne masquée (aucun numéro inventé). **L'adresse `contact@afrikaisse.com` est à confirmer** par GLOBALTECH avant la mise en ligne |
 | Textes | `src/i18n/fr.ts`, typé par `SiteText` (`src/i18n/types.ts`). Anglais et arabe : un fichier par langue + une entrée dans `LOCALES` (préfixe `/en`, `dir: 'rtl'` pour l'arabe) ; la CSS est en propriétés logiques |
 | Faits | Prix, limites, durée d'essai et de grâce lus dans `packages/core/src/plans.ts` ; devises dans `currency.ts` ; nombre de plats et de photos dans le catalogue de `apps/web/public/catalogue`. Rien n'est recopié à la main |
-| Design | Identité WEBDEV 28 de `DESIGN.md` : bandeau bleu `#065FD4` (rubrique active en aplat plus foncé souligné de blanc), Roboto, boutons plats en capitales avec pictogramme à gauche, rayon 4 px, fiches à bande de titre grise, tables zébrées à en-tête gris, barre d'état en pied de page. Pas de dégradé, d'animation ni de grille de cartes décoratives |
+| Design | Même langage que l'application (tablette, téléphone et PC, « Savane bleu » validé le 15/09/2026) : bandeau bleu nuit `#0F2044` (rubrique active en bouton clair arrondi), bleu `#1D4ED8`, Plus Jakarta Sans, cartes blanches arrondies (14 à 20 px) à ombre douce, boutons en minuscules, tables sans zébrures, en-têtes de page et bande d'appel en carte bleue dégradée comme le tableau de bord. Pas d'animation |
 | Images | Captures **réelles** de l'application (restaurant de démonstration, 15/09/2026) dans `public/captures` ; six photos du catalogue (CC0 / domaine public), jamais d'auteur affiché. Aucun témoignage, logo client ni chiffre inventé (§81) |
 | SEO | Titre et description par page, lien canonique, Open Graph (`og-afrikaisse.png`), JSON-LD (SoftwareApplication, FAQPage), `sitemap.xml`, `robots.txt`, 404 en `noindex` |
 | Largeurs | 360 px à 1440 px ; menu complet dans le bandeau à partir de 1180 px, menu déroulant en dessous |

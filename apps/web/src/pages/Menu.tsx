@@ -18,7 +18,6 @@ import { useI18n } from '../i18n.tsx';
 import { compressImage } from '../images.ts';
 import { useDishPhoto } from '../dishPhotos.ts';
 import { mediaSrc } from '../platform.ts';
-import { isTablet } from '../touch.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
 import { QrTab } from './Qr.tsx';
 import { CatalogueImport } from './CatalogueImport.tsx';
@@ -197,7 +196,7 @@ function swap(ids: string[], index: number, dir: -1 | 1): string[] | null {
 
 function ProductsTab({ menu, canManage, canAvailability, save, act, onRefresh }: { menu: AdminMenu; canManage: boolean; canAvailability: boolean; save: Save; act: Save; onRefresh: () => void }) {
   // Tablette : un plat sans photo montre la photo d'exemple que voient les clients, pâlie et signalée.
-  const samplePhoto = useDishPhoto(isTablet());
+  const samplePhoto = useDishPhoto();
   const { t } = useI18n();
   const [categoryId, setCategoryId] = useState<string | null>(menu.categories[0]?.id ?? null);
   const [productId, setProductId] = useState<string | null>(null);

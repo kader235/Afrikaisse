@@ -20,9 +20,10 @@ import './styles.css';
 import './styles/client.css';
 import './styles/tablette.css';
 import './styles/tablette-doux.css';
-import { enforceTouchLayout, markTablet } from './touch.ts';
+import './styles/pc.css';
+import { enforceTouchLayout, markDevice } from './touch.ts';
 
-markTablet();
+markDevice();
 enforceTouchLayout();
 
 createRoot(document.getElementById('root')!).render(
