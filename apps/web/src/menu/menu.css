@@ -6,6 +6,9 @@
  * Chrome 83 : pas de gap sur flexbox (marges ; grid-gap accepté), pas de :has(), pas de raccourci inset.
  * Arabe : propriétés logiques (margin-inline-*), et surcharges [dir='rtl'] pour ce qui est positionné.
  */
+/* Thème par défaut « Bleu AfriKaisse » (packages/core/src/menuThemes.ts, vérifié par son test).
+ * Le thème choisi par l'établissement est injecté après cette feuille (menu/theme.ts) : toute couleur
+ * du menu passe par ces variables. */
 :root {
   --m-bg: #f5f7fb;
   --m-card: #ffffff;
@@ -19,11 +22,27 @@
   --m-accent-press: #1a43bd;
   --m-accent-dark: #1e3a8a;
   --m-accent-text: #1d4ed8;
-  --m-navy: #0f2044;
+  --m-on-accent: #ffffff;
+  --m-deep: #0f2044;
+  --m-on-deep: #ffffff;
+  --m-deep-soft: #bfdbfe;
+  --m-banner-start: #0f2044;
+  --m-banner-end: #1d4ed8;
+  --m-banner-text: #ffffff;
+  --m-banner-soft: #c9d8ff;
+  --m-banner-cta: #ffffff;
+  --m-banner-cta-text: #1d4ed8;
   --m-tick: #cbd3e1;
   --m-disabled: #c3cbd9;
+  --m-on-disabled: #ffffff;
+  --m-dot: #c7d2e6;
   --m-danger: #c62828;
   --m-danger-soft: #fdecec;
+  --m-shadow-color: #0f2044;
+  --m-accent-rgb: 29, 78, 216;
+  --m-on-accent-rgb: 255, 255, 255;
+  --m-card-rgb: 255, 255, 255;
+  --m-shadow-rgb: 15, 32, 68;
   --m-shadow: 0 2px 10px rgba(15, 32, 68, 0.05);
   --m-shadow-lg: 0 4px 14px rgba(15, 32, 68, 0.07);
   --m-shadow-pop: 0 10px 30px rgba(15, 32, 68, 0.18);
@@ -44,11 +63,27 @@
     --m-accent-press: #2754cc;
     --m-accent-dark: #a9c1ff;
     --m-accent-text: #8fb0ff;
-    --m-navy: #0a1630;
+    --m-on-accent: #ffffff;
+    --m-deep: #0a1630;
+    --m-on-deep: #ffffff;
+    --m-deep-soft: #bfdbfe;
+    --m-banner-start: #0f2044;
+    --m-banner-end: #1d4ed8;
+    --m-banner-text: #ffffff;
+    --m-banner-soft: #c9d8ff;
+    --m-banner-cta: #ffffff;
+    --m-banner-cta-text: #1d4ed8;
     --m-tick: #4a5873;
     --m-disabled: #34425e;
+    --m-on-disabled: #9aa5ba;
+    --m-dot: #34425e;
     --m-danger: #f28b82;
     --m-danger-soft: #3a1f24;
+    --m-shadow-color: #000000;
+    --m-accent-rgb: 47, 99, 232;
+    --m-on-accent-rgb: 255, 255, 255;
+    --m-card-rgb: 20, 29, 48;
+    --m-shadow-rgb: 0, 0, 0;
     --m-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     --m-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.35);
     --m-shadow-pop: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -149,8 +184,8 @@ b {
   border: 0;
   border-radius: 16px;
   background: var(--m-accent);
-  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.22);
-  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(var(--m-accent-rgb), 0.22);
+  color: var(--m-on-accent);
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
@@ -164,14 +199,8 @@ b {
 .m-button:disabled {
   background: var(--m-disabled);
   box-shadow: none;
-  color: #ffffff;
+  color: var(--m-on-disabled);
   cursor: default;
-}
-
-@media (prefers-color-scheme: dark) {
-  .m-button:disabled {
-    color: var(--m-muted);
-  }
 }
 
 .m-grow {
@@ -301,7 +330,7 @@ b {
   border: 0;
   border-radius: 14px;
   background: var(--m-card);
-  box-shadow: 0 2px 8px rgba(15, 32, 68, 0.06);
+  box-shadow: 0 2px 8px rgba(var(--m-shadow-rgb), 0.06);
   color: var(--m-text);
   font-size: 14px;
   font-weight: 800;
@@ -430,9 +459,9 @@ b {
   padding: 18px;
   overflow: hidden;
   border: 0;
-  background: #1d4ed8;
-  background: linear-gradient(120deg, #0f2044 0%, #1d4ed8 100%);
-  color: #ffffff;
+  background: var(--m-banner-end);
+  background: linear-gradient(120deg, var(--m-banner-start) 0%, var(--m-banner-end) 100%);
+  color: var(--m-banner-text);
   text-align: start;
 }
 
@@ -441,7 +470,7 @@ button.m-banner {
 }
 
 [dir='rtl'] .m-banner {
-  background: linear-gradient(240deg, #0f2044 0%, #1d4ed8 100%);
+  background: linear-gradient(240deg, var(--m-banner-start) 0%, var(--m-banner-end) 100%);
 }
 
 .m-banner-text {
@@ -469,7 +498,7 @@ button.m-banner {
   display: -webkit-box;
   margin-top: 5px;
   overflow: hidden;
-  color: #c9d8ff;
+  color: var(--m-banner-soft);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.35;
@@ -485,8 +514,8 @@ button.m-banner {
   margin-top: 12px;
   padding: 0 14px;
   border-radius: 12px;
-  background: #ffffff;
-  color: #1d4ed8;
+  background: var(--m-banner-cta);
+  color: var(--m-banner-cta-text);
   font-size: 14px;
   font-weight: 800;
   white-space: nowrap;
@@ -541,19 +570,13 @@ button.m-banner {
   width: 7px;
   height: 7px;
   border-radius: 4px;
-  background: #c7d2e6;
+  background: var(--m-dot);
   transition: width 0.25s ease;
 }
 
 .m-dots button.on span {
   width: 20px;
   background: var(--m-accent);
-}
-
-@media (prefers-color-scheme: dark) {
-  .m-dots span {
-    background: var(--m-border);
-  }
 }
 
 /* --- Titres de section, catégories, plus commandés ----------------------- */
@@ -741,7 +764,7 @@ button.m-banner {
   margin: 0 auto;
   padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
   background: var(--m-bg);
-  box-shadow: 0 4px 14px rgba(15, 32, 68, 0.08);
+  box-shadow: 0 4px 14px rgba(var(--m-shadow-rgb), 0.08);
   animation: m-drop 0.18s ease-out;
 }
 
@@ -754,7 +777,7 @@ button.m-banner {
   border: 0;
   border-radius: 12px;
   background: var(--m-card);
-  box-shadow: 0 1px 4px rgba(15, 32, 68, 0.06);
+  box-shadow: 0 1px 4px rgba(var(--m-shadow-rgb), 0.06);
   color: var(--m-muted);
   font-size: 13.5px;
   font-weight: 700;
@@ -764,7 +787,7 @@ button.m-banner {
 
 .m-pins button.on {
   background: var(--m-accent);
-  color: #ffffff;
+  color: var(--m-on-accent);
 }
 
 /* --- Liste des plats ---------------------------------------------------- */
@@ -805,7 +828,7 @@ button.m-banner {
 .m-item:active,
 .m-pop:active,
 .m-cat:active {
-  box-shadow: var(--m-shadow), inset 0 0 0 999px rgba(29, 78, 216, 0.04);
+  box-shadow: var(--m-shadow), inset 0 0 0 999px rgba(var(--m-accent-rgb), 0.04);
 }
 
 .m-item-photo {
@@ -879,7 +902,7 @@ button.m-banner {
   padding: 0 8px;
   border-radius: 8px;
   background: var(--m-accent);
-  color: #ffffff;
+  color: var(--m-on-accent);
   font-size: 11.5px;
   font-weight: 700;
   line-height: 20px;
@@ -903,7 +926,7 @@ button.m-banner {
   margin-inline-start: 12px;
   border-radius: 12px;
   background: var(--m-accent);
-  color: #ffffff;
+  color: var(--m-on-accent);
 }
 
 .m-item.off .m-item-photo,
@@ -954,8 +977,8 @@ button.m-banner {
   border: 0;
   border-radius: 18px;
   background: var(--m-accent);
-  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.35);
-  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(var(--m-accent-rgb), 0.35);
+  color: var(--m-on-accent);
   font-weight: 800;
   text-align: start;
   cursor: pointer;
@@ -980,7 +1003,7 @@ button.m-banner {
   margin-inline-end: 10px;
   padding: 0 6px;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(var(--m-on-accent-rgb), 0.25);
   font-size: 14px;
   font-style: normal;
 }
@@ -993,13 +1016,14 @@ button.m-banner {
 }
 
 .m-bar-soft {
-  background: var(--m-navy);
-  box-shadow: 0 10px 24px rgba(15, 32, 68, 0.3);
+  background: var(--m-deep);
+  box-shadow: 0 10px 24px rgba(var(--m-shadow-rgb), 0.3);
+  color: var(--m-on-deep);
 }
 
 .m-bar-soft .m-ico {
   margin-inline-end: 10px;
-  color: #bfdbfe;
+  color: var(--m-deep-soft);
 }
 
 .m-bar-status {
@@ -1009,7 +1033,7 @@ button.m-banner {
 }
 
 .m-bar-soft > strong {
-  color: #bfdbfe;
+  color: var(--m-deep-soft);
 }
 
 .m-tabs {
@@ -1062,9 +1086,9 @@ button.m-banner {
   max-width: calc(100% - 36px);
   padding: 12px 16px;
   border-radius: 14px;
-  background: var(--m-navy);
+  background: var(--m-deep);
   box-shadow: var(--m-shadow-pop);
-  color: #ffffff;
+  color: var(--m-on-deep);
   font-size: 14px;
   font-weight: 600;
   text-align: center;
@@ -1082,7 +1106,7 @@ button.m-banner {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(15, 32, 68, 0.45);
+  background: rgba(var(--m-shadow-rgb), 0.45);
   animation: m-fade 0.18s ease-out;
 }
 
@@ -1096,7 +1120,7 @@ button.m-banner {
   overflow: hidden;
   border-radius: 24px 24px 0 0;
   background: var(--m-bg);
-  box-shadow: 0 -8px 30px rgba(15, 32, 68, 0.18);
+  box-shadow: 0 -8px 30px rgba(var(--m-shadow-rgb), 0.18);
   animation: m-up 0.22s ease-out;
 }
 
@@ -1204,9 +1228,9 @@ button.m-banner {
   padding: 0;
   border: 0;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 2px 8px rgba(15, 32, 68, 0.12);
-  color: #0f1f40;
+  background: rgba(var(--m-card-rgb), 0.94);
+  box-shadow: 0 2px 8px rgba(var(--m-shadow-rgb), 0.12);
+  color: var(--m-text);
   cursor: pointer;
 }
 
@@ -1216,7 +1240,7 @@ button.m-banner {
 
 .m-heart {
   right: 18px;
-  color: #1d4ed8;
+  color: var(--m-accent-text);
 }
 
 .m-hero-bar {
@@ -1430,7 +1454,7 @@ button.m-banner {
   left: 5px;
   width: 6px;
   height: 11px;
-  border: solid #ffffff;
+  border: solid var(--m-on-accent);
   border-width: 0 2.5px 2.5px 0;
   border-radius: 0;
   background: transparent;
@@ -1438,7 +1462,7 @@ button.m-banner {
 }
 
 .m-choice input:focus ~ .m-tick {
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.25);
+  box-shadow: 0 0 0 3px rgba(var(--m-accent-rgb), 0.25);
 }
 
 .m-choice.off {
@@ -1511,7 +1535,7 @@ button.m-banner {
 .m-field input:focus,
 .m-code input:focus {
   border-color: var(--m-accent);
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+  box-shadow: 0 0 0 3px rgba(var(--m-accent-rgb), 0.15);
   outline: none;
 }
 
@@ -1559,7 +1583,7 @@ button.m-banner {
   border: 0;
   border-radius: 12px;
   background: var(--m-card);
-  box-shadow: 0 1px 3px rgba(15, 32, 68, 0.08);
+  box-shadow: 0 1px 3px rgba(var(--m-shadow-rgb), 0.08);
   color: var(--m-text);
   cursor: pointer;
 }
@@ -1763,7 +1787,7 @@ button.m-banner {
 }
 
 .m-order.mine {
-  border-color: rgba(29, 78, 216, 0.35);
+  border-color: rgba(var(--m-accent-rgb), 0.35);
 }
 
 .m-order-head {
@@ -1937,17 +1961,17 @@ button.m-banner {
   margin-top: 16px;
   padding: 18px;
   border-radius: 20px;
-  background: #1d4ed8;
-  background: linear-gradient(120deg, #0f2044 0%, #1d4ed8 100%);
-  color: #ffffff;
+  background: var(--m-banner-end);
+  background: linear-gradient(120deg, var(--m-banner-start) 0%, var(--m-banner-end) 100%);
+  color: var(--m-banner-text);
 }
 
 [dir='rtl'] .m-pay-amount {
-  background: linear-gradient(240deg, #0f2044 0%, #1d4ed8 100%);
+  background: linear-gradient(240deg, var(--m-banner-start) 0%, var(--m-banner-end) 100%);
 }
 
 .m-pay-amount span {
-  color: #c9d8ff;
+  color: var(--m-banner-soft);
   font-weight: 600;
 }
 

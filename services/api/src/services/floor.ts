@@ -5,6 +5,7 @@ import {
   DEFAULT_TABLE_SIZE,
   findFreeSpot,
   findLayoutIssues,
+  menuTheme,
   rectInside,
   rectsOverlap,
   resolveZoneColor,
@@ -56,6 +57,7 @@ const toLocation = (r: LocationRow): LocationDetails => ({
   operatingMode: r.operating_mode,
   tableCodeRequired: r.table_code_required === 1,
   billMode: r.bill_mode,
+  menuTheme: menuTheme(r.menu_theme).id,
   status: r.status,
   createdAt: r.created_at,
 });
@@ -226,8 +228,10 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
     ...(input.operatingMode !== undefined && { operating_mode: input.operatingMode }),
     ...(input.tableCodeRequired !== undefined && { table_code_required: input.tableCodeRequired ? (1 as const) : (0 as const) }),
     ...(input.billMode !== undefined && { bill_mode: input.billMode }),
+    ...(input.menuTheme !== undefined && { menu_theme: input.menuTheme }),
   };
   const modeChanged = input.operatingMode !== undefined && input.operatingMode !== before.operating_mode;
+  const onlyTheme = Object.keys(input).every((k) => k === 'menuTheme');
 
   return ctx.db.transaction().execute(async (trx) => {
     const hlc = ctx.clock.now();
@@ -237,7 +241,7 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
       tenantId: scope.tenantId,
       locationId: id,
       actorUserId: scope.userId,
-      action: modeChanged ? 'location.mode_changed' : 'location.updated',
+      action: modeChanged ? 'location.mode_changed' : onlyTheme ? 'location.menu_theme_changed' : 'location.updated',
       entityType: 'location',
       entityId: id,
       data: { before: toLocation(before), changes: input },

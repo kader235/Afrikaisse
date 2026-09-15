@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { publicAnnouncementSchema } from './announcements.ts';
 import { CURRENCY_CODES, LOCATION_TYPES } from './currency.ts';
 import { BILL_MODES } from './guests.ts';
+import { MENU_THEMES } from './menuThemes.ts';
 import { stationSchema } from './kitchen.ts';
 import { MONEY_MAX } from './money.ts';
 
@@ -291,6 +292,8 @@ export const publicMenuSchema = z.object({
     type: z.enum(LOCATION_TYPES),
     currency: z.enum(CURRENCY_CODES),
     logoUrl: z.string().nullable(),
+    /** Thème du menu choisi par l'établissement (couleurs : `@afrikaisse/core/menu-themes`). */
+    theme: z.enum(MENU_THEMES),
   }),
   table: z.object({ label: z.string() }),
   categories: z.array(z.object({ id: z.string(), name: z.string(), products: z.array(publicProductSchema) })),
