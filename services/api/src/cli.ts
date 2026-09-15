@@ -5,6 +5,7 @@ import { sql } from 'kysely';
 import { releaseManifestSchema, signedReleaseSchema, type SignedRelease } from '@afrikaisse/core';
 import { createDatabase, databaseConfigFromUrl, migrateToLatest } from '@afrikaisse/database';
 import { buildApp } from './app.ts';
+import { backupNow } from './lib/backup.ts';
 import { loadConfig } from './config.ts';
 import { createDemoTenant } from './services/demo.ts';
 import { EMBEDDED_RELEASE_PUBLIC_KEY, generateReleaseKeys, publicKeyOf, signRelease, verifyRelease } from './lib/releases.ts';
@@ -19,8 +20,9 @@ import { publishRelease } from './services/releases.ts';
  *   release-sign <manifeste.json>        signe une annonce (AFK_RELEASE_PRIVATE_KEY) → <manifeste>.signe.json
  *   release-publish <fichier.json>       publie une annonce signée dans la base du Cloud
  *   create-demo [e-mail]                 crée une organisation « AfriKaisse Demo Restaurant » pour un prospect
+ *   backup                               serveur local : copie vérifiée de la base dans AFK_BACKUP_DIR (console Windows)
  */
-const USAGE = 'Usage : cli migrate | grant-platform-admin <e-mail> | revoke-platform-admin <e-mail> | release-keygen | release-sign <manifeste.json> | release-publish <manifeste.signe.json> | create-demo [e-mail]';
+const USAGE = 'Usage : cli migrate | grant-platform-admin <e-mail> | revoke-platform-admin <e-mail> | release-keygen | release-sign <manifeste.json> | release-publish <manifeste.signe.json> | create-demo [e-mail] | backup';
 
 function sha256File(file: string): Promise<string> {
   return new Promise((ok, ko) => {
@@ -131,6 +133,15 @@ async function main() {
         } finally {
           await app.close();
         }
+        break;
+      }
+      case 'backup': {
+        // « Sauvegarder maintenant » de la console Windows : même copie vérifiée et même rotation que le
+        // serveur (VACUUM INTO, lecture concurrente sans arrêter la caisse), sans session dans l'application.
+        // Ni migration ni écriture dans la base. Dernière ligne : le fichier produit, en JSON.
+        if (database.kind !== 'sqlite' || !config.backupDir) throw new Error('Sauvegarde intégrée : base SQLite du serveur local et AFK_BACKUP_DIR requis.');
+        if (!existsSync(config.databaseUrl.replace(/^sqlite:/, ''))) throw new Error('Aucune base sur ce PC : créez d’abord le restaurant.');
+        console.log(JSON.stringify(await backupNow(database, config.backupDir, 'manuelle')));
         break;
       }
       case 'release-publish': {

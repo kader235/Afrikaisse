@@ -1,0 +1,259 @@
+/* Fenêtres locales de la console : identité WEBDEV 28 (docs/DESIGN.md), mêmes jetons que l'application web. */
+@font-face {
+  font-family: 'Roboto';
+  src: url('polices/roboto-400.woff2') format('woff2');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Roboto';
+  src: url('polices/roboto-500.woff2') format('woff2');
+  font-weight: 500;
+}
+
+:root {
+  --primary: #065fd4;
+  --primary-hover: #0658c4;
+  --primary-strong: #0550b3;
+  --primary-soft: #e8f0fc;
+  --primary-tonal: rgba(6, 95, 212, 0.12);
+  --bg: #f4f4f4;
+  --surface: #ffffff;
+  --band: #f8f8f8;
+  --line: #e5e5e5;
+  --border: #d6d6d6;
+  --text: #2d2d2d;
+  --text-soft: #606060;
+  --muted: #767676;
+  --danger: #c9302c;
+}
+
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font: 14px/1.45 Roboto, 'Segoe UI', Arial, sans-serif;
+  color: var(--text);
+  background: var(--surface);
+  user-select: none;
+}
+
+/* Bandeau et barre de titre bleus, texte blanc. */
+.titlebar {
+  height: 40px;
+  background: var(--primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding-inline-start: 14px;
+  font-weight: 500;
+  font-size: 14.5px;
+  -webkit-app-region: drag;
+}
+
+.fenetre {
+  display: flex;
+  flex-direction: column;
+}
+.contenu {
+  flex: 1 1 auto;
+  padding: 18px 20px;
+  overflow: auto;
+}
+.pied {
+  flex: none;
+  background: var(--band);
+  border-top: 1px solid var(--line);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Boutons plats en capitales, rayon 4 px ; « plein » pour l'action principale. */
+.btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 4px;
+  border: 1px solid var(--primary);
+  background: var(--surface);
+  color: var(--primary);
+  font: 500 13.5px Roboto, 'Segoe UI', Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--primary-tonal);
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 5px rgba(0, 0, 0, 0.12);
+}
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+.btn-primary:active {
+  background: var(--primary-strong);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Alerte : fond blanc, texte rouge, triangle. */
+.msg {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 10px 12px;
+  border-radius: 4px;
+  margin-top: 12px;
+}
+.msg svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.msg-erreur {
+  color: var(--danger);
+}
+.msg .muted {
+  margin-top: 2px;
+  user-select: text;
+}
+.muted {
+  color: var(--muted);
+}
+
+.section-titre {
+  background: var(--band);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  text-transform: uppercase;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-soft);
+  padding: 6px 10px;
+  margin-top: 18px;
+}
+
+/* Attente (dans la fenêtre de la caisse) : fiche centrée sur fond gris. */
+.attente {
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+}
+.boite {
+  width: 460px;
+  background: var(--surface);
+  border-radius: 4px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.36);
+  overflow: hidden;
+}
+.boite-corps {
+  padding: 18px 16px;
+}
+.piste {
+  height: 6px;
+  background: var(--line);
+  margin: 14px 0 4px;
+  overflow: hidden;
+}
+.barre {
+  height: 6px;
+  width: 30%;
+  background: var(--primary);
+  animation: aller 1.4s ease-in-out infinite;
+}
+@keyframes aller {
+  0% {
+    margin-left: -30%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+/* Appairage. */
+.appairage {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.qr-cadre {
+  flex: none;
+  width: 250px;
+  height: 250px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  background: #fff;
+}
+.qr-cadre img {
+  display: block;
+}
+.infos {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.libelle {
+  font-size: 12.5px;
+  color: var(--text-soft);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+.adresse {
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 2px 0 2px;
+  user-select: text;
+  word-break: break-all;
+}
+.consigne {
+  margin: 14px 0 0;
+  color: var(--text-soft);
+}
+
+/* Liste des adresses : lignes de table, sélection bleu pâle et barre bleue de 3 px. */
+.liste {
+  border: 1px solid var(--line);
+}
+.ligne {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  font: 14px Roboto, 'Segoe UI', Arial, sans-serif;
+  color: var(--text);
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+}
+.ligne:first-child {
+  border-top: 0;
+}
+.ligne:nth-child(even) {
+  background: #f9f9f9;
+}
+.ligne.choisie {
+  background: var(--primary-soft);
+  border-left-color: var(--primary);
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:" />
+    <title>AfriKaisse</title>
+    <link rel="stylesheet" href="fenetre.css" />
+  </head>
+  <body class="attente">
+    <div class="boite">
+      <div class="titlebar">AfriKaisse</div>
+      <div class="boite-corps">
+        <strong id="message">Recherche du serveur AfriKaisse…</strong>
+        <div class="piste" id="piste"><div class="barre"></div></div>
+        <div class="msg msg-erreur" id="erreur" role="alert" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z" /></svg>
+          <div>
+            <div id="erreur-texte"></div>
+            <div class="muted" id="detail"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pied" id="actions" hidden>
+        <button class="btn btn-primary" id="reessayer" type="button">Réessayer</button>
+        <button class="btn" id="journaux" type="button">Ouvrir les journaux</button>
+      </div>
+    </div>
+    <script src="attente.js"></script>
+  </body>
+</html>

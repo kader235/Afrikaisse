@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:" />
+    <title>Appairer une tablette</title>
+    <link rel="stylesheet" href="fenetre.css" />
+  </head>
+  <body class="fenetre">
+    <div class="titlebar">Appairer une tablette</div>
+    <div class="contenu">
+      <div class="muted" id="chargement">Recherche du serveur AfriKaisse…</div>
+
+      <div class="msg msg-erreur" id="erreur" role="alert" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z" /></svg>
+        <div>
+          <div id="erreur-texte"></div>
+          <div class="muted" id="erreur-detail"></div>
+        </div>
+      </div>
+
+      <div class="appairage" id="appairage" hidden>
+        <div class="qr-cadre"><img id="qr" alt="QR code de l'adresse du serveur" width="248" height="248" /></div>
+        <div class="infos">
+          <div class="libelle">Adresse du serveur</div>
+          <div class="adresse" id="adresse"></div>
+          <div class="muted" id="carte"></div>
+          <p class="consigne">Application tablette, écran « Connexion au serveur » : <strong>Serveur local du restaurant</strong>, puis cette adresse.</p>
+          <div class="msg msg-erreur" id="alerte" role="alert" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z" /></svg>
+            <div id="alerte-texte"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="autres" hidden>
+        <div class="section-titre">Adresses de ce PC</div>
+        <div class="liste" id="liste"></div>
+      </div>
+    </div>
+    <div class="pied">
+      <button class="btn btn-primary" id="fermer" type="button">Fermer</button>
+      <button class="btn" id="actualiser" type="button">Actualiser</button>
+    </div>
+    <script src="appairage.js"></script>
+  </body>
+</html>

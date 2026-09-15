@@ -24,6 +24,9 @@
     "services/*/src",
     "services/*/test",
     "apps/web/src",
+    "apps/desktop/src",
+    "apps/desktop/test",
+    "infrastructure/windows/test",
     "vitest.config.ts"
   ]
 }

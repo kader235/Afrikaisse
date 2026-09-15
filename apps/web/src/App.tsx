@@ -34,6 +34,9 @@ type State =
 
 type Section = 'dashboard' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform' | 'monitoring';
 
+/** Adresse d'entrée directe (console Windows) : `#supervision` → Supervision. */
+const sectionFromHash = (): Section | null => (window.location.hash === '#supervision' ? 'monitoring' : null);
+
 export function App() {
   usePreferences();
   const [state, setState] = useState<State>({ kind: 'loading' });
@@ -209,7 +212,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     .slice(0, 4);
   if (quick.length === 0 && visible[0]) quick.push(visible[0]);
   const [panel, setPanel] = useState<'account' | 'nav' | null>(null);
-  const [section, setSection] = useState<Section>(() => quick[0]?.id ?? 'account');
+  const [section, setSection] = useState<Section>(() => sectionFromHash() ?? quick[0]?.id ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
   const roleLabel = me.role ? ROLE_LABELS[lang][me.role] : '';
   const place = me.locations.length === 1 ? me.locations[0]!.name : (me.tenant?.name ?? 'AfriKaisse');
@@ -227,6 +230,15 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     setSection(id);
     setPanel(null);
   };
+  // Console Windows : « État du système » ouvre l'application sur #supervision.
+  useEffect(() => {
+    const onHash = () => {
+      const target = sectionFromHash();
+      if (target) open(target);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
 
   // Assistant de mise en route : s'ouvre seul sur un restaurant neuf (une fois par session), se rouvre depuis Paramètres.
   const setupLocationId = can('location.manage') && me.tenantAccess === 'OK' ? (me.locations[0]?.id ?? null) : null;
