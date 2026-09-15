@@ -7,6 +7,7 @@ import { useI18n } from '../i18n.tsx';
 import { LogoAfrikaisse } from '../logo.tsx';
 import { isNativeApp, mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage } from '../ui.tsx';
+import { A4, buildPdf, canvasJpeg, deliverPdf, type PdfImage, type PdfPage } from '../pdf.ts';
 
 type Code = QrList['codes'][number];
 
@@ -14,7 +15,9 @@ type Code = QrList['codes'][number];
  * QR codes des tables, présentés comme les chevalets posés sur les tables :
  * aperçu de chaque carte par zone, affichage en grand (le client scanne l'écran de la tablette),
  * image haute définition pour l'imprimeur, planche A4 de quatre chevalets à découper,
- * régénération d'un QR compromis. L'impression et l'image passent par un ordinateur.
+ * PDF A4 à imprimer (quatre chevalets par page, ou une table en grand) : téléchargé sur ordinateur,
+ * partagé depuis la tablette (WhatsApp, e-mail, Fichiers) pour l'imprimer ailleurs ;
+ * régénération d'un QR compromis.
  */
 export function QrTab({ locationId, canManage }: { locationId: string; canManage: boolean }) {
   const { t } = useI18n();
@@ -62,6 +65,21 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
   const openIndex = codes.findIndex((c) => c.tableId === openId);
   const open = openIndex >= 0 ? codes[openIndex]! : null;
   const card = (c: Code) => <TableCard code={c} list={list!} svg={svgs[c.token]} />;
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  async function makePdf(items: Code[], single: boolean) {
+    if (!list || items.length === 0 || pdfBusy) return;
+    setPdfBusy(true);
+    setError(null);
+    try {
+      await saveCardsPdf(list, items, single);
+    } catch (err) {
+      // Partage fermé sans choisir d'application : ce n'est pas une erreur.
+      if (!(err instanceof Error && /cancel/i.test(err.message))) setError(err);
+    } finally {
+      setPdfBusy(false);
+    }
+  }
 
   async function regenerate() {
     if (!open) return;
@@ -79,8 +97,12 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
   return (
     <>
       <div className="toolbar">
+        <button className="btn btn-primary" disabled={codes.length === 0 || pdfBusy} onClick={() => void makePdf(codes, false)}>
+          <Icon name="pdf" />
+          {pdfBusy ? 'Préparation du PDF…' : 'PDF à imprimer'}
+        </button>
         {!native && (
-          <button className="btn btn-primary" disabled={codes.length === 0} onClick={() => setPrinting(codes)}>
+          <button className="btn" disabled={codes.length === 0} onClick={() => setPrinting(codes)}>
             <Icon name="print" />
             Imprimer les chevalets
           </button>
@@ -130,6 +152,7 @@ export function QrTab({ locationId, canManage }: { locationId: string; canManage
           onNext={openIndex < codes.length - 1 ? () => setOpenId(codes[openIndex + 1]!.tableId) : undefined}
           onClose={() => setOpenId(null)}
           onPrint={native ? undefined : () => setPrinting([open])}
+          onPdf={pdfBusy ? undefined : () => void makePdf([open], true)}
           onSaveImage={native ? undefined : () => void saveCardImage(list, open).catch(setError)}
           onRegenerate={canManage ? () => setConfirm(true) : undefined}
         >
@@ -216,6 +239,7 @@ function QrPresenter({
   onNext,
   onClose,
   onPrint,
+  onPdf,
   onSaveImage,
   onRegenerate,
 }: {
@@ -226,6 +250,7 @@ function QrPresenter({
   onNext?: () => void;
   onClose: () => void;
   onPrint?: () => void;
+  onPdf?: () => void;
   onSaveImage?: () => void;
   onRegenerate?: () => void;
 }) {
@@ -249,6 +274,12 @@ function QrPresenter({
           </span>
         </div>
         <div className="qr-presenter-actions">
+          {onPdf && (
+            <button className="btn" onClick={onPdf}>
+              <Icon name="pdf" />
+              PDF
+            </button>
+          )}
           {onSaveImage && (
             <button className="btn" onClick={onSaveImage}>
               <Icon name="image" />
@@ -291,8 +322,8 @@ function QrPresenter({
   );
 }
 
-/** Image du chevalet en A6 à 300 dpi (1240 × 1748 px), pour un imprimeur ou un partage. */
-async function saveCardImage(list: QrList, code: Code) {
+/** Chevalet dessiné en A6 à 300 dpi (1240 × 1748 px) : image pour un imprimeur, pages du PDF. */
+async function drawCard(list: QrList, code: Code): Promise<HTMLCanvasElement> {
   const W = 1240;
   const H = 1748;
   const canvas = document.createElement('canvas');
@@ -351,6 +382,12 @@ async function saveCardImage(list: QrList, code: Code) {
   g.fillStyle = '#0f2a4a';
   g.fillText('AfriKaisse', W - 90, 1684);
 
+  return canvas;
+}
+
+/** Image PNG du chevalet, pour un imprimeur ou un partage. */
+async function saveCardImage(list: QrList, code: Code) {
+  const canvas = await drawCard(list, code);
   const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Image impossible à créer."))), 'image/png'));
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -360,4 +397,49 @@ async function saveCardImage(list: QrList, code: Code) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+const CARD_RATIO = 1748 / 1240;
+const fileName = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9.-]+/g, '-');
+
+/**
+ * PDF A4 : toutes les tables, quatre chevalets par page séparés par des traits de coupe ;
+ * une seule table, son chevalet en grand au centre de la page.
+ */
+async function saveCardsPdf(list: QrList, codes: Code[], single: boolean) {
+  const pages: PdfPage[] = [];
+  const image = async (code: Code, x: number, y: number, width: number, height: number): Promise<PdfImage> => {
+    const canvas = await drawCard(list, code);
+    return { jpeg: await canvasJpeg(canvas), pixelWidth: canvas.width, pixelHeight: canvas.height, x, y, width, height };
+  };
+  if (single) {
+    const width = A4.width - 120;
+    const height = width * CARD_RATIO;
+    for (const code of codes) pages.push({ images: [await image(code, (A4.width - width) / 2, (A4.height - height) / 2, width, height)] });
+  } else {
+    const margin = 24;
+    const cellW = (A4.width - 2 * margin) / 2;
+    const cellH = (A4.height - 2 * margin) / 2;
+    const width = Math.min(cellW - 16, (cellH - 16) / CARD_RATIO);
+    const height = width * CARD_RATIO;
+    for (let first = 0; first < codes.length; first += 4) {
+      const images: PdfImage[] = [];
+      const group = codes.slice(first, first + 4);
+      for (let k = 0; k < group.length; k++) {
+        const cx = margin + cellW * (k % 2) + cellW / 2;
+        const cy = A4.height - margin - cellH * Math.floor(k / 2) - cellH / 2;
+        images.push(await image(group[k]!, cx - width / 2, cy - height / 2, width, height));
+      }
+      pages.push({
+        images,
+        cuts: [
+          { x1: A4.width / 2, y1: margin / 2, x2: A4.width / 2, y2: A4.height - margin / 2 },
+          { x1: margin / 2, y1: A4.height / 2, x2: A4.width - margin / 2, y2: A4.height / 2 },
+        ],
+      });
+    }
+  }
+  const one = single && codes.length === 1 ? codes[0]! : null;
+  const name = one ? `chevalet-table-${one.tableLabel}.pdf` : `chevalets-${list.locationName}.pdf`;
+  await deliverPdf(buildPdf(pages), fileName(name), one ? `Chevalet table ${one.tableLabel}` : `Chevalets QR — ${list.locationName}`);
 }
