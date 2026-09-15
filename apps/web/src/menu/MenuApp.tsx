@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // Types seulement (effacés à la compilation) : ce bundle n'embarque pas Zod.
-import type { ClientSession, PublicMenu, PublicPricing, PublicProduct } from '@afrikaisse/core';
+import type { ClientSession, PublicAnnouncement, PublicMenu, PublicPricing, PublicProduct } from '@afrikaisse/core';
 import { isTableCode } from '@afrikaisse/core/guests';
 import { formatMoney } from '@afrikaisse/core/money';
 import { priceLine, type PricedLine } from '@afrikaisse/core/pricing';
-import { bestProductPromotion, lineDiscount, localMoment, priceOrder, promoCodeMessage, promotionBadge, type OrderPricing, type PromotionRule } from '@afrikaisse/core/promotions';
+import { bestProductPromotion, isScheduled, lineDiscount, localMoment, priceOrder, promoCodeMessage, promotionBadge, type OrderPricing, type PromotionRule } from '@afrikaisse/core/promotions';
 import { formatRate } from '@afrikaisse/core/taxes';
+import { mdiArrowLeft, mdiBellRing, mdiCash, mdiClockOutline, mdiHeart, mdiHeartOutline, mdiInformationOutline, mdiMagnify, mdiMinus, mdiPlus, mdiReceipt, mdiSilverwareForkKnife, mdiTableFurniture, mdiTrashCanOutline } from '@mdi/js';
+import { Announcements } from './Announcements.tsx';
 import { errorText, isNetworkError, request } from './api.ts';
-import { ACTIVE_STATUSES, GuestFields, LanguageSwitch, OfflineBanner, PaySheet, Sheet, TableSheet, type Blocked, type Money } from './ClientSheets.tsx';
+import { ACTIVE_STATUSES, ChoiceRow, GuestFields, LanguageSwitch, OfflineBanner, PaySheet, Sheet, TableSheet, type Blocked, type Money } from './ClientSheets.tsx';
+import { Icon } from './Icon.tsx';
 import { LangProvider, MONEY_LOCALE, choiceRuleText, useLang } from './i18n.tsx';
 import { nicknameStore, setupPwa, tableCodeStore, useFavorites, useOnline } from './pwa.ts';
 import '../styles/pricing.css';
@@ -82,6 +85,16 @@ function useStoredCart(key: string): [CartLine[], (next: CartLine[]) => void] {
   return [cart, save];
 }
 
+/** Heure courante, relue chaque minute : les annonces suivent leur période tant que le menu reste ouvert. */
+function useMinute(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
 export function MenuApp() {
   return (
     <LangProvider>
@@ -100,6 +113,7 @@ function Menu() {
   const [query, setQuery] = useState('');
   const [sheet, setSheet] = useState<SheetState>(null);
   const [active, setActive] = useState<string | null>(null);
+  const [pinned, setPinned] = useState(false);
   const [cart, setCart] = useStoredCart(`afk.cart.${token}`);
   const [session, setSession] = useState<ClientSession | null>(null);
   const [reachable, setReachable] = useState(true);
@@ -108,6 +122,8 @@ function Menu() {
   const online = useOnline();
   const [pricing, setPricing] = useState<PublicPricing | null>(null);
   const [code, setCode] = useState<PromotionRule | null>(null);
+  const now = useMinute();
+  const pinsRef = useRef<HTMLElement | null>(null);
 
   const loadMenu = useCallback(() => {
     request<PublicMenu>('GET', `/api/public/menu/${token}`)
@@ -175,49 +191,73 @@ function Menu() {
 
   const menu = state.kind === 'ready' ? state.menu : null;
   const products = useMemo(() => new Map((menu?.categories ?? []).flatMap((c) => c.products.map((p) => [p.id, p] as const))), [menu]);
+  const popular = useMemo(() => (menu?.popular ?? []).map((id) => products.get(id)).filter((p): p is PublicProduct => !!p), [menu, products]);
+  const favs = useMemo(() => (menu?.categories ?? []).flatMap((c) => c.products).filter((p) => favorites.has(p.id)), [menu, favorites]);
 
-  // Sections du menu : « Populaires » (ventes réelles) et « Favoris » (ce téléphone) avant les catégories.
+  // Navigation : « Les plus commandés » (ventes réelles) et « Favoris » (ce téléphone) avant les catégories.
   const nav = useMemo<Section[]>(() => {
     if (!menu) return [];
     const extra: Section[] = [];
-    const popular = (menu.popular ?? []).map((id) => products.get(id)).filter((p): p is PublicProduct => !!p);
     if (popular.length > 0) extra.push({ id: 'popular', name: t('popular'), products: popular });
-    const favs = menu.categories.flatMap((c) => c.products).filter((p) => favorites.has(p.id));
     if (favs.length > 0) extra.push({ id: 'favorites', name: t('favorites'), products: favs });
     return [...extra, ...menu.categories];
-  }, [menu, products, favorites, t]);
+  }, [menu, popular, favs, t]);
 
+  // Listes de plats : les favoris puis chaque catégorie (les plus commandés défilent à part).
   const sections = useMemo<Section[]>(() => {
     if (!menu) return [];
     const q = normalize(query.trim());
-    if (!q) return nav;
+    if (!q) return nav.filter((s) => s.id !== 'popular');
     return menu.categories
       .map((c) => ({ ...c, products: c.products.filter((p) => normalize(`${p.name} ${p.description ?? ''} ${p.tags.join(' ')}`).includes(q)) }))
       .filter((c) => c.products.length > 0);
   }, [menu, nav, query]);
 
   useEffect(() => {
-    if (!menu || query) return;
+    if (!menu || query) {
+      setPinned(false);
+      return;
+    }
     const onScroll = () => {
       let current = nav[0]?.id ?? null;
       for (const c of nav) {
         const el = document.getElementById(`c-${c.id}`);
-        if (el && el.getBoundingClientRect().top < 140) current = c.id;
+        if (el && el.getBoundingClientRect().top < 120) current = c.id;
       }
       setActive(current);
+      const cats = document.getElementById('m-cats');
+      setPinned(!!cats && cats.getBoundingClientRect().bottom < 0);
     };
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [menu, nav, query]);
 
-  if (state.kind === 'loading') return <div className="m-status">{t('loading')}</div>;
+  // Onglet actif gardé visible dans la barre épinglée.
+  useEffect(() => {
+    if (!pinned || !active) return;
+    const el = pinsRef.current?.querySelector<HTMLElement>(`[data-id="${active}"]`);
+    el?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [pinned, active]);
+
+  if (state.kind === 'loading') {
+    return (
+      <div className="m-status">
+        <span className="m-spinner" aria-hidden="true" />
+        <p>{t('loading')}</p>
+      </div>
+    );
+  }
   if (state.kind === 'error') {
     return (
       <div className="m-status">
-        <p>{state.message}</p>
-        <button className="m-button" onClick={() => window.location.reload()}>
-          {t('retry')}
-        </button>
+        <div className="m-status-card">
+          <Icon path={mdiInformationOutline} size={32} />
+          <p>{state.message}</p>
+          <button className="m-button" onClick={() => window.location.reload()}>
+            {t('retry')}
+          </button>
+        </div>
       </div>
     );
   }
@@ -256,6 +296,20 @@ function Menu() {
   const mine = session?.orders.filter((o) => o.mine) ?? [];
   const latest = mine.find((o) => ACTIVE_STATUSES.has(o.status));
 
+  // Annonces en cours dans le fuseau de l'établissement ; sans ce fuseau (tarifs pas encore chargés), aucune.
+  const announcementMoment = pricing ? localMoment(now, pricing.timezone) : null;
+  const announcements = announcementMoment
+    ? (state.menu.announcements ?? [])
+        .filter((a) => isScheduled(a.schedule, announcementMoment))
+        .map((a) => (a.target && (a.target.kind === 'PRODUCT' ? products.has(a.target.id) : state.menu.categories.some((c) => c.id === a.target!.id)) ? a : { ...a, target: null }))
+    : [];
+  const evening = (() => {
+    const hour = new Date(now).getHours();
+    return hour >= 17 || hour < 4;
+  })();
+  const thumbOf = (list: PublicProduct[]) => list.find((p) => p.photoUrl)?.photoUrl ?? null;
+  const popularPhotos = popular.some((p) => p.photoUrl);
+
   function addToCart(line: Omit<CartLine, 'key'>) {
     const same = cart.find((l) => l.productId === line.productId && l.variantId === line.variantId && l.note === line.note && l.modifierIds.slice().sort().join() === line.modifierIds.slice().sort().join());
     setCart(same ? cart.map((l) => (l === same ? { ...l, quantity: Math.min(99, l.quantity + line.quantity) } : l)) : [...cart, { ...line, key: randomToken() }]);
@@ -278,78 +332,169 @@ function Menu() {
     setSheet({ kind });
   }
 
+  function goTo(id: string) {
+    setActive(id);
+    document.getElementById(`c-${id}`)?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function openAnnouncement(a: PublicAnnouncement) {
+    if (!a.target) return;
+    if (a.target.kind === 'CATEGORY') goTo(a.target.id);
+    else {
+      const product = products.get(a.target.id);
+      if (product) setSheet({ kind: 'product', product });
+    }
+  }
+
+  const openProduct = (p: PublicProduct) => setSheet({ kind: 'product', product: p });
+
   return (
     <div className="m-app">
-      <header className="m-head">
-        {restaurant.logoUrl && <img className="m-logo" src={restaurant.logoUrl} alt="" width={52} height={52} />}
-        <div>
-          <h1>{restaurant.name}</h1>
-          {restaurant.organization !== restaurant.name && <p>{restaurant.organization}</p>}
+      <header className="m-top">
+        <div className="m-brand">
+          {restaurant.logoUrl && <img className="m-logo" src={restaurant.logoUrl} alt="" width={44} height={44} />}
+          <div className="m-brand-text">
+            <small>{t('welcome')}</small>
+            <strong>{restaurant.name}</strong>
+          </div>
         </div>
-        <div className="m-head-side">
-          <span className="m-table">{t('table', { label: table.label })}</span>
+        <div className="m-top-side">
           <LanguageSwitch />
+          <button className="m-table-chip" onClick={() => open('table')}>
+            <Icon path={mdiTableFurniture} size={18} />
+            <span>{t('table', { label: table.label })}</span>
+          </button>
         </div>
       </header>
-      <OfflineBanner blocked={blocked} />
-      <div className="m-service">
-        <button onClick={callWaiter} disabled={offline}>
-          {t('callWaiter')}
-        </button>
-        <button onClick={() => open('table')}>{t('myTable')}</button>
-        <button onClick={() => open('pay')}>{t('pay')}</button>
-      </div>
 
-      <div className="m-sticky">
-        <label className="m-search">
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zM14 14l-3.5-3.5" />
-          </svg>
-          <input type="search" placeholder={t('search')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('search')} />
-        </label>
-        {!query && (
-          <nav className="m-cats">
-            {nav.map((c) => (
-              <button
-                key={c.id}
-                className={active === c.id ? 'on' : undefined}
-                onClick={() => {
-                  setActive(c.id);
-                  document.getElementById(`c-${c.id}`)?.scrollIntoView();
-                }}
-              >
-                {c.name}
-              </button>
-            ))}
-          </nav>
-        )}
-      </div>
+      <h1 className="m-greeting">
+        {t('greetingStart')}
+        <em>{t('greetingWord')}</em>
+        {t(evening ? 'greetingEndEvening' : 'greetingEnd')}
+      </h1>
+
+      <label className="m-search">
+        <Icon path={mdiMagnify} size={22} />
+        <input type="search" placeholder={t('search')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('search')} />
+      </label>
+
+      <OfflineBanner blocked={blocked} />
+
+      {!query && (
+        <>
+          <Announcements items={announcements} onOpen={openAnnouncement} />
+
+          {(favs.length > 0 || state.menu.categories.length > 0) && (
+            <>
+              <div className="m-title">
+                <h2>{t('categories')}</h2>
+              </div>
+              <nav className="m-cats" id="m-cats">
+                {favs.length > 0 && (
+                  <button className={active === 'favorites' ? 'm-cat on' : 'm-cat'} onClick={() => goTo('favorites')}>
+                    <span className="m-cat-thumb m-cat-icon">
+                      <Icon path={mdiHeart} size={24} />
+                    </span>
+                    <span className="m-cat-name">{t('favorites')}</span>
+                  </button>
+                )}
+                {state.menu.categories.map((c) => {
+                  const thumb = thumbOf(c.products);
+                  return (
+                    <button key={c.id} className={active === c.id ? 'm-cat on' : 'm-cat'} onClick={() => goTo(c.id)}>
+                      {thumb ? (
+                        <img className="m-cat-thumb" src={thumb} alt="" loading="lazy" decoding="async" width={56} height={56} />
+                      ) : (
+                        <span className="m-cat-thumb m-cat-icon">
+                          <Icon path={mdiSilverwareForkKnife} size={24} />
+                        </span>
+                      )}
+                      <span className="m-cat-name">{c.name}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </>
+          )}
+
+          {popular.length > 0 && (
+            <section id="c-popular" className="m-section m-section-popular">
+              <div className="m-title">
+                <h2>{t('mostOrdered')}</h2>
+              </div>
+              <div className={popularPhotos ? 'm-pops' : 'm-pops m-pops-text'}>
+                {popular.map((p) => (
+                  <button key={p.id} className={p.isAvailable ? 'm-pop' : 'm-pop off'} onClick={() => openProduct(p)}>
+                    {popularPhotos &&
+                      (p.photoUrl ? (
+                        <img className="m-pop-photo" src={p.photoUrl} alt="" loading="lazy" decoding="async" />
+                      ) : (
+                        <span className="m-pop-photo m-pop-empty">
+                          <Icon path={mdiSilverwareForkKnife} size={30} />
+                        </span>
+                      ))}
+                    <span className="m-pop-body">
+                      <strong className="m-name">{p.name}</strong>
+                      {p.description && <span className="m-desc">{p.description}</span>}
+                      <span className="m-pop-foot">
+                        <span className="m-price">
+                          <PriceContent product={p} promo={showcase(p)} ht={ht(p)} money={money} />
+                          {!p.isAvailable && <em>{t('soldOut')}</em>}
+                        </span>
+                        {p.isAvailable && (
+                          <span className="m-plus" aria-hidden="true">
+                            <Icon path={mdiPlus} size={22} />
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      {!query && pinned && nav.length > 1 && (
+        <nav className="m-pins" ref={pinsRef}>
+          {nav.map((c) => (
+            <button key={c.id} data-id={c.id} className={active === c.id ? 'on' : undefined} onClick={() => goTo(c.id)}>
+              {c.name}
+            </button>
+          ))}
+        </nav>
+      )}
 
       <main>
         {sections.map((c) => (
-          <section key={c.id} id={`c-${c.id}`} className={`m-section m-section-${c.id === 'popular' || c.id === 'favorites' ? c.id : 'category'}`}>
-            <h2>{c.name}</h2>
-            {c.products.map((p) => (
-              <button key={p.id} className={`m-item${p.isAvailable ? '' : ' off'}${p.photoUrl ? ' has-photo' : ''}`} onClick={() => setSheet({ kind: 'product', product: p })}>
-                <span className="m-text">
-                  <strong>
-                    {favorites.has(p.id) && <StarIcon className="m-fav-mark" filled />}
-                    {p.name}
-                  </strong>
-                  {p.description && <span className="m-desc">{p.description}</span>}
-                  <span className="m-price">
-                    <PriceContent product={p} promo={showcase(p)} ht={ht(p)} money={money} />
-                    {!p.isAvailable && <em>{t('soldOut')}</em>}
+          <section key={c.id} id={`c-${c.id}`} className={`m-section m-section-${c.id === 'favorites' ? c.id : 'category'}`}>
+            <div className="m-title">
+              <h2>{c.name}</h2>
+            </div>
+            <div className="m-list">
+              {c.products.map((p) => (
+                <button key={p.id} className={`m-item${p.isAvailable ? '' : ' off'}${p.photoUrl ? ' has-photo' : ''}`} onClick={() => openProduct(p)}>
+                  {p.photoUrl && <img className="m-item-photo" src={p.photoUrl} alt="" loading="lazy" decoding="async" width={84} height={84} />}
+                  <span className="m-text">
+                    <strong className="m-name">
+                      {favorites.has(p.id) && <Icon path={mdiHeart} size={15} className="m-fav-mark" />}
+                      {p.name}
+                    </strong>
+                    {p.description && <span className="m-desc">{p.description}</span>}
+                    <span className="m-price">
+                      <PriceContent product={p} promo={showcase(p)} ht={ht(p)} money={money} />
+                      {!p.isAvailable && <em>{t('soldOut')}</em>}
+                    </span>
                   </span>
-                </span>
-                {p.photoUrl && <img src={p.photoUrl} alt="" loading="lazy" decoding="async" width={96} height={96} />}
-                {p.isAvailable && (
-                  <span className="m-plus" aria-hidden="true">
-                    +
-                  </span>
-                )}
-              </button>
-            ))}
+                  {p.isAvailable && (
+                    <span className="m-plus" aria-hidden="true">
+                      <Icon path={mdiPlus} size={22} />
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </section>
         ))}
         {sections.length === 0 && <p className="m-empty">{query ? t('noResult') : t('emptyMenu')}</p>}
@@ -357,19 +502,45 @@ function Menu() {
 
       <footer className="m-foot">{t('footer')}</footer>
 
-      {cartCount > 0 ? (
-        <button className="m-bar" onClick={() => open('cart')}>
-          <span>{cartCount > 1 ? t('cartMany', { n: cartCount }) : t('cartOne')}</span>
-          <strong>{money(cartTotal)}</strong>
-        </button>
-      ) : (
-        mine.length > 0 && (
-          <button className="m-bar m-bar-soft" onClick={() => open('table')}>
-            <span>{latest ? `${t('orderNo', { n: latest.number })} · ${t(`status.${latest.status}`)}` : t('myOrders')}</span>
-            <strong>{t('track')}</strong>
+      <div className="m-dock">
+        {cartCount > 0 ? (
+          <button className="m-bar" onClick={() => open('cart')} aria-label={`${cartCount > 1 ? t('cartMany', { n: cartCount }) : t('cartOne')} · ${money(cartTotal)}`}>
+            <span className="m-bar-label">
+              <i>{cartCount}</i>
+              {t('viewCart')}
+            </span>
+            <strong className="m-num">{money(cartTotal)}</strong>
           </button>
-        )
-      )}
+        ) : (
+          mine.length > 0 && (
+            <button className="m-bar m-bar-soft" onClick={() => open('table')}>
+              <span className="m-bar-label">
+                <Icon path={mdiClockOutline} size={20} />
+                <span className="m-bar-status">{latest ? `${t('orderNo', { n: latest.number })} · ${t(`status.${latest.status}`)}` : t('myOrders')}</span>
+              </span>
+              <strong>{t('track')}</strong>
+            </button>
+          )
+        )}
+        <nav className="m-tabs">
+          <button className={sheet?.kind !== 'table' && sheet?.kind !== 'pay' ? 'on' : undefined} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <Icon path={mdiSilverwareForkKnife} size={24} />
+            <span>{t('navMenu')}</span>
+          </button>
+          <button className={sheet?.kind === 'table' ? 'on' : undefined} onClick={() => open('table')}>
+            <Icon path={mdiReceipt} size={24} />
+            <span>{t('myTable')}</span>
+          </button>
+          <button onClick={callWaiter} disabled={offline} aria-label={t('callWaiter')}>
+            <Icon path={mdiBellRing} size={24} />
+            <span>{t('navWaiter')}</span>
+          </button>
+          <button className={sheet?.kind === 'pay' ? 'on' : undefined} onClick={() => open('pay')} aria-label={t('pay')}>
+            <Icon path={mdiCash} size={24} />
+            <span>{t('navBill')}</span>
+          </button>
+        </nav>
+      </div>
 
       {toast && (
         <div className="m-toast" role="status">
@@ -437,14 +608,6 @@ function Menu() {
   );
 }
 
-function StarIcon({ filled, className }: { filled: boolean; className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 20 20" aria-hidden="true" width="16" height="16">
-      <path d="M10 1.8l2.5 5.2 5.7.8-4.1 4 1 5.6L10 14.8l-5.1 2.6 1-5.6-4.1-4 5.7-.8z" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
 function ProductSheet({
   product: p,
   promo,
@@ -486,10 +649,23 @@ function ProductSheet({
     }
   }
 
+  const actions = (
+    <>
+      <button className="m-round m-back" aria-label={t('back')} onClick={onClose}>
+        <Icon path={mdiArrowLeft} size={22} className="m-flip" />
+      </button>
+      <button className={favorite ? 'm-round m-heart on' : 'm-round m-heart'} aria-pressed={favorite} aria-label={favorite ? t('favoriteRemove') : t('favoriteAdd')} onClick={onFavorite}>
+        <Icon path={favorite ? mdiHeart : mdiHeartOutline} size={22} />
+      </button>
+    </>
+  );
+
   return (
     <Sheet
       title={p.name}
       onClose={onClose}
+      className={p.photoUrl ? 'm-sheet-product has-photo' : 'm-sheet-product'}
+      closeButton={false}
       footer={
         p.isAvailable ? (
           <>
@@ -497,11 +673,11 @@ function ProductSheet({
             <div className="m-add">
               <div className="m-qty">
                 <button aria-label={t('less')} disabled={quantity <= 1} onClick={() => setQuantity(quantity - 1)}>
-                  −
+                  <Icon path={mdiMinus} size={20} />
                 </button>
-                <span>{quantity}</span>
+                <span className="m-num">{quantity}</span>
                 <button aria-label={t('more')} disabled={quantity >= 99} onClick={() => setQuantity(quantity + 1)}>
-                  +
+                  <Icon path={mdiPlus} size={20} />
                 </button>
               </div>
               <button className="m-button m-grow" disabled={!result.ok} onClick={() => onAdd({ productId: p.id, variantId, modifierIds, quantity, note: note.trim() })}>
@@ -514,16 +690,19 @@ function ProductSheet({
         )
       }
     >
-      {p.photoUrl && <img className="m-hero" src={p.photoUrl} alt="" decoding="async" />}
-      <div className="m-sheet-body">
+      {p.photoUrl ? (
+        <div className="m-hero">
+          <img src={p.photoUrl} alt="" decoding="async" />
+          {actions}
+        </div>
+      ) : (
+        <div className="m-hero-bar">{actions}</div>
+      )}
+      <div className="m-sheet-body m-product">
         <h3>{p.name}</h3>
         <p className="m-price big">
           <PriceContent product={p} promo={promo} ht={ht} money={money} />
         </p>
-        <button className={favorite ? 'm-fav on' : 'm-fav'} aria-pressed={favorite} onClick={onFavorite}>
-          <StarIcon filled={favorite} />
-          <span>{favorite ? t('favoriteRemove') : t('favoriteAdd')}</span>
-        </button>
         {p.description && <p className="m-long">{p.description}</p>}
         {p.tags.length > 0 && (
           <p className="m-tags">
@@ -535,42 +714,54 @@ function ProductSheet({
         {p.variants.length > 0 && (
           <fieldset className="m-group">
             <legend>
-              {t('version')} <small>{t('required')}</small>
+              <span className="m-group-head">
+                <span>{t('version')}</span>
+                <small className="req">{t('required')}</small>
+              </span>
             </legend>
             {p.variants.map((v) => (
-              <label key={v.id} className={v.isAvailable ? 'm-choice' : 'm-choice off'}>
-                <input type="radio" name="variant" disabled={!v.isAvailable || !p.isAvailable} checked={variantId === v.id} onChange={() => setVariantId(v.id)} />
-                <span>{v.name}</span>
-                <span>{v.isAvailable ? delta(v.priceDelta) : t('unavailable')}</span>
-              </label>
+              <ChoiceRow key={v.id} type="radio" name="variant" off={!v.isAvailable} disabled={!v.isAvailable || !p.isAvailable} checked={variantId === v.id} onChange={() => setVariantId(v.id)} label={v.name} aside={v.isAvailable ? delta(v.priceDelta) : t('unavailable')} />
             ))}
           </fieldset>
         )}
         {p.modifierGroups.map((g) => (
           <fieldset className="m-group" key={g.id}>
             <legend>
-              {g.name} <small>{choiceRuleText(lang, g.minSelect, g.maxSelect)}</small>
+              <span className="m-group-head">
+                <span>{g.name}</span>
+                <small className={g.minSelect > 0 ? 'req' : undefined}>{choiceRuleText(lang, g.minSelect, g.maxSelect)}</small>
+              </span>
             </legend>
             {g.modifiers.map((m) => {
               const checked = modifierIds.includes(m.id);
               const full = g.maxSelect > 1 && !checked && modifierIds.filter((id) => g.modifiers.some((x) => x.id === id)).length >= g.maxSelect;
               return (
-                <label key={m.id} className={m.isAvailable ? 'm-choice' : 'm-choice off'}>
-                  <input type={g.maxSelect === 1 ? 'radio' : 'checkbox'} name={g.id} disabled={!m.isAvailable || !p.isAvailable || full} checked={checked} onChange={() => toggle(g.id, m.id)} onClick={() => g.maxSelect === 1 && checked && g.minSelect === 0 && toggle(g.id, m.id)} />
-                  <span>{m.name}</span>
-                  <span>{m.isAvailable ? delta(m.priceDelta) : t('unavailable')}</span>
-                </label>
+                <ChoiceRow
+                  key={m.id}
+                  type={g.maxSelect === 1 ? 'radio' : 'checkbox'}
+                  name={g.id}
+                  off={!m.isAvailable}
+                  disabled={!m.isAvailable || !p.isAvailable || full}
+                  checked={checked}
+                  onChange={() => toggle(g.id, m.id)}
+                  onClick={() => g.maxSelect === 1 && checked && g.minSelect === 0 && toggle(g.id, m.id)}
+                  label={m.name}
+                  aside={m.isAvailable ? delta(m.priceDelta) : t('unavailable')}
+                />
               );
             })}
           </fieldset>
         ))}
         {p.allergens.length > 0 && (
           <p className="m-allergens">
-            <strong>{t('allergens')}</strong> {p.allergens.map(allergen).join(', ')}
+            <Icon path={mdiInformationOutline} size={18} />
+            <span>
+              <strong>{t('allergens')}</strong> {p.allergens.map(allergen).join(', ')}
+            </span>
           </p>
         )}
         {p.isAvailable && (
-          <label className="m-note-field">
+          <label className="m-field">
             <span>{t('kitchenNote')}</span>
             <input maxLength={200} placeholder={t('kitchenNotePh')} value={note} onChange={(e) => setNote(e.target.value)} />
           </label>
@@ -656,35 +847,36 @@ function CartSheet({
     >
       <div className="m-sheet-body">
         <h3>{t('yourCart')}</h3>
-        {lines.map(({ line, product, result }) => {
-          const variant = product?.variants.find((v) => v.id === line.variantId);
-          const options = product?.modifierGroups.flatMap((g) => g.modifiers).filter((m) => line.modifierIds.includes(m.id)) ?? [];
-          return (
-            <div key={line.key} className={result.ok ? 'm-line' : 'm-line bad'}>
-              <div className="m-line-text">
-                <strong>{product?.name ?? t('removedItem')}</strong>
-                {(variant || options.length > 0) && <span>{[variant?.name, ...options.map((o) => o.name)].filter(Boolean).join(', ')}</span>}
-                {line.note && <span>« {line.note} »</span>}
-                {!result.ok && <em>{result.message}</em>}
-              </div>
-              <div className="m-line-side">
-                <strong>{result.ok ? money(result.total) : '—'}</strong>
+        <div className="m-lines">
+          {lines.map(({ line, product, result }) => {
+            const variant = product?.variants.find((v) => v.id === line.variantId);
+            const options = product?.modifierGroups.flatMap((g) => g.modifiers).filter((m) => line.modifierIds.includes(m.id)) ?? [];
+            return (
+              <div key={line.key} className={result.ok ? 'm-line' : 'm-line bad'}>
+                {product?.photoUrl && <img className="m-line-photo" src={product.photoUrl} alt="" loading="lazy" decoding="async" width={52} height={52} />}
+                <div className="m-line-text">
+                  <strong>{product?.name ?? t('removedItem')}</strong>
+                  {(variant || options.length > 0) && <span>{[variant?.name, ...options.map((o) => o.name)].filter(Boolean).join(', ')}</span>}
+                  {line.note && <span>« {line.note} »</span>}
+                  {!result.ok && <em>{result.message}</em>}
+                  <b className="m-line-price m-num">{result.ok ? money(result.total) : '—'}</b>
+                </div>
                 <div className="m-qty small">
                   <button aria-label={t('less')} onClick={() => setQty(line.key, line.quantity - 1)}>
-                    {line.quantity === 1 ? '✕' : '−'}
+                    <Icon path={line.quantity === 1 ? mdiTrashCanOutline : mdiMinus} size={18} />
                   </button>
-                  <span>{line.quantity}</span>
+                  <span className="m-num">{line.quantity}</span>
                   <button aria-label={t('more')} disabled={line.quantity >= 99} onClick={() => setQty(line.key, line.quantity + 1)}>
-                    +
+                    <Icon path={mdiPlus} size={18} />
                   </button>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
         {needsCode && !session?.session && <p className="m-hint">{t('tableNotOpen')}</p>}
         <GuestFields needsCode={needsCode} code={code} onCode={setCode} nickname={session?.joined && session.nickname ? session.nickname : nickname} onNickname={setNickname} />
-        <label className="m-note-field">
+        <label className="m-field">
           <span>{t('restaurantNote')}</span>
           <input maxLength={300} placeholder={t('restaurantNotePh')} value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
@@ -702,9 +894,9 @@ function PriceContent({ product: p, promo, ht, money }: { product: PublicProduct
   const off = promo?.discount ?? 0;
   return (
     <>
-      {money(base - off)}
+      <span className="m-num">{money(base - off)}</span>
       {ht && <small className="m-promo-ht">{t('exclTax')}</small>}
-      {(p.promoPrice !== null || off > 0) && <s>{money(p.price)}</s>}
+      {(p.promoPrice !== null || off > 0) && <s className="m-num">{money(p.price)}</s>}
       {promo && <span className="m-promo-badge">{promotionBadge(promo.promotion, money)}</span>}
     </>
   );
@@ -719,12 +911,12 @@ function CartSums({ quote, money }: { quote: OrderPricing | null; money: Money }
     <dl className="m-sums">
       <div>
         <dt>{t('subtotal')}</dt>
-        <dd>{money(quote.subtotal)}</dd>
+        <dd className="m-num">{money(quote.subtotal)}</dd>
       </div>
       {quote.applied.map((a) => (
         <div key={a.id}>
           <dt>{a.code ? t('promoCodeNamed', { code: a.code }) : a.name}</dt>
-          <dd>−{money(a.amount)}</dd>
+          <dd className="m-num">−{money(a.amount)}</dd>
         </div>
       ))}
       {taxes.map((x) => (
@@ -732,7 +924,7 @@ function CartSums({ quote, money }: { quote: OrderPricing | null; money: Money }
           <dt>
             {x.name} {formatRate(x.rateBp)}
           </dt>
-          <dd>{money(x.tax)}</dd>
+          <dd className="m-num">{money(x.tax)}</dd>
         </div>
       ))}
     </dl>

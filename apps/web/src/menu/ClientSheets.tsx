@@ -2,7 +2,9 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 // Types seulement, et valeurs du sous-module sans Zod : le bundle du menu reste léger.
 import type { ClientSession, PublicOrder } from '@afrikaisse/core';
 import { CLIENT_PAYMENT_METHODS, NICKNAME_MAX, isTableCode, type ClientPaymentMethod } from '@afrikaisse/core/guests';
+import { mdiClose, mdiTranslate, mdiWifiOff, mdiInformationOutline } from '@mdi/js';
 import { errorText, request } from './api.ts';
+import { Icon } from './Icon.tsx';
 import { LANGS, LANG_NAMES, useLang, type Lang } from './i18n.tsx';
 import { nicknameStore, tableCodeStore } from './pwa.ts';
 
@@ -18,7 +20,7 @@ export type Blocked = 'offline' | 'paused' | null;
 export const ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED']);
 const STEPS = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED'] as const;
 
-export function Sheet({ title, onClose, children, footer }: { title?: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
+export function Sheet({ title, onClose, children, footer, className, closeButton = true }: { title?: string; onClose: () => void; children: ReactNode; footer?: ReactNode; className?: string; closeButton?: boolean }) {
   const { t } = useLang();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -31,10 +33,12 @@ export function Sheet({ title, onClose, children, footer }: { title?: string; on
   }, [onClose]);
   return (
     <div className="m-overlay" onClick={onClose}>
-      <div className="m-sheet" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <button className="m-close" aria-label={t('close')} onClick={onClose}>
-          ✕
-        </button>
+      <div className={className ? `m-sheet ${className}` : 'm-sheet'} role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        {closeButton && (
+          <button className="m-close" aria-label={t('close')} onClick={onClose}>
+            <Icon path={mdiClose} size={20} />
+          </button>
+        )}
         <div className="m-sheet-scroll">{children}</div>
         {footer && <div className="m-sheet-foot">{footer}</div>}
       </div>
@@ -47,22 +51,41 @@ export function OfflineBanner({ blocked }: { blocked: Blocked }) {
   if (!blocked) return null;
   return (
     <div className={`m-offline m-offline-${blocked}`} role="status">
-      {blocked === 'offline' && <strong>{t('offline')}</strong>}
-      <span>{t(blocked === 'offline' ? 'orderingOffline' : 'orderingPaused')}</span>
+      <Icon path={blocked === 'offline' ? mdiWifiOff : mdiInformationOutline} size={20} />
+      <div>
+        {blocked === 'offline' && <strong>{t('offline')}</strong>}
+        <span>{t(blocked === 'offline' ? 'orderingOffline' : 'orderingPaused')}</span>
+      </div>
     </div>
   );
 }
 
+/** Langue : pastille discrète (icône seule) ; la liste native s'ouvre au toucher. */
 export function LanguageSwitch() {
   const { lang, setLang, t } = useLang();
   return (
-    <select className="m-lang" aria-label={t('language')} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
-      {LANGS.map((l) => (
-        <option key={l} value={l}>
-          {LANG_NAMES[l]}
-        </option>
-      ))}
-    </select>
+    <label className="m-lang" title={t('language')}>
+      <Icon path={mdiTranslate} size={18} />
+      <select aria-label={t('language')} value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+        {LANGS.map((l) => (
+          <option key={l} value={l}>
+            {LANG_NAMES[l]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+/** Ligne de choix (radio ou case) : grande ligne blanche, pastille à la fin, prix du supplément. */
+export function ChoiceRow({ type, name, checked, disabled, off, label, aside, onChange, onClick }: { type: 'radio' | 'checkbox'; name: string; checked: boolean; disabled?: boolean; off?: boolean; label: string; aside?: string; onChange: () => void; onClick?: () => void }) {
+  return (
+    <label className={`m-choice${checked ? ' on' : ''}${off ? ' off' : ''}${disabled ? ' disabled' : ''}`}>
+      <input type={type} name={name} disabled={disabled} checked={checked} onChange={onChange} onClick={onClick} />
+      <span className="m-choice-name">{label}</span>
+      {aside && <small className="m-choice-aside">{aside}</small>}
+      <span className={type === 'radio' ? 'm-tick' : 'm-tick m-tick-box'} />
+    </label>
   );
 }
 
@@ -88,7 +111,7 @@ export function OrdersList({ orders, money, showGuests }: { orders: PublicOrder[
           <div key={o.id} className={o.mine ? 'm-order mine' : 'm-order'}>
             <div className="m-order-head">
               <strong>{t('orderNo', { n: o.number })}</strong>
-              <span>{money(o.total)}</span>
+              <span className="m-num">{money(o.total)}</span>
             </div>
             {showGuests && (o.guestName || o.mine) && (
               <p className="m-order-guest">
@@ -129,7 +152,7 @@ export function GuestFields({ needsCode, code, onCode, nickname, onNickname }: {
   return (
     <>
       {needsCode && (
-        <label className="m-note-field m-code-field">
+        <label className="m-field m-code-field">
           <span>{t('tableCode')}</span>
           <input
             inputMode="numeric"
@@ -144,7 +167,7 @@ export function GuestFields({ needsCode, code, onCode, nickname, onNickname }: {
           <small>{t('tableCodeHint')}</small>
         </label>
       )}
-      <label className="m-note-field">
+      <label className="m-field">
         <span>{t('nickname')}</span>
         <input maxLength={NICKNAME_MAX} value={nickname} onChange={(e) => onNickname(e.target.value)} autoComplete="given-name" />
       </label>
@@ -217,7 +240,7 @@ export function TableSheet({
         <h3>{t('myTable')}</h3>
         {!session.session && session.tableCodeRequired && <p className="m-hint">{t('tableNotOpen')}</p>}
         {session.session && (needsCode || canJoin) && (
-          <form className="m-join" onSubmit={join}>
+          <form className="m-card m-join" onSubmit={join}>
             <GuestFields needsCode={needsCode} code={code} onCode={setCode} nickname={nickname} onNickname={setNickname} />
             {error && <p className="m-error">{error}</p>}
             <button className="m-button m-wide" disabled={busy || blocked === 'offline'}>
@@ -236,7 +259,7 @@ export function TableSheet({
                     {guestText(g.name)}
                     {g.isMe && ` (${t('you')})`}
                   </span>
-                  {perCustomer && <span className="m-guest-share">{money(g.share.total)}</span>}
+                  {perCustomer && <span className="m-guest-share m-num">{money(g.share.total)}</span>}
                 </li>
               ))}
             </ul>
@@ -250,19 +273,19 @@ export function TableSheet({
             {session.table.total > 0 && (
               <>
                 <dt>{t('tableTotal')}</dt>
-                <dd>{money(session.table.total)}</dd>
+                <dd className="m-num">{money(session.table.total)}</dd>
               </>
             )}
             {perCustomer && (
               <>
                 <dt>{t('myShare')}</dt>
-                <dd>{money(session.mine.total)}</dd>
+                <dd className="m-num">{money(session.mine.total)}</dd>
               </>
             )}
             {(perCustomer ? session.mine.paid : session.table.paid) > 0 && (
               <>
                 <dt>{t('alreadyPaid')}</dt>
-                <dd>{money(perCustomer ? session.mine.paid : session.table.paid)}</dd>
+                <dd className="m-num">{money(perCustomer ? session.mine.paid : session.table.paid)}</dd>
               </>
             )}
           </dl>
@@ -331,29 +354,29 @@ export function PaySheet({
         {pending && <p className="m-pay-pending">{pending.scope === 'TABLE' && !pending.mine ? t('billPendingTable') : t('billPending', { method: t(pending.paymentMethod ?? 'CASH') })}</p>}
         <div className="m-pay-amount">
           <span>{t('remaining')}</span>
-          <strong>{amount > 0 ? money(amount) : '—'}</strong>
+          <strong className="m-num">{amount > 0 ? money(amount) : '—'}</strong>
         </div>
         {amount === 0 && <p className="m-hint">{t('nothingToPay')}</p>}
         {perCustomer && (
           <fieldset className="m-group">
-            <legend>{t('payWhat')}</legend>
+            <legend>
+              <span className="m-group-head">
+                <span>{t('payWhat')}</span>
+              </span>
+            </legend>
             {(['MINE', 'TABLE'] as const).map((s) => (
-              <label key={s} className="m-choice">
-                <input type="radio" name="bill-scope" checked={scope === s} onChange={() => setScope(s)} />
-                <span>{t(s === 'MINE' ? 'payMine' : 'payTable')}</span>
-                <span>{session ? money(s === 'MINE' ? session.mine.remaining : session.table.remaining) : ''}</span>
-              </label>
+              <ChoiceRow key={s} type="radio" name="bill-scope" checked={scope === s} onChange={() => setScope(s)} label={t(s === 'MINE' ? 'payMine' : 'payTable')} aside={session ? money(s === 'MINE' ? session.mine.remaining : session.table.remaining) : undefined} />
             ))}
           </fieldset>
         )}
         <fieldset className="m-group">
-          <legend>{t('payHow')}</legend>
+          <legend>
+            <span className="m-group-head">
+              <span>{t('payHow')}</span>
+            </span>
+          </legend>
           {CLIENT_PAYMENT_METHODS.map((m) => (
-            <label key={m} className="m-choice">
-              <input type="radio" name="pay-method" checked={method === m} onChange={() => setMethod(m)} />
-              <span>{t(m)}</span>
-              <span />
-            </label>
+            <ChoiceRow key={m} type="radio" name="pay-method" checked={method === m} onChange={() => setMethod(m)} label={t(m)} />
           ))}
         </fieldset>
       </div>

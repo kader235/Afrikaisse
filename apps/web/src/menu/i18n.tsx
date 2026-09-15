@@ -115,6 +115,20 @@ const fr = {
   choiceRequiredOne: '1 choix obligatoire',
   choiceRequiredN: '{n} choix obligatoires',
   choiceRange: '{min} à {max} choix',
+  welcome: 'Bienvenue chez',
+  greetingStart: 'Qu’est-ce qui vous fait ',
+  greetingWord: 'envie',
+  greetingEnd: ' aujourd’hui ?',
+  greetingEndEvening: ' ce soir ?',
+  categories: 'Catégories',
+  mostOrdered: 'Les plus commandés',
+  viewCart: 'Voir mon panier',
+  navMenu: 'Menu',
+  navWaiter: 'Serveur',
+  navBill: 'Addition',
+  back: 'Retour',
+  announcements: 'Annonces',
+  announcementNo: 'Annonce {n}',
 };
 export type MenuKey = keyof typeof fr;
 
@@ -222,6 +236,20 @@ const en: Record<MenuKey, string> = {
   choiceRequiredOne: '1 required choice',
   choiceRequiredN: '{n} required choices',
   choiceRange: '{min} to {max} choices',
+  welcome: 'Welcome to',
+  greetingStart: 'What are you ',
+  greetingWord: 'craving',
+  greetingEnd: ' today?',
+  greetingEndEvening: ' tonight?',
+  categories: 'Categories',
+  mostOrdered: 'Most ordered',
+  viewCart: 'View my cart',
+  navMenu: 'Menu',
+  navWaiter: 'Waiter',
+  navBill: 'Bill',
+  back: 'Back',
+  announcements: 'Announcements',
+  announcementNo: 'Announcement {n}',
 };
 
 const ar: Record<MenuKey, string> = {
@@ -328,6 +356,20 @@ const ar: Record<MenuKey, string> = {
   choiceRequiredOne: 'خيار واحد إلزامي',
   choiceRequiredN: '{n} خيارات إلزامية',
   choiceRange: 'من {min} إلى {max} خيارات',
+  welcome: 'مرحبًا بكم في',
+  greetingStart: 'ماذا ',
+  greetingWord: 'تشتهي',
+  greetingEnd: ' اليوم؟',
+  greetingEndEvening: ' هذا المساء؟',
+  categories: 'الفئات',
+  mostOrdered: 'الأكثر طلبًا',
+  viewCart: 'عرض سلتي',
+  navMenu: 'القائمة',
+  navWaiter: 'النادل',
+  navBill: 'الفاتورة',
+  back: 'رجوع',
+  announcements: 'الإعلانات',
+  announcementNo: 'إعلان {n}',
 };
 
 const DICTIONARIES: Record<Lang, Record<MenuKey, string>> = { fr, en, ar };
