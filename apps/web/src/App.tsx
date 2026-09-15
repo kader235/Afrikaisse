@@ -47,9 +47,11 @@ export function App() {
       return;
     }
     setState({ kind: 'loading' });
+    // Le bouton « Créer mon restaurant » du site public arrive avec #inscription.
+    const anonymous: State = { kind: 'anonymous', screen: window.location.hash === '#inscription' ? 'register' : 'login' };
     refreshSession().then(
-      (s) => setState(s ? { kind: 'session', me: s.me } : { kind: 'anonymous', screen: 'login' }),
-      (err) => setState(err instanceof ApiError && err.code === OFFLINE ? { kind: 'offline' } : { kind: 'anonymous', screen: 'login' }),
+      (s) => setState(s ? { kind: 'session', me: s.me } : anonymous),
+      (err) => setState(err instanceof ApiError && err.code === OFFLINE ? { kind: 'offline' } : anonymous),
     );
   };
   useEffect(boot, []);

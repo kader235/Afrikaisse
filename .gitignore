@@ -14,3 +14,4 @@ coverage/
 infrastructure/windows/charge/
 infrastructure/windows/sortie/
 infrastructure/o2switch/sortie/
+infrastructure/site/sortie/

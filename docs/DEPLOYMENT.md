@@ -184,6 +184,38 @@ diffusion.
 
   Si l'API est servie sur un autre sous-domaine que l'application, ajouter son adresse à `connect-src`.
 
+## 7. Site public (fichiers statiques)
+
+Le site de présentation (`apps/site`, voir WEB.md) est indépendant de l'application : aucun Node.js,
+aucune base, un simple dossier de sous-domaine. Adresse prévue : **https://www.afrikaisse.dametta.com**
+(plus tard `afrikaisse.com`).
+
+```bash
+node infrastructure/site/build.mjs
+# autre adresse : SITE_URL=https://www.afrikaisse.com SITE_APP_URL=https://afrikaisse.dametta.com node infrastructure/site/build.mjs
+```
+
+Résultat dans `infrastructure/site/sortie/` : `afrikaisse-site.zip` (le site, `sitemap.xml`, `robots.txt`
+et `.htaccess`) et `LISEZ-MOI.txt` (gestes cPanel, avec les adresses réellement construites). L'archive
+ZIP est écrite par le script lui-même (Node, sans outil externe).
+
+| Étape (une fois) | Détail |
+|---|---|
+| DNS | Enregistrement A `www.afrikaisse` → `109.234.167.48` (GoDaddy, domaine dametta.com) |
+| cPanel > Domaines | Créer `www.afrikaisse.dametta.com`, racine du document propre (ne pas partager, **jamais** le dossier `afrikaisse` de l'application) |
+| HTTPS | Attendre le certificat AutoSSL, puis « Forcer la redirection HTTPS » |
+
+À chaque mise à jour : Gestionnaire de fichiers, afficher les fichiers cachés, vider le dossier du site
+(garder `.well-known`), téléverser le zip, **Extraire** sur place, supprimer le zip.
+
+Le `.htaccess` fourni (`infrastructure/site/htaccess`) : redirection HTTPS (y compris derrière un proxy,
+`X-Forwarded-Proto`), `/page` → `/page/`, page 404, en-têtes de sécurité (CSP sans aucune ressource
+extérieure, `nosniff`, `X-Frame-Options`, HSTS), cache définitif des fichiers à empreinte (`assets/`),
+30 jours pour les images, pas de cache pour le HTML, compression.
+
+Avant la première mise en ligne : confirmer l'adresse e-mail de `apps/site/src/config.ts`
+(`contact@afrikaisse.com` par défaut) et, si souhaité, renseigner téléphone et WhatsApp.
+
 ## Limites d'un mutualisé
 
 Suffisant pour les premiers dizaines de restaurants. L'architecture n'a **aucune dépendance propre à

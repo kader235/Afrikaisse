@@ -1,0 +1,19 @@
+{
+  "name": "@afrikaisse/site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Site public d'AfriKaisse : pages statiques, sans JavaScript côté navigateur",
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "preview": "vite preview --outDir dist --port 18402 --strictPort"
+  },
+  "dependencies": {
+    "@afrikaisse/core": "0.1.0",
+    "@fontsource/roboto": "^5.3.0",
+    "@mdi/js": "^7.4.47"
+  },
+  "devDependencies": {
+    "vite": "^7.1.0"
+  }
+}
