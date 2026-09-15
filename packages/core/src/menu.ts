@@ -294,6 +294,8 @@ export const publicMenuSchema = z.object({
     logoUrl: z.string().nullable(),
     /** Thème du menu choisi par l'établissement (couleurs : `@afrikaisse/core/menu-themes`). */
     theme: z.enum(MENU_THEMES),
+    /** Slogan de l'établissement, en titre du menu ; null : phrase d'accueil. */
+    slogan: z.string().nullable(),
   }),
   table: z.object({ label: z.string() }),
   categories: z.array(z.object({ id: z.string(), name: z.string(), products: z.array(publicProductSchema) })),

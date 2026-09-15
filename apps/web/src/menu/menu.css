@@ -2084,3 +2084,352 @@ button.m-banner {
     transition: none;
   }
 }
+
+/* --- Slogan de l'établissement (titre de l'accueil) ----------------------- */
+/* Trois lignes au plus : la police réduit avec la longueur (menu/slogan.ts), puis coupe. */
+.m-greeting.m-slogan {
+  display: -webkit-box;
+  margin: 16px 18px 12px;
+  padding: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.m-slogan-lg {
+  font-size: 26px;
+}
+
+.m-slogan-md {
+  font-size: 22px;
+  line-height: 1.22;
+}
+
+.m-slogan-sm {
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+/* --- Ma table : invitation au jeu du mémo ---------------------------------- */
+.m-play {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 2px solid rgba(var(--m-accent-rgb), 0.22);
+  color: var(--m-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.m-play-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-inline-end: 12px;
+  border-radius: 14px;
+  background: var(--m-soft);
+  color: var(--m-accent-text);
+}
+
+.m-play-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.m-play-text strong {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.m-play-text span {
+  margin-top: 2px;
+  color: var(--m-muted);
+  font-size: 13.5px;
+}
+
+.m-play-cta {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 38px;
+  margin-inline-start: 10px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--m-accent);
+  color: var(--m-on-accent);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* --- Jeu du mémo ------------------------------------------------------------ */
+.m-sheet-game {
+  height: 92vh;
+}
+
+.m-memo-intro {
+  margin: 6px 0 0;
+  color: var(--m-muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.m-memo-ready {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--m-deep);
+  box-shadow: var(--m-shadow-lg);
+  color: var(--m-on-deep);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  animation: m-rise 0.3s ease-out;
+}
+
+.m-memo-ready .m-ico {
+  flex: none;
+  margin-inline-end: 12px;
+  color: var(--m-deep-soft);
+}
+
+.m-memo-ready span {
+  display: flex;
+  flex-direction: column;
+}
+
+.m-memo-ready strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.m-memo-ready small {
+  color: var(--m-deep-soft);
+  font-size: 13px;
+}
+
+.m-memo-stats {
+  display: flex;
+  margin-top: 14px;
+}
+
+.m-memo-stats > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  border-radius: 14px;
+  background: var(--m-card);
+  box-shadow: var(--m-shadow);
+}
+
+.m-memo-stats > span + span {
+  margin-inline-start: 8px;
+}
+
+.m-memo-stats small {
+  color: var(--m-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.m-memo-stats strong {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.m-memo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-gap: 10px;
+  max-width: 400px;
+  margin: 16px auto 0;
+}
+
+/* Carte carrée (pas d'aspect-ratio sur Chrome 83) qui se retourne en 3D. */
+.m-memo-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0 0 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  -webkit-perspective: 700px;
+  perspective: 700px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-memo-card.up {
+  cursor: default;
+}
+
+.m-memo-inner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transition: transform 0.35s ease;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+.m-memo-card.up .m-memo-inner {
+  transform: rotateY(180deg);
+}
+
+.m-memo-face {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 16px;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.m-memo-back {
+  background-color: var(--m-accent);
+  background-image: radial-gradient(rgba(var(--m-on-accent-rgb), 0.16) 1.5px, transparent 2px);
+  background-size: 12px 12px;
+  box-shadow: 0 4px 12px rgba(var(--m-accent-rgb), 0.24);
+  color: var(--m-on-accent);
+}
+
+.m-memo-back::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  border: 1.5px solid rgba(var(--m-on-accent-rgb), 0.35);
+  border-radius: 11px;
+}
+
+.m-memo-front {
+  background: var(--m-card);
+  box-shadow: var(--m-shadow-lg);
+  transform: rotateY(180deg);
+}
+
+.m-memo-front img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Dessins (moins de 6 photos) : trois fonds tirés du thème. */
+.m-memo-tone-0 {
+  background: var(--m-soft);
+  color: var(--m-accent-dark);
+}
+
+.m-memo-tone-1 {
+  background: var(--m-deep);
+  color: var(--m-deep-soft);
+}
+
+.m-memo-tone-2 {
+  background: var(--m-fill);
+  color: var(--m-accent-text);
+}
+
+.m-memo-card.found .m-memo-front {
+  box-shadow: 0 0 0 3px var(--m-accent), var(--m-shadow-lg);
+}
+
+.m-memo-card.found {
+  animation: m-memo-pop 0.35s ease-out 0.3s;
+}
+
+.m-memo-win {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 18px;
+  padding: 28px 18px 24px;
+  border-radius: 24px;
+  background: var(--m-card);
+  box-shadow: var(--m-shadow);
+  text-align: center;
+  animation: m-rise 0.3s ease-out;
+}
+
+.m-memo-trophy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--m-soft);
+  color: var(--m-accent-text);
+}
+
+.m-memo-win strong {
+  margin-top: 16px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.m-memo-win p {
+  margin: 6px 0 0;
+  color: var(--m-muted);
+  font-size: 14.5px;
+}
+
+.m-memo-replay {
+  margin-top: 20px;
+  padding: 0 26px;
+}
+
+.m-memo-replay .m-ico {
+  margin-inline-end: 8px;
+}
+
+@keyframes m-memo-pop {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-memo-inner {
+    transition: none;
+  }
+
+  .m-memo-card.found,
+  .m-memo-ready,
+  .m-memo-win {
+    animation: none;
+  }
+}

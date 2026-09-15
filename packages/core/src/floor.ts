@@ -72,12 +72,23 @@ export const createLocationSchema = z.object({
 });
 export type CreateLocationInput = z.infer<typeof createLocationSchema>;
 
+/** Slogan du menu client : une ligne (espaces resserrés), 80 caractères ; vide → null (retour à la phrase d'accueil). */
+export const SLOGAN_MAX = 80;
+export const sloganSchema = z
+  .string()
+  .trim()
+  .max(SLOGAN_MAX, `Slogan : ${SLOGAN_MAX} caractères au plus`)
+  .transform((v) => v.replace(/\s+/g, ' ') || null)
+  .nullable();
+
 // Sans valeurs par défaut : un PATCH ne doit jamais remettre un champ absent à zéro.
 export const updateLocationSchema = z
   .object({
     ...locationFields,
     /** Thème du menu client (QR) : un identifiant de MENU_THEMES. */
     menuTheme: z.enum(MENU_THEMES),
+    /** Slogan affiché en titre du menu client ; null ou vide le retire. */
+    slogan: sloganSchema,
   })
   .partial()
   .refine(nonEmpty, NO_CHANGE);
@@ -230,6 +241,8 @@ export const locationDetailsSchema = z.object({
   billMode: z.enum(BILL_MODES),
   /** Thème du menu client (QR) ; « bleu » quand l'établissement n'en a pas choisi. */
   menuTheme: z.enum(MENU_THEMES),
+  /** Slogan du menu client ; null : le menu affiche sa phrase d'accueil. */
+  slogan: z.string().nullable(),
   status: z.enum(RECORD_STATUSES),
   createdAt: z.number(),
 });

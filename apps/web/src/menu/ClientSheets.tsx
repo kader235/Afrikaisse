@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 // Types seulement, et valeurs du sous-module sans Zod : le bundle du menu reste léger.
 import type { ClientSession, PublicOrder } from '@afrikaisse/core';
 import { CLIENT_PAYMENT_METHODS, NICKNAME_MAX, isTableCode, type ClientPaymentMethod } from '@afrikaisse/core/guests';
-import { mdiClose, mdiTranslate, mdiWifiOff, mdiInformationOutline } from '@mdi/js';
+import { mdiCardsOutline, mdiClose, mdiTranslate, mdiWifiOff, mdiInformationOutline } from '@mdi/js';
 import { errorText, request } from './api.ts';
 import { Icon } from './Icon.tsx';
 import { LANGS, LANG_NAMES, useLang, type Lang } from './i18n.tsx';
@@ -18,6 +18,8 @@ export type Money = (minor: number) => string;
 export type Blocked = 'offline' | 'paused' | null;
 
 export const ACTIVE_STATUSES = new Set(['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED']);
+/** Commande envoyée mais pas encore prête : le client patiente (jeu du mémo proposé). */
+export const WAITING_STATUSES = new Set(['PENDING', 'CONFIRMED', 'PREPARING']);
 const STEPS = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'SERVED'] as const;
 
 export function Sheet({ title, onClose, children, footer, className, closeButton = true }: { title?: string; onClose: () => void; children: ReactNode; footer?: ReactNode; className?: string; closeButton?: boolean }) {
@@ -182,6 +184,7 @@ export function TableSheet({
   money,
   blocked,
   onSession,
+  onPlay,
   onClose,
 }: {
   session: ClientSession | null;
@@ -190,6 +193,8 @@ export function TableSheet({
   money: Money;
   blocked: Blocked;
   onSession: (s: ClientSession) => void;
+  /** Ouvre le jeu du mémo (proposé tant qu'une commande de la table est en cours de préparation). */
+  onPlay?: () => void;
   onClose: () => void;
 }) {
   const { t } = useLang();
@@ -238,6 +243,18 @@ export function TableSheet({
     <Sheet title={t('myTable')} onClose={onClose}>
       <div className="m-sheet-body">
         <h3>{t('myTable')}</h3>
+        {onPlay && session.orders.some((o) => WAITING_STATUSES.has(o.status)) && (
+          <button className="m-card m-play" onClick={onPlay}>
+            <span className="m-play-icon" aria-hidden="true">
+              <Icon path={mdiCardsOutline} size={26} />
+            </span>
+            <span className="m-play-text">
+              <strong>{t('memoInviteTitle')}</strong>
+              <span>{t('memoInviteBody')}</span>
+            </span>
+            <span className="m-play-cta">{t('memoPlay')}</span>
+          </button>
+        )}
         {!session.session && session.tableCodeRequired && <p className="m-hint">{t('tableNotOpen')}</p>}
         {session.session && (needsCode || canJoin) && (
           <form className="m-card m-join" onSubmit={join}>

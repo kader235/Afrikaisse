@@ -58,6 +58,7 @@ const toLocation = (r: LocationRow): LocationDetails => ({
   tableCodeRequired: r.table_code_required === 1,
   billMode: r.bill_mode,
   menuTheme: menuTheme(r.menu_theme).id,
+  slogan: r.slogan,
   status: r.status,
   createdAt: r.created_at,
 });
@@ -229,9 +230,10 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
     ...(input.tableCodeRequired !== undefined && { table_code_required: input.tableCodeRequired ? (1 as const) : (0 as const) }),
     ...(input.billMode !== undefined && { bill_mode: input.billMode }),
     ...(input.menuTheme !== undefined && { menu_theme: input.menuTheme }),
+    ...(input.slogan !== undefined && { slogan: input.slogan }),
   };
   const modeChanged = input.operatingMode !== undefined && input.operatingMode !== before.operating_mode;
-  const onlyTheme = Object.keys(input).every((k) => k === 'menuTheme');
+  const only = (key: keyof UpdateLocationInput) => Object.keys(input).every((k) => k === key);
 
   return ctx.db.transaction().execute(async (trx) => {
     const hlc = ctx.clock.now();
@@ -241,7 +243,7 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
       tenantId: scope.tenantId,
       locationId: id,
       actorUserId: scope.userId,
-      action: modeChanged ? 'location.mode_changed' : onlyTheme ? 'location.menu_theme_changed' : 'location.updated',
+      action: modeChanged ? 'location.mode_changed' : only('menuTheme') ? 'location.menu_theme_changed' : only('slogan') ? 'location.menu_slogan_changed' : 'location.updated',
       entityType: 'location',
       entityId: id,
       data: { before: toLocation(before), changes: input },

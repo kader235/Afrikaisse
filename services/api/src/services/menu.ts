@@ -690,6 +690,7 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
       'l.table_code_required',
       'l.bill_mode',
       'l.menu_theme',
+      'l.slogan',
       'o.name as tenant_name',
       'o.status as tenant_status',
     ])
@@ -706,7 +707,7 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
   const eligible = new Set(m.products.filter((p) => visibleIds.has(p.category_id) && p.is_available === 1).map((p) => p.id));
 
   return {
-    restaurant: { name: found.location_name, organization: found.tenant_name, type: found.type, currency: found.currency, logoUrl: mediaUrl(found.logo_media_id), theme: menuTheme(found.menu_theme).id },
+    restaurant: { name: found.location_name, organization: found.tenant_name, type: found.type, currency: found.currency, logoUrl: mediaUrl(found.logo_media_id), theme: menuTheme(found.menu_theme).id, slogan: found.slogan },
     table: { label: found.label },
     popular: await popularProductIds(ctx.db, found.location_id, ctx.now(), eligible),
     service: { tableCodeRequired: found.table_code_required === 1, billMode: found.bill_mode },
