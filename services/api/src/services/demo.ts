@@ -351,7 +351,8 @@ async function generateActivity(ctx: AppContext, locationId: string, staff: Staf
     const waiter = pick(staff.waiters);
     const free = tables.filter((x) => (busyUntil.get(x.id) ?? 0) < t);
     const r = random();
-    const kind: 'QR' | 'WAITER' | 'TAKEAWAY' = stop === 'PENDING' ? 'QR' : free.length === 0 ? 'TAKEAWAY' : r < 0.18 ? 'QR' : r < 0.68 ? 'WAITER' : 'TAKEAWAY';
+    // La commande servie du jour est toujours en salle : c'est sa table qui demande l'addition, quelle que soit l'heure.
+    const kind: 'QR' | 'WAITER' | 'TAKEAWAY' = stop === 'PENDING' ? 'QR' : stop === 'SERVED' ? 'WAITER' : free.length === 0 ? 'TAKEAWAY' : r < 0.18 ? 'QR' : r < 0.68 ? 'WAITER' : 'TAKEAWAY';
     const table = kind === 'TAKEAWAY' ? null : pick(free.length ? free : tables);
     if (table) busyUntil.set(table.id, stop === 'PAID' ? t + 70 * MINUTE : Number.MAX_SAFE_INTEGER);
     count += 1;
