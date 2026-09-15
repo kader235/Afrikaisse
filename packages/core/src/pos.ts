@@ -98,6 +98,8 @@ const positive = z.number().int().min(1).max(MONEY_MAX);
 const reason = z.string().trim().min(1, 'Indiquez le motif.').max(200);
 
 export const createStaffOrderSchema = z.object({
+  /** Identifiant créé par la tablette : une commande prise hors ligne puis renvoyée n'est enregistrée qu'une fois. */
+  id: z.uuid().optional(),
   serviceType: z.enum(SERVICE_TYPES).default('DINE_IN'),
   tableId: z.uuid().nullable().default(null),
   customerName: z.string().trim().max(60).nullable().optional(),

@@ -82,6 +82,14 @@ async function nextDocumentNumber(trx: Db, locationId: string, kind: string): Pr
 
 export async function createStaffOrder(ctx: AppContext, scope: TenantScope, locationId: string, input: CreateStaffOrderInput, meta: RequestMeta): Promise<Order> {
   const location = await assertLocation(ctx.db, scope, locationId);
+  // Renvoi d'une commande déjà reçue (tablette revenue en ligne) : la même commande, jamais un doublon.
+  if (input.id) {
+    const existing = await ctx.db.selectFrom('orders').select(['id', 'tenant_id', 'location_id']).where('id', '=', input.id).executeTakeFirst();
+    if (existing) {
+      if (existing.tenant_id !== scope.tenantId || existing.location_id !== locationId) throw new AppError('CONFLICT', 'Identifiant de commande déjà utilisé.');
+      return loadOrder(ctx.db, existing.id);
+    }
+  }
   const table = input.tableId
     ? await ctx.db.selectFrom('dining_tables').select(['id', 'label']).where('id', '=', input.tableId).where('location_id', '=', locationId).where('status', '=', 'ACTIVE').executeTakeFirst()
     : null;
@@ -93,7 +101,7 @@ export async function createStaffOrder(ctx: AppContext, scope: TenantScope, loca
   const total = quote.pricing.total;
 
   for (let attempt = 1; ; attempt++) {
-    const orderId = uuidv7();
+    const orderId = input.id ?? uuidv7();
     try {
       await ctx.db.transaction().execute(async (trx) => {
         const hlc = ctx.clock.now();
@@ -141,6 +149,11 @@ export async function createStaffOrder(ctx: AppContext, scope: TenantScope, loca
       });
       return loadOrder(ctx.db, orderId);
     } catch (err) {
+      // Deux envois simultanés du même identifiant : le second rend la commande du premier.
+      if (input.id && isUniqueViolation(err)) {
+        const same = await ctx.db.selectFrom('orders').select('id').where('id', '=', input.id).where('tenant_id', '=', scope.tenantId).executeTakeFirst();
+        if (same) return loadOrder(ctx.db, same.id);
+      }
       if (attempt < 2 && isUniqueViolation(err)) continue;
       throw err;
     }

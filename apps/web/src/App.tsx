@@ -20,6 +20,7 @@ import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
 import { TakeOrderPage } from './pages/TakeOrder.tsx';
 import { isTablet } from './touch.ts';
+import { clearCache, readCache, saveCache, useOutboxSender } from './offline.ts';
 import { OnboardingWizard } from './pages/Onboarding.tsx';
 import { RecoveryPrompt } from './pages/Recovery.tsx';
 import { useActivityFeed } from './activity.ts';
@@ -56,14 +57,23 @@ export function App() {
     // Le bouton « Créer mon restaurant » du site public arrive avec #inscription.
     const anonymous: State = { kind: 'anonymous', screen: window.location.hash === '#inscription' ? 'register' : 'login' };
     refreshSession().then(
-      (s) => setState(s ? { kind: 'session', me: s.me } : anonymous),
-      (err) => setState(err instanceof ApiError && err.code === OFFLINE ? { kind: 'offline' } : anonymous),
+      (s) => {
+        if (s) saveCache('me', s.me);
+        setState(s ? { kind: 'session', me: s.me } : anonymous);
+      },
+      (err) => {
+        const offline = err instanceof ApiError && err.code === OFFLINE;
+        // Tablette sans réseau (coupure de courant ou d'Internet) : le dernier compte connu, pour continuer à prendre les commandes.
+        const cached = offline && isNativeApp() ? readCache<Me>('me') : null;
+        setState(cached ? { kind: 'session', me: cached } : offline ? { kind: 'offline' } : anonymous);
+      },
     );
   };
   useEffect(boot, []);
 
   const onSession = (s: SessionResponse) => {
     setSession(s);
+    saveCache('me', s.me);
     setState({ kind: 'session', me: s.me });
   };
   const logout = async () => {
@@ -71,6 +81,7 @@ export function App() {
       await api('POST', '/auth/logout');
     } finally {
       setSession(null);
+      clearCache();
       setState({ kind: 'anonymous', screen: 'login' });
     }
   };
@@ -104,7 +115,12 @@ export function App() {
         <RegisterPage server={server} onSession={onSession} onLogin={() => setState({ kind: 'anonymous', screen: 'login' })} />
       );
     case 'session':
-      return <Shell me={state.me} onMe={(me) => setState({ kind: 'session', me })} onSession={onSession} onLogout={logout} />;
+      return <Shell
+          me={state.me}
+          onMe={(me) => {
+            saveCache('me', me);
+            setState({ kind: 'session', me });
+          }} onSession={onSession} onLogout={logout} />;
   }
 }
 
@@ -209,6 +225,8 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   // Un seul flux d'activité pour toute l'application : pastille et signal sonore sur tous les écrans.
   // Le signal des commandes QR et des appels de table concerne la salle, pas la cuisine.
   const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK', can('orders.create'));
+  // Commandes prises pendant une coupure : envoyées dès le retour du réseau, quel que soit l'écran ouvert.
+  useOutboxSender(() => feed.refresh());
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
   // Centre de notifications : la salle et la caisse (service), la gestion du stock (ruptures).
   const notifyEnabled = me.tenantAccess === 'OK' && (can('orders.create') || can('inventory.read'));

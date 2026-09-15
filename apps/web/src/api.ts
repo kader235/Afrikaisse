@@ -107,7 +107,8 @@ const NO_RETRY = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/recov
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res = await send(method, path, body);
-  if (res.status === 401 && accessToken && !NO_RETRY.includes(path)) {
+  // Tablette démarrée pendant une coupure : pas encore de jeton d'accès, celui du Keystore en redonne un au retour du réseau.
+  if (res.status === 401 && (accessToken || isNativeApp()) && !NO_RETRY.includes(path)) {
     const renewed = await refreshSession();
     if (renewed) res = await send(method, path, body);
   }
