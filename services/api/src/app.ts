@@ -35,6 +35,14 @@ import { systemRoutes } from './routes/system.ts';
 import { printerRoutes } from './routes/printers.ts';
 import { teamRoutes } from './routes/team.ts';
 import { platformRoutes, tenantRoutes } from './routes/tenant.ts';
+import { randomUUID } from 'node:crypto';
+import { captureError } from './lib/errorLog.ts';
+import { categoryLoggers } from './lib/logger.ts';
+import { monitoringRoutes, releaseRoutes } from './routes/monitoring.ts';
+import { platformBackOfficeRoutes } from './routes/platform.ts';
+
+/** Refus à tracer dans le journal « security » (§74). */
+const SECURITY_CODES = new Set(['TOO_MANY_ATTEMPTS', 'INVALID_CREDENTIALS', 'TOKEN_INVALID']);
 
 export const API_VERSION = '0.1.0';
 declare const __AFK_BUILD__: string | undefined;
@@ -58,6 +66,8 @@ export async function buildApp(opts: BuildOptions) {
   const { database, config } = opts;
   const now = opts.now ?? Date.now;
   const node = await initNode(database.db, config.profile, now());
+  // Identifiant de requête unique (UUID) : il relie la réponse 500, le journal et la ligne du back-office.
+  const app = Fastify({ logger: opts.logger ?? false, trustProxy: config.trustProxy, bodyLimit: 1024 * 1024, genReqId: () => randomUUID() }).withTypeProvider<ZodTypeProvider>();
   const ctx: AppContext = {
     db: database.db,
     dbKind: database.kind,
@@ -67,10 +77,13 @@ export async function buildApp(opts: BuildOptions) {
     jwtKey: new TextEncoder().encode(config.jwtSecret ?? node.jwtSecret),
     clock: new HybridClock(node.nodeId, now),
     now,
+    log: categoryLoggers(app.log),
+    version: API_VERSION,
+    build: API_BUILD,
+    startedAt: now(),
   };
   if (opts.syncTransport) setSyncTransport(ctx, opts.syncTransport);
 
-  const app = Fastify({ logger: opts.logger ?? false, trustProxy: config.trustProxy, bodyLimit: 1024 * 1024 }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   app.decorateRequest('auth', null);
@@ -92,8 +105,9 @@ export async function buildApp(opts: BuildOptions) {
     transform: jsonSchemaTransform,
   });
 
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
     if (error instanceof AppError) {
+      if (SECURITY_CODES.has(error.code)) ctx.log.security.warn({ code: error.code, method: request.method, route: request.routeOptions.url ?? null, ip: request.ip }, error.message);
       return reply.status(error.status).send({ error: { code: error.code, message: error.message, details: error.details } });
     }
     if (hasZodFastifySchemaValidationErrors(error)) {
@@ -109,8 +123,18 @@ export async function buildApp(opts: BuildOptions) {
     if (status && status >= 400 && status < 500) {
       return reply.status(status).send({ error: { code: 'BAD_REQUEST', message: (error as Error).message } });
     }
-    request.log.error(error);
-    return reply.status(500).send({ error: { code: 'INTERNAL', message: 'Erreur interne. Réessayez.' } });
+    request.log.error({ category: 'application', err: error }, 'Erreur interne');
+    // Journal d'erreurs du back-office (§67) : sans corps ni en-têtes ; son échec ne masque pas la réponse.
+    await captureError(ctx, {
+      requestId: request.id,
+      method: request.method,
+      route: request.routeOptions.url ?? null,
+      status: 500,
+      code: isResponseSerializationError(error) ? 'SERIALIZATION' : 'INTERNAL',
+      message: `${(error as Error).name ?? 'Error'}: ${(error as Error).message ?? ''}`,
+      tenantId: request.auth?.tenantId ?? null,
+    }).catch((err) => ctx.log.database.error({ err }, "Journal d'erreurs indisponible"));
+    return reply.status(500).send({ error: { code: 'INTERNAL', message: 'Erreur interne. Réessayez.', details: { requestId: request.id } } });
   });
 
   app.setNotFoundHandler((_request, reply) => reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'Route introuvable.' } }));
@@ -166,8 +190,11 @@ export async function buildApp(opts: BuildOptions) {
   await app.register(systemRoutes(ctx, database), { prefix: '/api' });
   await app.register(printerRoutes(ctx), { prefix: '/api' });
   await app.register(syncRoutes(ctx), { prefix: '/api' });
+  await app.register(monitoringRoutes(ctx), { prefix: '/api' });
+  await app.register(releaseRoutes(ctx), { prefix: '/api' });
   if (config.profile === 'cloud') {
     await app.register(platformRoutes(ctx), { prefix: '/api/platform' });
+    await app.register(platformBackOfficeRoutes(ctx), { prefix: '/api/platform' });
   }
   if (config.webDir) registerWebApp(app, config.webDir);
 

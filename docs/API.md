@@ -270,6 +270,47 @@ d'échéance. Le serveur local ne contrôle aucune limite.
 Routes `POST` ouvertes sans connexion : 429 `TOO_MANY_ATTEMPTS` et en-tête `Retry-After` au-delà de
 la limite (valeurs dans SECURITY.md). `AFK_RATE_LIMIT=false` les désactive (tests).
 
+## §67 — back-office GLOBALTECH (Cloud)
+
+Toutes les routes : `is_platform_admin`, contrôlé avant la validation. Client connecté : **404**
+partout (même identifiant mal formé) ; anonyme : 401. Absentes du serveur local.
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/api/platform/restaurants?q=` | Organisations : offre, état d'abonnement, échéance, membres, dernière activité ; leurs établissements (mode, état, devise, dernière activité) |
+| GET | `/api/platform/users?q=&limit=` | Comptes de toutes les organisations (nom ou e-mail), dernière connexion, organisations et rôles |
+| POST | `/api/platform/users/{id}/suspend` · `/reactivate` | 204 ; suspension : sessions révoquées, changement synchronisé, audit ; 409 sur son propre compte ou un compte back-office |
+| GET | `/api/platform/devices` | Installations : type, organisation, établissement, version, dernier contact, état (révoqué) |
+| GET | `/api/platform/sync` | Par serveur local : derniers envoi et réception, en attente / en échec / en conflit annoncés, conflits gardés par le Cloud |
+| GET | `/api/platform/errors?limit=&before=` | Erreurs 500 : date, identifiant de requête, méthode, motif de route, code, message nettoyé, organisation |
+| GET | `/api/platform/stats` | Organisations, établissements actifs et hybrides, comptes, serveurs locaux ; sur 7 et 30 jours par devise : commandes, chiffre d'affaires, encaissé (démos exclues) |
+
+Existantes : `GET /api/platform/tenants`, `POST /api/platform/tenants/{id}/subscription`,
+`/suspend`, `/reactivate`.
+
+Toute réponse 500 porte `details.requestId`, le même identifiant que la ligne du journal d'erreurs.
+
+## §68-69 — supervision
+
+| Méthode | Route | Accès | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/monitoring` | `devices.manage` | `overall`, puis `api`, `database`, `cloud`, `localServer`, `sync`, `printers`, `kds`, `backup` ; chaque bloc a un `state` `OK/WARN/ERROR/NONE` |
+| POST | `/api/locations/{id}/screens/heartbeat` | `orders.read` | `{screenId, stationId?, name?}` → 204 ; appelé toutes les 30 s par l'écran Cuisine |
+
+Le serveur local ajoute à chaque push et pull : `x-afk-version`, `x-afk-pending`, `x-afk-failed`,
+`x-afk-conflicts` ; le Cloud les range dans `devices` (valeurs mal formées ignorées).
+
+## §73 — mises à jour
+
+| Méthode | Route | Accès | Rôle |
+|---|---|---|---|
+| GET | `/api/public/releases/latest?channel=stable` | public | Plus haute version du canal (semver) : `{channel, version, releasedAt, notes, downloadUrl, sha256, signature}` ; 404 si aucune ; cache 5 min |
+| GET | `/api/system/update` | `settings.manage` | `{enabled, currentVersion, channel, latest, updateAvailable, lastCheckAt, lastError}` (dernière annonce **vérifiée**) |
+| POST | `/api/system/update/check` | `settings.manage` | Serveur local : recherche immédiate ; 409 dans le Cloud. N'installe rien |
+
+Signature : Ed25519 sur `JSON.stringify(["afrikaisse-release-v1", channel, version, releasedAt, notes, downloadUrl, sha256])`.
+Publication : `cli release-sign` puis `cli release-publish` (DEPLOYMENT.md §4.1).
+
 ## Temps réel (phases 5-8)
 
 - **En place (phase 5)** : le flux d'activité `GET /api/locations/{id}/activity?since=` est interrogé

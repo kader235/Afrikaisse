@@ -15,7 +15,11 @@ const common = {
   logLevel: 'info',
   // PGlite ne sert qu'aux tests ; pg-native est une option de pg jamais utilisée.
   external: ['@electric-sql/pglite', 'pg-native'],
-  define: { __AFK_BUILD__: JSON.stringify(process.env.AFK_BUILD ?? 'local') },
+  define: {
+    __AFK_BUILD__: JSON.stringify(process.env.AFK_BUILD ?? 'local'),
+    // Clé PUBLIQUE de vérification des mises à jour (§73), embarquée dans le fichier livré. Jamais la clé privée.
+    __AFK_RELEASE_PUBLIC_KEY__: JSON.stringify(process.env.AFK_RELEASE_PUBLIC_KEY ?? ''),
+  },
 };
 
 await build({ ...common, entryPoints: ['src/main.ts'], outfile: 'dist/server.cjs' });

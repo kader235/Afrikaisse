@@ -91,6 +91,38 @@ begin
   end;
 end;
 
+{ Copie de la base, serveur arrêté, AVANT de remplacer le programme (§73).
+  Le serveur fait déjà une copie au démarrage avant ses migrations, mais celle-ci sort de la rotation
+  horaire au bout d'un jour : pour revenir à l'ancienne version plusieurs jours après, il faut la base
+  d'avant la mise à jour. Une seule copie, remplacée à chaque mise à jour, hors de la rotation.
+  Échec de la copie : installation annulée, rien n'est modifié. }
+function SauvegarderAvantMiseAJour: String;
+var
+  Donnees, Dossier: String;
+begin
+  Result := '';
+  Donnees := ExpandConstant('{commonappdata}\AfriKaisse');
+  if not FileExists(Donnees + '\afrikaisse.sqlite') then Exit;
+  Dossier := Donnees + '\sauvegardes\avant-mise-a-jour';
+  WizardForm.StatusLabel.Caption := 'Sauvegarde des données avant la mise à jour…';
+  if not ForceDirectories(Dossier) then
+  begin
+    Result := 'Sauvegarde avant mise à jour impossible (dossier ' + Dossier + '). Installation annulée : rien n''a été modifié.';
+    Exit;
+  end;
+  DeleteFile(Dossier + '\afrikaisse.sqlite-wal');
+  DeleteFile(Dossier + '\afrikaisse.sqlite-shm');
+  if not CopyFile(Donnees + '\afrikaisse.sqlite', Dossier + '\afrikaisse.sqlite', False) then
+  begin
+    Result := 'Sauvegarde avant mise à jour impossible (copie de la base). Installation annulée : rien n''a été modifié.';
+    Exit;
+  end;
+  { Serveur arrêté brutalement : les dernières écritures peuvent être dans le journal WAL, copié avec la base. }
+  if FileExists(Donnees + '\afrikaisse.sqlite-wal') then
+    if not CopyFile(Donnees + '\afrikaisse.sqlite-wal', Dossier + '\afrikaisse.sqlite-wal', False) then
+      Result := 'Sauvegarde avant mise à jour impossible (journal de la base). Installation annulée : rien n''a été modifié.';
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   Arret: String;
@@ -104,4 +136,5 @@ begin
     Exec('wscript.exe', '"' + Arret + '"', '', SW_HIDE, ewWaitUntilTerminated, Code);
     Sleep(1500);
   end;
+  Result := SauvegarderAvantMiseAJour;
 end;

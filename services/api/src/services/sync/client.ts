@@ -16,6 +16,10 @@ const transports = new WeakMap<object, SyncTransport>();
 export function setSyncTransport(ctx: AppContext, transport: SyncTransport) {
   transports.set(ctx, transport);
 }
+/** Transport vers le Cloud de ce nœud (réseau réel, ou substitut des tests). */
+export function syncTransportOf(ctx: AppContext): SyncTransport {
+  return transports.get(ctx) ?? fetchTransport;
+}
 
 const fetchTransport: SyncTransport = async (req) => {
   const res = await fetch(req.url, {
@@ -108,8 +112,23 @@ const PUSH_BATCH = 200;
 export async function runSyncOnce(ctx: AppContext): Promise<SyncRun> {
   const [url, device, secret, locationId] = await Promise.all([getState(ctx.db, K.url), getState(ctx.db, K.device), getState(ctx.db, K.secret), getState(ctx.db, K.location)]);
   if (!url || !device || !secret || !locationId) throw new AppError('CONFLICT', "Ce serveur n'est pas relié à AfriKaisse Cloud.");
-  const transport = transports.get(ctx) ?? fetchTransport;
-  const headers = { 'x-afk-device': device, 'x-afk-device-secret': secret };
+  const transport = syncTransportOf(ctx);
+  // Version et compteurs annoncés au Cloud : le back-office et la supervision les affichent (§67-68).
+  const counts = await ctx.db
+    .selectFrom('sync_events')
+    .select((eb) => ['status', eb.fn.countAll().as('n')])
+    .where((eb) => eb.or([eb.and([eb('device_id', '=', ctx.nodeId), eb('status', 'in', ['PENDING', 'FAILED'])]), eb('status', '=', 'CONFLICT')]))
+    .groupBy('status')
+    .execute();
+  const count = (s: string) => String(Number(counts.find((c) => c.status === s)?.n ?? 0));
+  const headers = {
+    'x-afk-device': device,
+    'x-afk-device-secret': secret,
+    'x-afk-version': ctx.version,
+    'x-afk-pending': count('PENDING'),
+    'x-afk-failed': count('FAILED'),
+    'x-afk-conflicts': count('CONFLICT'),
+  };
   let pushed = 0;
   let pulled = 0;
   let conflicts = 0;

@@ -17,6 +17,7 @@ import type { AppContext } from '../context.ts';
 import { requestMeta, requireAuth, requireTenant } from '../lib/access.ts';
 import { pairWithCloud, runSyncOnce, syncStatus } from '../services/sync/client.ts';
 import { authenticateDevice, createPairingCode, pairDevice, pullEvents, pushEvents } from '../services/sync/server.ts';
+import { recordDeviceReport } from '../services/monitoring.ts';
 
 /** Synchronisation : routes du Cloud (appairage, push, pull) ou du serveur local (état, appairage). */
 export function syncRoutes(ctx: AppContext): FastifyPluginAsyncZod {
@@ -55,7 +56,11 @@ export function syncRoutes(ctx: AppContext): FastifyPluginAsyncZod {
       app.post(
         '/sync/push',
         { bodyLimit: 30 * 1024 * 1024, schema: { tags, summary: 'Événements du serveur local (idempotents)', body: pushRequestSchema, response: { 200: pushResponseSchema } } },
-        async (request) => pushEvents(ctx, await authenticateDevice(ctx, request), request.body.events),
+        async (request) => {
+          const device = await authenticateDevice(ctx, request);
+          await recordDeviceReport(ctx, device.id, 'push', request.headers);
+          return pushEvents(ctx, device, request.body.events);
+        },
       );
 
       app.get(
@@ -63,7 +68,9 @@ export function syncRoutes(ctx: AppContext): FastifyPluginAsyncZod {
         { schema: { tags, summary: 'Événements des autres nœuds depuis un curseur', querystring: z.object({ since: z.coerce.number().int().min(0).default(0) }), response: { 200: pullResponseSchema } } },
         async (request, reply) => {
           reply.header('cache-control', 'no-store');
-          return pullEvents(ctx, await authenticateDevice(ctx, request), request.query.since);
+          const device = await authenticateDevice(ctx, request);
+          await recordDeviceReport(ctx, device.id, 'pull', request.headers);
+          return pullEvents(ctx, device, request.query.since);
         },
       );
       return;

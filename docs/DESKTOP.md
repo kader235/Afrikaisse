@@ -32,8 +32,24 @@ Détail dans LOCAL.md, « Installation chez le client ».
 - Une seule icône « AfriKaisse », aucun script visible.
 - Désinstallation : **les données sont conservées**.
 
-Restent pour la phase 16 : service Windows, console Electron (zone de notification, état du système,
-appairage par QR), signature du code pour éviter l'avertissement SmartScreen.
+Restent pour la phase 16 : service Windows, console Electron (zone de notification, appairage par
+QR), signature du code pour éviter l'avertissement SmartScreen. L'état du système existe déjà dans
+l'application web (**Administration → Supervision**, §68).
+
+## Mise à jour (§73)
+
+- Le serveur local annonce la nouvelle version (signature Ed25519 vérifiée) dans **Supervision** ; il ne
+  télécharge ni n'installe rien.
+- **Avant de remplacer le programme**, l'installateur arrête AfriKaisse puis copie `afrikaisse.sqlite`
+  (et `afrikaisse.sqlite-wal`) dans `C:\ProgramData\AfriKaisse\sauvegardes\avant-mise-a-jour\`
+  (`SauvegarderAvantMiseAJour` dans `AfriKaisse.iss`). Échec de la copie : installation annulée.
+- Au démarrage, le serveur refait une copie vérifiée avant ses migrations.
+- Procédure complète et retour arrière : DEPLOYMENT.md §4.2.
+
+## Journaux (§74)
+
+`C:\ProgramData\AfriKaisse\journaux\` : un fichier par catégorie (application, security, sync,
+printer, database, system), à rotation (LOCAL.md). Le lanceur passe `AFK_LOG_DIR`.
 
 ## Pièges connus (Scolaar, PHARMINA)
 

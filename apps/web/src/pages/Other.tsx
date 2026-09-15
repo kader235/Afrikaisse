@@ -409,7 +409,7 @@ function daysLabel(daysLeft: number) {
   return `échue depuis ${days(-daysLeft)}`;
 }
 
-function ExpiryState({ plan, expiresAt }: { plan: string; expiresAt: number | null }) {
+export function ExpiryState({ plan, expiresAt }: { plan: string; expiresAt: number | null }) {
   if (expiresAt === null) return <span className="muted">Sans échéance</span>;
   const { state } = subscriptionState(plan, expiresAt, Date.now());
   const tone = state === 'EXPIRED' ? 'state state-off' : state === 'GRACE' ? 'state state-warn' : 'state';
@@ -499,7 +499,7 @@ function SubscriptionPanel({ subscription: s }: { subscription: Subscription }) 
   );
 }
 
-function SubscriptionDialog({ tenant, onClose, onSaved }: { tenant: PlatformTenant; onClose: () => void; onSaved: () => void }) {
+export function SubscriptionDialog({ tenant, onClose, onSaved }: { tenant: PlatformTenant; onClose: () => void; onSaved: () => void }) {
   const [plan, setPlan] = useState<PlanCode>((PLAN_CODES as readonly string[]).includes(tenant.plan) ? (tenant.plan as PlanCode) : 'STARTER');
   const [months, setMonths] = useState(1);
   const [unlimited, setUnlimited] = useState(false);

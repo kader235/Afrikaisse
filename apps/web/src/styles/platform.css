@@ -1,0 +1,33 @@
+/* Back-office GLOBALTECH (§67). Styles propres aux écrans de la plateforme uniquement. */
+
+.platform-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px 0;
+}
+
+.platform-search input {
+  flex: 1 1 240px;
+  max-width: 420px;
+}
+
+.platform-sub {
+  display: block;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.platform-message {
+  max-width: 520px;
+  overflow-wrap: anywhere;
+}
+
+.platform-more {
+  padding: 12px 16px;
+}
+
+.platform-period + .platform-period {
+  margin-top: 16px;
+}

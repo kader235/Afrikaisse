@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { RELEASE_CHANNELS, type ReleaseChannel } from '@afrikaisse/core';
+import { EMBEDDED_RELEASE_PUBLIC_KEY } from './lib/releases.ts';
 
 const flag = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
 
@@ -19,6 +21,10 @@ const envSchema = z.object({
   AFK_PORT_FILE: z.string().min(1).optional(),
   AFK_BACKUP_DIR: z.string().min(1).optional(),
   AFK_RATE_LIMIT: flag.optional(),
+  AFK_LOG_DIR: z.string().min(1).optional(),
+  AFK_RELEASE_PUBLIC_KEY: z.string().min(40).optional(),
+  AFK_UPDATE_URL: z.url().optional(),
+  AFK_UPDATE_CHANNEL: z.enum(RELEASE_CHANNELS).default('stable'),
 });
 
 export type Profile = 'cloud' | 'local';
@@ -46,6 +52,13 @@ export interface AppConfig {
   backupDir: string | undefined;
   /** Limites par adresse IP sur les routes ouvertes sans connexion (désactivées dans les tests). */
   rateLimit: boolean;
+  /** Serveur local : un fichier journal par catégorie dans ce dossier (§74). Absent : sortie standard. */
+  logDir: string | undefined;
+  /** Clé publique Ed25519 des annonces de version ; par défaut celle embarquée à la construction (§73). */
+  releasePublicKey: string;
+  /** Adresse interrogée pour les mises à jour ; par défaut le Cloud relié, sinon le Cloud AfriKaisse. */
+  updateUrl: string | undefined;
+  updateChannel: ReleaseChannel;
   accessTokenTtlSec: number;
   sessionTtlSec: number;
   loginMaxFailures: number;
@@ -72,6 +85,10 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     portFile: e.AFK_PORT_FILE,
     backupDir: e.AFK_BACKUP_DIR,
     rateLimit: e.AFK_RATE_LIMIT ?? true,
+    logDir: e.AFK_LOG_DIR,
+    releasePublicKey: e.AFK_RELEASE_PUBLIC_KEY ?? EMBEDDED_RELEASE_PUBLIC_KEY,
+    updateUrl: e.AFK_UPDATE_URL?.replace(/\/+$/, ''),
+    updateChannel: e.AFK_UPDATE_CHANNEL,
     accessTokenTtlSec: 15 * 60,
     sessionTtlSec: 30 * 24 * 3600,
     loginMaxFailures: 5,

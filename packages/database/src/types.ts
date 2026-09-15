@@ -145,6 +145,14 @@ export interface DevicesTable {
   updated_at: number;
   /** Serveur local appairé : empreinte SHA-256 de son secret (le secret n'est jamais stocké). */
   secret_hash: string | null;
+  /** §67 (0013) : version du serveur local, derniers envoi et réception, compteurs annoncés au Cloud. */
+  app_version: string | null;
+  last_push_at: number | null;
+  last_pull_at: number | null;
+  reported_pending: number | null;
+  reported_failed: number | null;
+  reported_conflicts: number | null;
+  reported_at: number | null;
 }
 
 /** Code d'appairage d'un serveur local : usage unique, 10 minutes. */
@@ -619,7 +627,53 @@ export interface PrintJobsTable {
   sent_at: number | null;
 }
 
+// --- §67-§73 : back-office, supervision, mises à jour (0013) --------------------
+
+/** Erreur serveur (500) : borné, sans corps de requête, sans en-têtes. Propre au nœud. */
+export interface ErrorLogsTable {
+  id: string;
+  created_at: number;
+  node_id: string | null;
+  request_id: string | null;
+  method: string | null;
+  /** Motif de route (ex. /api/orders/:orderId), jamais l'adresse réelle. */
+  route: string | null;
+  status: number;
+  code: string;
+  message: string;
+  tenant_id: string | null;
+}
+
+/** Signe de vie d'un écran cuisine. Propre au nœud qui sert l'écran. */
+export interface ScreenHeartbeatsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  kind: 'KDS';
+  station_id: string | null;
+  name: string | null;
+  user_id: string | null;
+  last_seen_at: number;
+  created_at: number;
+}
+
+/** Annonce de version signée (Ed25519), publiée dans le Cloud. */
+export interface AppReleasesTable {
+  id: string;
+  channel: string;
+  version: string;
+  released_at: number;
+  notes: string;
+  download_url: string;
+  sha256: string;
+  signature: string;
+  created_at: number;
+}
+
 export interface Database {
+  error_logs: ErrorLogsTable;
+  screen_heartbeats: ScreenHeartbeatsTable;
+  app_releases: AppReleasesTable;
   pairing_codes: PairingCodesTable;
   printers: PrintersTable;
   print_jobs: PrintJobsTable;

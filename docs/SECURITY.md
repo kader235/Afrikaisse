@@ -64,6 +64,29 @@ réinitialisation de mot de passe, renommage d'organisation, suspension et réac
 - **Serveurs locaux révocables** (phase 17) : `POST /api/devices/{id}/revoke` efface l'empreinte du
   secret ; le PC est refusé dès sa requête suivante.
 
+### Back-office, supervision, journaux, mises à jour (§67-§74)
+- **Back-office** (`/api/platform/*`, profil cloud seulement) : le contrôle `is_platform_admin` se fait
+  dans `onRequest`, **avant** la validation des paramètres. Un client connecté reçoit 404 sur toutes
+  les routes, même avec un identifiant mal formé ; un anonyme 401. Testé pour propriétaire et
+  responsable, et sur le serveur local (routes absentes).
+- **Suspension d'un compte** depuis le back-office : statut `DISABLED`, toutes les sessions révoquées,
+  changement envoyé aux serveurs locaux de chaque organisation, audit dans chacune. Impossible sur son
+  propre compte ou sur un autre compte back-office (retirer d'abord le droit en ligne de commande).
+- **Journal d'erreurs** (`error_logs`) : seulement les 500 ; identifiant de requête (UUID, renvoyé
+  au client dans `details.requestId`), méthode, **motif** de route, code, organisation. Ni corps, ni
+  en-têtes, ni adresse IP ; e-mails, jetons et numéros effacés du message. 2 000 lignes et 30 jours au
+  plus.
+- **Supervision** : propriétaire, administrateur, responsable (`devices.manage`), bornée à
+  l'établissement. Le signe de vie d'un écran cuisine demande `orders.read` ; un identifiant d'écran
+  déjà pris par une autre organisation répond 404.
+- **Journaux par catégorie** (§74) : `security` reçoit les verrouillages, identifiants refusés, jetons
+  invalides, annonces de version à la signature invalide et suspensions de compte.
+- **Mises à jour signées** (Ed25519, `node:crypto`) : la clé publique est embarquée à la construction ;
+  la clé privée n'est lue que par la ligne de commande, jamais par le serveur web. Les octets signés
+  sont une liste ordonnée et versionnée (canal, version, date, notes, lien, SHA-256) : changer un seul
+  champ, dont le lien de téléchargement, invalide l'annonce. Lien `https://` obligatoire. Le serveur
+  local n'installe jamais rien ; l'installateur copie la base avant de remplacer le programme.
+
 ## Points connus, à traiter
 
 | Point | Phase |
@@ -74,7 +97,8 @@ réinitialisation de mot de passe, renommage d'organisation, suspension et réac
 | Le flux de synchronisation transporte `password_hash` et `pin_hash` (nécessaires à la connexion hors ligne) : il faut TLS et l'authentification de l'appareil | 12 |
 | Row Level Security PostgreSQL en filet de sécurité | après ouverture |
 | Double authentification pour propriétaires et back-office | après ouverture |
-| Signature des mises à jour du serveur local (Ed25519) ; les abonnements ne sont contrôlés que dans le Cloud, rien à signer | 16 |
+| Signature de code de l'installateur Windows (SmartScreen) ; l'annonce de version est déjà signée (§73) | 16 |
+| Révocation d'une clé de signature des versions compromise : aujourd'hui, nouvelle clé = nouvelle construction à installer à la main | après ouverture |
 | Sauvegardes chiffrées hors du poste | 11 |
 
 ## Signaler une faille

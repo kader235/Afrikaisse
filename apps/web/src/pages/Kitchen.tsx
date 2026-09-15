@@ -5,6 +5,7 @@ import { api } from '../api.ts';
 import { beep } from '../sound.ts';
 import { orderPlace } from '../labels.ts';
 import { FloatMessage, Icon } from '../ui.tsx';
+import { useScreenHeartbeat } from '../heartbeat.ts';
 
 /**
  * Écran cuisine (KDS), sombre et lisible à 2 m : trois colonnes, minuteur par ticket,
@@ -45,6 +46,8 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const canUse = (s: Station) => me.permissions.includes(s.kind === 'BAR' ? 'bar.use' : 'kitchen.use');
   const allowed = (stations ?? []).filter(canUse);
   const station = allowed.find((s) => s.id === stationId) ?? null;
+  // Supervision (§68) : cet écran se signale tant qu'il est ouvert.
+  useScreenHeartbeat(locationId, station?.id ?? null);
 
   useEffect(() => {
     if (!locationId) return;
