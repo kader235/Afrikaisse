@@ -4,6 +4,8 @@ import {
   PAYMENT_METHOD_LABELS,
   SERVICE_TYPE_LABELS,
   formatMoney,
+  formatRate,
+  mergeTaxLines,
   uuidv7,
   type CreatePrinterInput,
   type Order,
@@ -228,13 +230,22 @@ function receiptTicket(r: Receipt, width: 48 | 32, timeZone: string): string {
       t.row(`${i.quantity} x ${i.name}${i.variantName ? ` (${i.variantName})` : ''}`, money(i.total));
       if (i.modifiers.length) t.wrap(`   ${i.modifiers.map((m) => m.name).join(', ')}`);
     }
+    for (const promo of o.promotions) t.row(promo.code ? `Code ${promo.code}` : promo.name, `-${money(promo.amount)}`);
     if (o.discount > 0) t.row(`Remise${o.discountReason ? ` (${o.discountReason})` : ''}`, `-${money(o.discount)}`);
   }
-  t.rule()
-    .bold(true)
-    .row('Total', money(r.orders.reduce((s, o) => s + o.total, 0)))
-    .bold(false)
-    .row(`Payé · ${PAYMENT_METHOD_LABELS[p.method]}${p.provider ? ` ${p.provider}` : ''}`, money(p.amount));
+  const total = r.orders.reduce((s, o) => s + o.total, 0);
+  const taxes = mergeTaxLines(r.orders.map((o) => o.taxes));
+  const taxTotal = taxes.reduce((s, x) => s + x.tax, 0);
+  t.rule();
+  if (taxes.length > 0 && r.orders.some((o) => o.taxMode === 'EXCLUSIVE')) {
+    t.row('Total HT', money(total - taxTotal));
+    for (const x of taxes) t.row(`${x.name} ${formatRate(x.rateBp)}`, money(x.tax));
+    t.bold(true).row('Total TTC', money(total)).bold(false);
+  } else {
+    t.bold(true).row('Total', money(total)).bold(false);
+    for (const x of taxes) t.row(`dont ${x.name} ${formatRate(x.rateBp)}`, money(x.tax));
+  }
+  t.row(`Payé · ${PAYMENT_METHOD_LABELS[p.method]}${p.provider ? ` ${p.provider}` : ''}`, money(p.amount));
   if (p.method === 'CASH' && p.tendered > p.amount) t.row('Remis', money(p.tendered)).row('Rendu', money(p.change));
   if (p.reference) t.text(`Réf. ${p.reference}`);
   if (r.remaining > 0) t.bold(true).row('Reste à payer', money(r.remaining)).bold(false);

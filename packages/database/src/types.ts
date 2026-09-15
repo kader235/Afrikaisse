@@ -1,5 +1,5 @@
 import type { Generated } from 'kysely';
-import type { CurrencyCode, LocationType, OperatingMode, Role, TableShape } from '@afrikaisse/core';
+import type { CurrencyCode, LocationType, OperatingMode, PromotionKind, PromotionScope, Role, TableShape, TaxMode } from '@afrikaisse/core';
 
 /**
  * Conventions de colonnes, identiques en PostgreSQL (Cloud) et SQLite (local) :
@@ -213,6 +213,8 @@ export interface MenuCategoriesTable {
   sort: number;
   /** Masquée : reste gérée par le personnel mais n'apparaît pas sur le menu client. */
   is_visible: Bool;
+  /** Taux de taxe propre à la catégorie ; null : taux par défaut de l'établissement. */
+  tax_rate_id: string | null;
   status: 'ACTIVE' | 'ARCHIVED';
   created_at: number;
   updated_at: number;
@@ -238,6 +240,8 @@ export interface ProductsTable {
   tags: string;
   /** JSON : tableau d'allergènes (ALLERGENS). */
   allergens: string;
+  /** Taux de taxe propre au produit ; null : taux de sa catégorie, sinon le défaut. */
+  tax_rate_id: string | null;
   sort: number;
   status: 'ACTIVE' | 'ARCHIVED';
   created_at: number;
@@ -360,11 +364,26 @@ export interface OrdersTable {
   customer_name: string | null;
   currency: CurrencyCode;
   subtotal: number;
-  /** Remise sur la commande ; total = sous-total − remise. */
+  /** Remise manuelle ; total = sous-total − promotions − remise (+ taxes en mode hors taxe). */
   discount: number;
   discount_reason: string | null;
   discount_by: string | null;
   total: number;
+  /** Taxes et promotions figées à la commande (0011_pricing). */
+  tax_mode: TaxMode;
+  tax_total: number;
+  /** JSON : détail par taux [{ rateId, name, rateBp, base, tax }]. */
+  taxes: string | null;
+  /** Toutes promotions : lignes, commande, code. */
+  promotion_discount: number;
+  order_promotion_id: string | null;
+  order_promotion_discount: number;
+  promo_code: string | null;
+  promo_code_promotion_id: string | null;
+  /** Remise totale du code (lignes visées et commande). */
+  promo_code_discount: number;
+  /** JSON : récapitulatif [{ id, name, code, amount }]. */
+  applied_promotions: string | null;
   /** Somme des paiements non annulés (dénormalisée, mise à jour dans la transaction du paiement). */
   paid_amount: number;
   payment_status: 'UNPAID' | 'PARTIAL' | 'PAID';
@@ -397,6 +416,15 @@ export interface OrderItemsTable {
   station_id: string | null;
   kds_status: 'QUEUED' | 'PREPARING' | 'READY';
   kds_updated_at: number | null;
+  /** Promotion automatique de la ligne et sa remise. */
+  promotion_id: string | null;
+  promotion_discount: number;
+  /** Part du code promo portée par la ligne. */
+  code_discount: number;
+  /** Taux copié au moment de la commande. */
+  tax_rate_id: string | null;
+  tax_rate_bp: number | null;
+  tax_name: string | null;
 }
 
 export interface OrderItemModifiersTable {
@@ -619,7 +647,66 @@ export interface PrintJobsTable {
   sent_at: number | null;
 }
 
+/** Réglages de taxe d'un établissement ; id = identifiant de l'établissement. */
+export interface PricingSettingsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  tax_mode: TaxMode;
+  default_tax_rate_id: string | null;
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface TaxRatesTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  /** Points de base : 1800 = 18 %. */
+  rate_bp: number;
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
+export interface PromotionsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  name: string;
+  kind: PromotionKind;
+  scope: PromotionScope;
+  target_id: string | null;
+  /** PERCENT : points de base ; AMOUNT : unités mineures ; FREE_ITEM : 0. */
+  value: number;
+  buy_quantity: number | null;
+  free_quantity: number | null;
+  min_amount: number | null;
+  code: string | null;
+  /** Code en majuscules : unique par établissement parmi les promotions non archivées. */
+  code_key: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  /** Bit 0 = lundi … bit 6 = dimanche ; 0 = tous les jours. */
+  days_mask: number;
+  start_minute: number | null;
+  end_minute: number | null;
+  max_uses: number | null;
+  is_active: Bool;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
 export interface Database {
+  pricing_settings: PricingSettingsTable;
+  tax_rates: TaxRatesTable;
+  promotions: PromotionsTable;
   pairing_codes: PairingCodesTable;
   printers: PrintersTable;
   print_jobs: PrintJobsTable;

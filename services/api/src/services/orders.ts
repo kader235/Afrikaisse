@@ -26,6 +26,7 @@ import { requireTenant, type AuthState, type TenantScope } from '../lib/access.t
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { enqueueKitchenTickets } from './printing.ts';
 import { consumeStock, restoreStock } from './stock.ts';
+import { orderPricingColumns, parseApplied, parseTaxes, priceOrderLines, reserveUses, type LinePricing } from './pricing.ts';
 
 /**
  * Commandes, sessions de table et appels du client.
@@ -38,7 +39,8 @@ import { consumeStock, restoreStock } from './stock.ts';
  */
 
 type OrderRow = Selectable<OrdersTable>;
-type Priced = { productId: string; variantId: string | null; product: PricingProduct; line: Extract<PricedLine, { ok: true }>; quantity: number; note: string | null };
+/** Ligne validée ; `pricing` : promotion et taux calculés par services/pricing.ts. */
+export type Priced = { productId: string; variantId: string | null; product: PricingProduct; line: Extract<PricedLine, { ok: true }>; quantity: number; note: string | null; pricing?: LinePricing };
 
 const MAX_ORDERS_PER_CLIENT_PER_MINUTE = 5;
 const MAX_PENDING_PER_TABLE = 10;
@@ -47,7 +49,7 @@ const LOCAL_SERVER_SILENCE_MS = 20_000;
 
 // --- QR ---------------------------------------------------------------------
 
-async function resolveQr(db: Db, token: string) {
+export async function resolveQr(db: Db, token: string) {
   const row = await db
     .selectFrom('qr_codes as q')
     .innerJoin('dining_tables as t', 't.id', 'q.table_id')
@@ -224,6 +226,9 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
 
   return rows.map((o) => {
     const own = items.filter((i) => i.order_id === o.id);
+    const applied = parseApplied(o.applied_promotions);
+    const names = new Map(applied.map((a) => [a.id, a.name]));
+    const codeName = o.promo_code_promotion_id ? (names.get(o.promo_code_promotion_id) ?? o.promo_code) : null;
     return {
       id: o.id,
       locationId: o.location_id,
@@ -239,6 +244,12 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
       customerName: o.customer_name,
       currency: o.currency,
       subtotal: o.subtotal,
+      promotionDiscount: o.promotion_discount,
+      promotions: applied,
+      promoCode: o.promo_code,
+      taxMode: o.tax_mode,
+      taxTotal: o.tax_total,
+      taxes: parseTaxes(o.taxes),
       discount: o.discount,
       discountReason: o.discount_reason,
       total: o.total,
@@ -253,6 +264,8 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
         unitPrice: i.unit_price,
         quantity: i.quantity,
         total: i.total,
+        promotionName: [i.promotion_id ? names.get(i.promotion_id) : null, i.code_discount > 0 ? codeName : null].filter(Boolean).join(' + ') || null,
+        promotionDiscount: i.promotion_discount + i.code_discount,
         note: i.note,
         modifiers: modifiers.filter((m) => m.order_item_id === i.id).map((m) => ({ groupName: m.group_name, name: m.name, priceDelta: m.price_delta })),
         stationId: i.station_id,
@@ -274,6 +287,12 @@ function toPublic(order: Order): PublicOrder {
     status: order.status,
     tableLabel: order.tableLabel,
     currency: order.currency,
+    subtotal: order.subtotal,
+    promotionDiscount: order.promotionDiscount,
+    promotions: order.promotions,
+    taxMode: order.taxMode,
+    taxTotal: order.taxTotal,
+    taxes: order.taxes,
     total: order.total,
     note: order.note,
     items: order.items.map((i) => ({ name: i.name, variantName: i.variantName, quantity: i.quantity, total: i.total, note: i.note, modifiers: i.modifiers.map((m) => m.name) })),
@@ -311,7 +330,9 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
   }
 
   const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId)), input.lines);
-  const total = priced.reduce((sum, p) => sum + p.line.total, 0);
+  // Promotions et taxes du moment, dans le fuseau de l'établissement ; un code refusé bloque la commande.
+  const quote = await priceOrderLines(ctx.db, { id: qr.location_id, timezone: qr.timezone, currency: qr.currency }, priced, input.promoCode, now);
+  const total = quote.pricing.total;
 
   // Deux clients de la même table au même instant : une seule session ouverte et des numéros
   // uniques sont garantis par des index ; en cas de collision, on rejoue une fois.
@@ -320,6 +341,7 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
     try {
       await ctx.db.transaction().execute(async (trx) => {
         const hlc = ctx.clock.now();
+        await reserveUses(trx, ctx, quote);
         const sessionId = await openSession(trx, ctx, { tenantId: qr.tenant_id, locationId: qr.location_id, tableId: qr.table_id, userId: null }, hlc);
         const date = businessDate(now, qr.timezone, qr.business_day_cutoff_min);
         // Établissement hybride : le Cloud numérote ses commandes QR à partir de 901, le serveur local
@@ -339,8 +361,7 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
             status: 'PENDING',
             note: input.note?.trim() || null,
             currency: qr.currency,
-            subtotal: total,
-            total,
+            ...orderPricingColumns(quote),
             service_type: 'DINE_IN',
             customer_name: null,
             discount: 0,
@@ -356,10 +377,10 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
             updated_hlc: hlc,
           })
           .execute();
-        await insertItems(trx, ctx, order, priced);
+        await insertItems(trx, ctx, order, quote.lines);
         await addHistory(trx, ctx, order, null, 'PENDING', { userId: null, source: 'QR' }, hlc);
         await emitOrder(trx, ctx, orderId, 'ORDER_PLACED', hlc);
-        await writeAudit(trx, ctx, { tenantId: qr.tenant_id, locationId: qr.location_id, action: 'order.qr_placed', subject: `table ${qr.table_label}`, entityType: 'order', entityId: orderId, data: { number, total, lines: priced.length }, meta });
+        await writeAudit(trx, ctx, { tenantId: qr.tenant_id, locationId: qr.location_id, action: 'order.qr_placed', subject: `table ${qr.table_label}`, entityType: 'order', entityId: orderId, data: { number, total, lines: priced.length, promoCode: quote.pricing.code?.code ?? null }, meta });
       });
       const [order] = await hydrateOrders(ctx.db, await ctx.db.selectFrom('orders').selectAll().where('id', '=', orderId).execute());
       return toPublic(order!);
@@ -395,6 +416,12 @@ export async function insertItems(trx: Db, ctx: AppContext, order: { id: string;
         station_id: stationOf.get(p.productId) ?? null,
         kds_status: 'QUEUED',
         kds_updated_at: null,
+        promotion_id: p.pricing?.promotionId ?? null,
+        promotion_discount: p.pricing?.promotionDiscount ?? 0,
+        code_discount: p.pricing?.codeDiscount ?? 0,
+        tax_rate_id: p.pricing?.taxRateId ?? null,
+        tax_rate_bp: p.pricing?.taxRateBp ?? null,
+        tax_name: p.pricing?.taxName ?? null,
       })
       .execute();
     for (const m of p.line.modifiers) {

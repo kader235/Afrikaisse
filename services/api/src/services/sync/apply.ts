@@ -35,6 +35,9 @@ export const MASTER_TABLES: Record<string, string> = {
   table_session: 'table_sessions',
   service_request: 'service_requests',
   cash_session: 'cash_sessions',
+  pricing_settings: 'pricing_settings',
+  tax_rate: 'tax_rates',
+  promotion: 'promotions',
 };
 
 /** Ajout seulement. */

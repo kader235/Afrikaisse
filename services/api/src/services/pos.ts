@@ -29,6 +29,7 @@ import type { TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { enqueueKitchenTickets } from './printing.ts';
 import { consumeStock } from './stock.ts';
+import { orderPricingColumns, priceOrderLines, recomputeStoredTotals, reserveUses } from './pricing.ts';
 import {
   addHistory,
   assertLocation,
@@ -86,14 +87,16 @@ export async function createStaffOrder(ctx: AppContext, scope: TenantScope, loca
   if (input.tableId && !table) throw new AppError('NOT_FOUND', 'Table introuvable.');
 
   const priced = priceLines(await loadPricingProducts(ctx.db, locationId, input.lines.map((l) => l.productId), { includeHidden: true }), input.lines);
-  const total = priced.reduce((sum, p) => sum + p.line.total, 0);
   const now = ctx.now();
+  const quote = await priceOrderLines(ctx.db, location, priced, input.promoCode, now);
+  const total = quote.pricing.total;
 
   for (let attempt = 1; ; attempt++) {
     const orderId = uuidv7();
     try {
       await ctx.db.transaction().execute(async (trx) => {
         const hlc = ctx.clock.now();
+        await reserveUses(trx, ctx, quote);
         const sessionId = table ? await openSession(trx, ctx, { tenantId: scope.tenantId, locationId, tableId: table.id, userId: scope.userId }, hlc) : null;
         const date = businessDate(now, location.timezone, location.business_day_cutoff_min);
         const number = await nextOrderNumber(trx, locationId, date);
@@ -112,11 +115,10 @@ export async function createStaffOrder(ctx: AppContext, scope: TenantScope, loca
             service_type: table ? 'DINE_IN' : input.serviceType,
             customer_name: input.customerName?.trim() || null,
             currency: location.currency,
-            subtotal: total,
+            ...orderPricingColumns(quote),
             discount: 0,
             discount_reason: null,
             discount_by: null,
-            total,
             paid_amount: 0,
             payment_status: paymentStatusOf(total, 0),
             client_token: null,
@@ -127,11 +129,14 @@ export async function createStaffOrder(ctx: AppContext, scope: TenantScope, loca
             updated_hlc: hlc,
           })
           .execute();
-        await insertItems(trx, ctx, order, priced);
+        await insertItems(trx, ctx, order, quote.lines);
         await addHistory(trx, ctx, order, null, 'CONFIRMED', { userId: scope.userId, source: 'STAFF' }, hlc);
         await emitOrder(trx, ctx, orderId, 'ORDER_PLACED', hlc);
         await consumeStock(trx, ctx, order, scope.userId);
         await enqueueKitchenTickets(trx, ctx, order);
+        if (quote.pricing.code) {
+          await writeAudit(trx, ctx, { tenantId: scope.tenantId, locationId, actorUserId: scope.userId, action: 'order.promo_code', entityType: 'order', entityId: orderId, data: { number, code: quote.pricing.code.code, amount: quote.pricing.code.amount }, meta });
+        }
       });
       return loadOrder(ctx.db, orderId);
     } catch (err) {
@@ -147,8 +152,10 @@ export async function setDiscount(ctx: AppContext, scope: TenantScope, orderId: 
   const order = await findOrder(ctx.db, scope, orderId);
   if (order.status === 'CANCELLED' || order.status === 'COMPLETED') throw conflict('Remise impossible sur une commande terminée ou annulée.');
   if (order.paid_amount > 0) throw conflict('Remise impossible : un paiement est déjà enregistré sur cette commande.');
-  const discount = discountAmount(order.subtotal, input.kind, input.value);
-  const total = order.subtotal - discount;
+  // Remise sur le montant après promotions ; taxes recalculées avec les taux figés sur les lignes.
+  const discount = discountAmount(order.subtotal - order.promotion_discount, input.kind, input.value);
+  const totals = await recomputeStoredTotals(ctx.db, order, discount);
+  const total = totals.total;
 
   await ctx.db.transaction().execute(async (trx) => {
     const hlc = ctx.clock.now();
@@ -157,6 +164,8 @@ export async function setDiscount(ctx: AppContext, scope: TenantScope, orderId: 
       .updateTable('orders')
       .set({
         discount,
+        tax_total: totals.taxTotal,
+        taxes: JSON.stringify(totals.taxes),
         discount_reason: discount > 0 ? input.reason : null,
         discount_by: discount > 0 ? scope.userId : null,
         total,

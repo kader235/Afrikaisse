@@ -11,6 +11,7 @@ import { stock } from './migrations/0007_stock.ts';
 import { printing } from './migrations/0008_printing.ts';
 import { sync } from './migrations/0009_sync.ts';
 import { plans } from './migrations/0010_plans.ts';
+import { pricing } from './migrations/0011_pricing.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -30,6 +31,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0008_printing': printing(c),
     '0009_sync': sync(c),
     '0010_plans': plans(c),
+    '0011_pricing': pricing(c),
   };
 }
 

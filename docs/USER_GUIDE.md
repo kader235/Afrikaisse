@@ -109,7 +109,7 @@ Toucher une table ouvre sa **fiche de service** :
 
 ## Le menu
 
-Menu **Menu**, trois onglets.
+Menu **Menu** : Produits, Options, Postes, Imprimantes, QR codes, Taxes et promotions.
 
 ### Produits
 - À gauche, les **catégories** : ➕ créer, ✎ renommer ou masquer (une catégorie masquée reste
@@ -157,6 +157,34 @@ Chaque table du plan de salle a son QR.
   ce serveur local est relié au Cloud. Un serveur local **non relié** ne peut produire que des QR du
   réseau du restaurant : l'écran le signale en orange avant l'impression.
 
+### Taxes et promotions
+Onglet **Taxes et promotions** (propriétaire, administrateur et gérant modifient ; les autres consultent).
+
+**Taxes**
+- **Prix du menu** : **TVA incluse** (par défaut, le prix affiché est payé tel quel, la TVA est
+  indiquée sur le reçu) ou **Hors taxe** (la TVA s'ajoute au total).
+- **Nouveau taux** : nom et pourcentage (TVA 18 %, TVA 19,25 %, Exonéré 0 %). Cocher **Par défaut**
+  pour l'appliquer à tout le menu.
+- **Taux par catégorie et produit** : un taux différent pour une catégorie (Boissons à taux réduit)
+  ou pour un seul produit. « Par défaut » et « Comme la catégorie » reprennent le taux hérité.
+- Changer un taux ne modifie pas les commandes déjà passées.
+
+**Promotions**
+- **Nouvelle promotion** :
+  - **Remise** : pourcentage, montant fixe (par article, ou sur la commande) ou **article offert**
+    (2 achetés + 1 offert) ;
+  - **Portée** : toute la commande (avec une commande minimale), une catégorie ou un produit ;
+  - **Code promo** : laisser vide pour une promotion automatique ; sinon le client ou le caissier
+    saisit le code (majuscules ou minuscules) ;
+  - **Dates**, **Jours**, **Heures** : une happy hour de 18:00 à 20:00 le vendredi, une offre du mois ;
+  - **Utilisations max.** : une commande annulée rend son utilisation.
+- **Suspendre / Reprendre** l'arrête sans la perdre ; **Archiver** la retire et libère son code.
+- **État** : En cours, Programmée, Suspendue, Terminée.
+
+Quand plusieurs promotions visent la même ligne, la plus avantageuse pour le client s'applique.
+Ensuite viennent la promotion de commande, le code promo (un seul par commande), la remise d'un
+responsable, puis les taxes. Un produit à prix promotionnel ne reçoit pas d'autre promotion d'article.
+
 ## Le menu client (QR)
 
 Le client scanne le QR de sa table avec l'appareil photo de son téléphone : le menu s'ouvre, sans
@@ -167,7 +195,9 @@ options et allergènes. Les articles épuisés restent visibles, marqués « Ép
 ### Commander depuis le téléphone
 1. Toucher un plat, choisir la version et les options : les choix obligatoires (Cuisson…) sont
    indiqués, et **Ajouter** reste grisé tant qu'ils manquent. Le prix se met à jour à chaque choix.
-2. **Voir le panier** : changer les quantités, ajouter un mot pour le restaurant, puis **Commander**.
+2. **Voir le panier** : changer les quantités, saisir un **code promo**, ajouter un mot pour le
+   restaurant, puis **Commander**. Les promotions en cours sont affichées sur les plats (prix barré,
+   « −20 % », « 2 + 1 offert ») et déduites dans le panier ; en mode hors taxe, la TVA s'y ajoute.
 3. La commande part au restaurant, **qui la confirme**. Le client suit les étapes sur son
    téléphone : Envoyée, Confirmée, En cuisine, Prête, Servie.
 4. **Appeler un serveur** et **Demander l'addition** préviennent le personnel sur ses tablettes.
@@ -212,13 +242,16 @@ Onglet **Vente**.
   - **Ajouter** montre le prix exact.
 - **− / +** changent la quantité.
 - **Sur place** : choisir la table, ou « Sans table » pour le comptoir. **À emporter** : nom du client.
+- Les promotions en cours se déduisent seules, ligne par ligne. **Code promo** (icône ticket) :
+  saisir le code du client ; le ticket affiche sous-total, promotions, taxes et total.
 - **Envoyer la commande** : la commande part en préparation, l'addition reste ouverte.
 - **Envoyer et encaisser** : le client paie tout de suite.
 
 ### Encaisser
 Onglet **Encaissement** : les notes ouvertes (tables occupées, commandes à emporter, commandes restées impayées).
 1. Toucher une note : détail des commandes, total, déjà payé, reste.
-2. **Remise** (responsables) : 5 %, 10 %… ou « Offert », avec un motif inscrit au journal.
+2. **Remise** (responsables) : 5 %, 10 %… ou « Offert », avec un motif inscrit au journal. Elle
+   porte sur le montant après promotions ; les taxes sont recalculées.
 3. **Encaisser** :
    - choisir **Espèces**, **Mobile money**, **Carte** ou **Autre** ;
    - le montant proposé est le reste à payer, ou une part de l'addition partagée (**1/2**, **1/3**, **1/4**) ;

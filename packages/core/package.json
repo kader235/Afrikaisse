@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./money": "./src/money.ts",
-    "./pricing": "./src/pricing.ts"
+    "./pricing": "./src/pricing.ts",
+    "./taxes": "./src/taxes.ts",
+    "./promotions": "./src/promotions.ts"
   },
   "dependencies": {
     "zod": "^4.1.0"

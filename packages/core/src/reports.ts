@@ -6,7 +6,7 @@ import { PAYMENT_METHODS, SERVICE_TYPES } from './pos.ts';
 /**
  * Rapports de ventes, par journée d'exploitation (la même date que les commandes et les
  * paiements : un service de nuit reste sur la bonne journée).
- * Chiffre d'affaires = commandes confirmées, non annulées (payées ou non) ;
+ * Chiffre d'affaires = commandes confirmées, non annulées (payées ou non), taxes comprises ;
  * encaissé = paiements enregistrés, non annulés.
  */
 
@@ -43,7 +43,12 @@ export const salesReportSchema = z.object({
     orders: z.number(),
     averageTicket: z.number(),
     collected: z.number(),
+    /** Remises manuelles. */
     discounts: z.number(),
+    /** Remises des promotions et codes promo. */
+    promotions: z.number(),
+    taxCollected: z.number(),
+    revenueExclTax: z.number(),
     itemsSold: z.number(),
     cancelledCount: z.number(),
     cancelledAmount: z.number(),
@@ -54,5 +59,7 @@ export const salesReportSchema = z.object({
   bySource: z.array(z.object({ source: z.enum(ORDER_SOURCES), orders: z.number(), revenue: z.number() })),
   byServiceType: z.array(z.object({ serviceType: z.enum(SERVICE_TYPES), orders: z.number(), revenue: z.number() })),
   topProducts: z.array(z.object({ name: z.string(), quantity: z.number(), revenue: z.number() })),
+  byTax: z.array(z.object({ name: z.string(), rateBp: z.number(), base: z.number(), tax: z.number() })),
+  byPromotion: z.array(z.object({ name: z.string(), code: z.string().nullable(), orders: z.number(), amount: z.number() })),
 });
 export type SalesReport = z.infer<typeof salesReportSchema>;
