@@ -18,7 +18,8 @@
     "dev:web": "npm run dev -w @afrikaisse/web",
     "build:api": "npm run build -w @afrikaisse/api",
     "build:web": "npm run build -w @afrikaisse/web",
-    "verify": "npm run typecheck && npm test && npm run build:api && npm run build:web"
+    "build:site": "npm run build -w @afrikaisse/site",
+    "verify": "npm run typecheck && npm test && npm run build:api && npm run build:web && npm run build:site"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.0",

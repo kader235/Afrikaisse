@@ -24,6 +24,9 @@
     "services/*/src",
     "services/*/test",
     "apps/web/src",
+    "apps/site/src",
+    "apps/site/scripts",
+    "apps/site/test",
     "vitest.config.ts"
   ]
 }

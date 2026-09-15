@@ -1,0 +1,68 @@
+AfriKaisse - site public
+Adresse du site             : {{SITE_URL}}
+Boutons Connexion / Créer   : {{APP_URL}}
+Version                     : {{BUILD}}
+
+Contenu de ce dossier :
+  afrikaisse-site.zip   les pages du site (HTML, styles, polices, images),
+                        sitemap.xml, robots.txt et le fichier .htaccess
+  LISEZ-MOI.txt         ce fichier
+
+Le site est fait de fichiers statiques : ni Node.js, ni base de données, ni PHP.
+Il ne touche pas à l'application AfriKaisse (dossier ~/afrikaisse, adresse
+{{APP_HOST}}) : NE JAMAIS déposer ce site dans le dossier afrikaisse.
+
+
+UNE SEULE FOIS
+==============
+
+1. DNS du domaine (GoDaddy pour dametta.com) > Ajouter un enregistrement
+     Type   : A
+     Nom    : {{DNS_NAME}}
+     Valeur : 109.234.167.48
+     TTL    : 600
+   Même manipulation que pour afrikaisse.dametta.com. Compter une dizaine de minutes.
+   (Pour un autre domaine, par exemple afrikaisse.com : l'enregistrement se fait
+   chez le registraire de ce domaine, avec la même valeur.)
+
+2. cPanel > Domaines > Créer un nouveau domaine
+     Domaine : {{SITE_HOST}}
+   Décocher « Partager la racine du document » si la case est proposée.
+   Laisser le dossier proposé (par exemple /home/sc2abca0814/{{SITE_HOST}})
+   et le noter : c'est le dossier du site.
+
+3. Quand le cadenas est prêt (cPanel > État SSL/TLS, certificat AutoSSL),
+   activer « Forcer la redirection HTTPS » pour ce domaine. Le fichier
+   .htaccess du site redirige aussi vers HTTPS.
+
+
+À CHAQUE MISE À JOUR
+====================
+
+4. cPanel > Gestionnaire de fichiers > ouvrir le dossier du site (étape 2).
+   Paramètres (en haut à droite) > cocher « Afficher les fichiers cachés ».
+
+5. Supprimer l'ancien contenu du dossier, SAUF le dossier .well-known s'il
+   existe (il sert au certificat HTTPS).
+
+6. Téléverser afrikaisse-site.zip dans ce dossier, clic droit > Extraire,
+   en gardant ce même dossier comme destination. Supprimer ensuite le zip.
+
+7. Vérifier que index.html et .htaccess sont directement dans le dossier,
+   pas dans un sous-dossier.
+
+8. Ouvrir {{SITE_URL}} :
+   - la page d'accueil s'affiche en bleu et blanc ;
+   - {{SITE_URL}}/tarifs/ affiche les offres ;
+   - « Connexion » et « Créer mon restaurant » ouvrent {{APP_URL}}.
+   Une page restée ancienne : recharger avec Ctrl+F5.
+
+
+AVANT DE PUBLIER
+================
+
+- Coordonnées : apps/site/src/config.ts. L'adresse e-mail est À CONFIRMER ;
+  le téléphone et WhatsApp restent masqués tant qu'ils valent null.
+- Autre adresse (plus tard afrikaisse.com) : reconstruire avec
+    SITE_URL=https://www.afrikaisse.com node infrastructure/site/build.mjs
+  et, si l'application change d'adresse, SITE_APP_URL=https://...
