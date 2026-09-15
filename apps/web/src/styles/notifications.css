@@ -1,0 +1,139 @@
+/* === Notifications (§42) : panneau de la cloche, problème signalé par la cuisine ===
+   Ce fichier est chargé avant styles.css : les règles qui recouvrent une règle globale
+   sont préfixées pour l'emporter sans dépendre de l'ordre. */
+
+.side-panel.notif-panel {
+  width: 400px;
+}
+
+.notif-panel .notif-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.notif-panel .notif-actions .btn {
+  min-height: 48px;
+}
+
+.notif-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notif-panel .notif-item {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  grid-gap: 12px;
+  align-items: start;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 20px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.notif-panel .notif-item:hover,
+.notif-panel .notif-item:focus-visible {
+  background: var(--band);
+}
+
+.notif-dot {
+  width: 9px;
+  height: 9px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.notif-item.unread .notif-dot {
+  background: var(--primary);
+}
+
+.notif-item.unread.urgent .notif-dot {
+  background: var(--flag-red);
+}
+
+.notif-text {
+  min-width: 0;
+}
+
+.notif-text strong,
+.notif-text span {
+  display: block;
+}
+
+.notif-text strong {
+  font-weight: 500;
+}
+
+.notif-item.unread .notif-text strong {
+  font-weight: 700;
+}
+
+.notif-text span {
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.notif-time {
+  padding-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.notif-empty {
+  margin: 0;
+  padding: 24px 20px;
+  color: var(--muted);
+}
+
+/* Écran cuisine : « Signaler un problème » sur sa propre ligne, sous les actions du ticket. */
+.kds .kds-card footer {
+  flex-wrap: wrap;
+}
+
+.kds .kds-card footer .btn.kds-problem {
+  flex: 1 0 100%;
+  margin: 8px 0 0;
+  font-weight: 500;
+}
+
+.kds-reasons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-gap: 8px;
+  margin-bottom: 14px;
+}
+
+.kds-reasons > .btn.btn {
+  margin: 0;
+}
+
+.kds-reasons .btn {
+  justify-content: center;
+  min-height: 48px;
+  white-space: normal;
+}
+
+.kds-reasons .btn[aria-pressed='true'] {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .kds-reasons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

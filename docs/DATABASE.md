@@ -30,7 +30,7 @@ Règles :
 |---|---|---|
 | Données maîtres | tenants, locations, users, memberships, zones, tables, menu, produits, modificateurs, stations, taxes, promotions, recettes, réglages | Oui, dernier écrivain gagnant par HLC, audité |
 | Transactions | table_sessions, orders, order_items, order_status_history, kitchen_tickets, payments, cash_sessions, inventory_movements | Oui, **ajout seulement**, l'état se déduit des événements |
-| Propres au nœud | auth_sessions, refresh_tokens, node_state, print_jobs locaux | **Non** |
+| Propres au nœud | auth_sessions, refresh_tokens, node_state, print_jobs locaux, notifications, notification_reads, notification_marks | **Non** |
 | Journal | sync_events, audit_logs | sync_events : c'est le transport ; audit_logs : remonté au Cloud (phase 12) |
 
 ## Tables livrées en phase 1 (migration `0001_foundation`)
@@ -138,6 +138,18 @@ Quantités en **millièmes entiers**. Le niveau n'est pas stocké : c'est `SUM(q
 |---|---|---|
 | `printers` | Imprimante réseau (donnée maître, synchronisée) | name, host, port, width, station_id, prints_kitchen, prints_receipts, last_ok_at, last_error |
 | `print_jobs` | File d'impression, **propre au nœud** (jamais synchronisée) | printer_id, kind `KITCHEN/RECEIPT/TEST`, status, payload (ESC/POS en base64), attempts, next_attempt_at, last_error, order_id |
+
+## Tables livrées pour les notifications (§42, migration `0012_notifications`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `notifications` | Notification d'un établissement, **propre au nœud** | `seq` (curseur local auto-incrémenté, clé primaire), `id` UUID v7 unique, tenant_id, location_id, kind `ORDER_NEW/ORDER_READY/WAITER_CALL/BILL_REQUESTED/KITCHEN_PROBLEM/STOCK_LOW`, `audience` (permission qui la rend visible), urgent 0/1, `data` (JSON brut : numéro, table, article…), entity_type, entity_id, `dedupe_key` (unique, NULL permis), created_by (l'auteur ne la reçoit pas), created_at ; index (location_id, seq) et (location_id, created_at) |
+| `notification_reads` | Lue par une personne | clé (notification_id, user_id), read_at |
+| `notification_marks` | « Tout marquer lu » : repère par personne et établissement | clé (user_id, location_id), `read_seq`, updated_at |
+
+Non lue = `seq > read_seq` et aucune ligne dans `notification_reads`. Rétention 30 jours (purge au « tout marquer lu »).
+Aucune colonne nouvelle pour les temps de préparation : ils se calculent depuis `order_status_history`, `order_items.kds_updated_at` et `products.prep_time_min`.
+SQL compatible PostgreSQL 9.6 et SQLite : `bigserial` / `integer autoincrement`, `ON CONFLICT` (9.5+), clés primaires composées, index uniques simples.
 
 ## Schéma cible (toutes phases)
 

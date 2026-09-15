@@ -1,0 +1,148 @@
+/* === Rapports détaillés (§38-39) et impression A4 ===========================
+   Chargé avant styles.css : les règles qui recouvrent une règle globale sont préfixées. */
+
+.report-page .report-tabs {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.report-doc > fieldset.group + fieldset.group {
+  margin-top: 20px;
+}
+
+.report-table-wrap {
+  overflow-x: auto;
+}
+
+.report-doc table.grid tr.report-total td {
+  border-top: 2px solid var(--border);
+  font-weight: 600;
+}
+
+.report-grain {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.report-page .summary-figures.report-figures-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Impression : A4 portrait, en-tête de l'établissement, tableaux sobres en noir. */
+.print-report {
+  color: #000000;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 10pt;
+}
+
+.print-report-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 6mm;
+  padding-bottom: 3mm;
+  border-bottom: 0.5mm solid #000000;
+}
+
+.print-report-head strong,
+.print-report-head span {
+  display: block;
+}
+
+.print-report-head strong {
+  font-size: 13pt;
+}
+
+.print-report-head .print-report-title {
+  text-align: right;
+}
+
+.print-report-head h1 {
+  margin: 0 0 1mm;
+  font-size: 15pt;
+}
+
+.print-report section {
+  margin-bottom: 6mm;
+}
+
+.print-report h2 {
+  margin: 0 0 2mm;
+  font-size: 11pt;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.print-report table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.print-report thead {
+  display: table-header-group;
+}
+
+.print-report tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-report th,
+.print-report td {
+  padding: 1.2mm 2mm;
+  border-bottom: 0.2mm solid #999999;
+  text-align: left;
+  vertical-align: top;
+}
+
+.print-report th {
+  border-bottom: 0.4mm solid #000000;
+  font-weight: 600;
+}
+
+.print-report .end {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.print-report .report-total td {
+  border-top: 0.4mm solid #000000;
+  font-weight: 700;
+}
+
+.print-report-foot {
+  margin-top: 4mm;
+  color: #444444;
+  font-size: 8pt;
+}
+
+@media print {
+  @page report {
+    size: A4 portrait;
+    margin: 14mm 12mm 16mm;
+  }
+
+  .print-report {
+    page: report;
+  }
+
+  /* Pas de fond d'écran gris sous la feuille quand « Graphiques d'arrière-plan » est coché. */
+  html:has(.print-report),
+  body:has(.print-report) {
+    background: #ffffff;
+  }
+}
+
+@media (max-width: 760px) {
+  .report-page .summary-figures.report-figures-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Tableau de bord : cinq chiffres (dont « Temps moyen ») sur une seule ligne quand la place le permet. */
+@media (min-width: 1101px) {
+  .dash .kpi-strip {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+}

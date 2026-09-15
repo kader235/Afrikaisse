@@ -157,6 +157,7 @@ dernier push et pull réussis, écart d'horloge avec le Cloud. Ces valeurs alime
 | `order` | La charge porte les lignes brutes (`rows.order/items/modifiers/history`) : commande par HLC, lignes rejouées, options et historique ajoutés si absents |
 | `payment` | `PAYMENT_RECORDED` : paiement et parts ajoutés si absents ; `PAYMENT_VOIDED` : ligne remplacée |
 | Sessions de connexion, file d'impression, compteurs | Jamais synchronisés |
+| Notifications, lectures, repères « tout lu » (§42) | Jamais synchronisés (voir ci-dessous) |
 
 **Garde du Cloud** (un serveur local compromis ne sort pas de son périmètre) :
 - **Périmètre** : chaque ligne doit appartenir à son organisation et à son établissement, sinon `REJECTED`.
@@ -173,6 +174,17 @@ un serveur local non relié produit des QR du réseau du restaurant, et l'écran
 (`reachableFromInternet: false`). Si le restaurant perd Internet, le Cloud ne voit plus le serveur
 local : il refuse proprement la commande (« adressez-vous à un serveur ») au lieu d'enregistrer une
 commande que la cuisine ne recevrait pas ; le menu reste consultable.
+
+**Notifications (§42) : propres au nœud.** Une notification est un signal pour les écrans reliés à UN
+serveur, et l'état lu / non lu appartient à ce serveur. Les synchroniser ferait sonner deux fois le même
+événement (Cloud et serveur local) et mélangerait des lectures faites sur deux nœuds. Chaque nœud écrit
+donc ses propres notifications :
+- pour ce qui se passe chez lui, dans la transaction de l'événement ;
+- pour un événement **reçu** (pull côté serveur local, push côté Cloud) et appliqué : commande QR en attente
+  (`ORDER_PLACED`), commande prête (`ORDER_STATUS_CHANGED` vers `READY`), appel de table (`service_request`
+  ouvert) — dans la transaction d'application (`notifyReceived`), avec la même clé anti-doublon, et seulement
+  si l'événement a moins de 10 minutes (un serveur resté hors ligne ne réveille pas la salle avec l'histoire
+  ancienne). Le problème cuisine et le stock faible sont vécus sur le nœud qui fait autorité : pas de relais.
 
 Limites connues, à reprendre :
 - une même table ouverte des deux côtés au même instant (session ouverte en double) produit un conflit gardé pour revue ;

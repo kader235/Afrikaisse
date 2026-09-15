@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { ticketState, type KitchenAction, type Me, type Order, type OrderItem, type Station } from '@afrikaisse/core';
+import { createPortal } from 'react-dom';
+import { KITCHEN_PROBLEM_REASONS, ticketDelay, ticketState, type AdminMenu, type KitchenAction, type Me, type Order, type OrderItem, type Station } from '@afrikaisse/core';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { beep } from '../sound.ts';
 import { orderPlace } from '../labels.ts';
-import { FloatMessage, Icon } from '../ui.tsx';
+import { Dialog, ErrorMessage, FloatMessage, Icon } from '../ui.tsx';
 
 /**
- * Écran cuisine (KDS), sombre et lisible à 2 m : trois colonnes, minuteur par ticket,
- * signal à chaque nouveau ticket. Chaque poste ne voit et n'avance que SES articles.
+ * Écran cuisine (KDS), sombre et lisible à 2 m : trois colonnes, minuteur par ticket (en retard selon
+ * le temps de préparation de ses plats), signal à chaque nouveau ticket, problème signalé à la salle. Chaque poste ne voit et n'avance que SES articles.
  */
 
 type Column = 'queued' | 'preparing' | 'ready';
@@ -18,8 +19,6 @@ const COLUMNS: [Column, string][] = [
   ['ready', 'Prêt'],
 ];
 const STORAGE_KEY = 'afk.kds.station';
-const LATE_MIN = 15;
-const VERY_LATE_MIN = 25;
 
 function readStored(): string {
   try {
@@ -39,6 +38,9 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const [stationId, setStationId] = useState(readStored);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [prepTimes, setPrepTimes] = useState<Map<string, number | null>>(new Map());
+  const [problem, setProblem] = useState<Order | null>(null);
   const [, setTick] = useState(0);
   const known = useRef<Set<string> | null>(null);
 
@@ -57,6 +59,11 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
         return list.find(canUse)?.id ?? '';
       });
     }, setError);
+    // Temps prévu de chaque plat : un ticket passe en retard selon SES plats, pas selon un seuil fixe.
+    api<AdminMenu>('GET', `/locations/${locationId}/menu`).then(
+      (menu) => setPrepTimes(new Map(menu.products.map((p) => [p.id, p.prepTimeMin]))),
+      () => undefined,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationId]);
 
@@ -161,8 +168,9 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
               {!feed.loaded && column === 'queued' && <p className="kds-empty">Chargement…</p>}
               {feed.loaded && list.length === 0 && <p className="kds-empty">{column === 'queued' ? 'Rien à préparer.' : '—'}</p>}
               {list.map(({ order, items, state }) => {
-                const age = Math.max(0, Math.floor((Date.now() - confirmedAt(order)) / 1000));
-                const late = state === 'ready' ? '' : age >= VERY_LATE_MIN * 60 ? ' kds-late2' : age >= LATE_MIN * 60 ? ' kds-late1' : '';
+                const delay = ticketDelay(confirmedAt(order), items.map((i) => prepTimes.get(i.productId) ?? null), Date.now());
+                const age = Math.floor(delay.elapsedMs / 1000);
+                const late = state === 'ready' ? '' : delay.level === 2 ? ' kds-late2' : delay.level === 1 ? ' kds-late1' : '';
                 const pending = (action: KitchenAction) => busy === `${order.id}:${action}`;
                 return (
                   <article key={order.id} className={`kds-card kds-${state}${late}`}>
@@ -206,6 +214,9 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
                             {pending('RECALL') ? '…' : 'Rappeler'}
                           </button>
                         ))}
+                      <button className="btn kds-problem" disabled={!!busy} onClick={() => setProblem(order)}>
+                        Signaler un problème
+                      </button>
                     </footer>
                   </article>
                 );
@@ -214,7 +225,82 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
           );
         })}
       </div>
-      <FloatMessage error={error} notice={null} onClose={() => setError(null)} />
+      {problem && (
+        <ProblemDialog
+          order={problem}
+          stationId={station?.id ?? null}
+          onClose={() => setProblem(null)}
+          onSent={() => {
+            setProblem(null);
+            setError(null);
+            setNotice('Salle prévenue');
+          }}
+        />
+      )}
+      <FloatMessage
+        error={error}
+        notice={notice}
+        onClose={() => {
+          setError(null);
+          setNotice(null);
+        }}
+      />
     </section>
+  );
+}
+
+/** « Problème » : motif en un geste, précision facultative ; la salle et la caisse reçoivent une notification. */
+function ProblemDialog({ order, stationId, onClose, onSent }: { order: Order; stationId: string | null; onClose: () => void; onSent: () => void }) {
+  const [reason, setReason] = useState('');
+  const [detail, setDetail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const message = [reason, detail.trim()].filter(Boolean).join(' — ');
+
+  async function send() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api('POST', `/orders/${order.id}/kitchen/problem`, { stationId, message });
+      onSent();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Rendue hors de l'écran cuisine : la fenêtre garde l'apparence standard, pas le thème sombre du KDS.
+  return createPortal(
+    <Dialog
+      title={`Problème · commande n°${order.number}`}
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn btn-primary" disabled={busy || !message} onClick={() => void send()}>
+            Prévenir la salle
+          </button>
+          <button className="btn" onClick={onClose}>
+            Annuler
+          </button>
+        </>
+      }
+    >
+      <div className="dialog-body">
+        <ErrorMessage error={error} />
+        <div className="kds-reasons" role="group" aria-label="Motif">
+          {KITCHEN_PROBLEM_REASONS.map((r) => (
+            <button key={r} type="button" className="btn" aria-pressed={reason === r} onClick={() => setReason(reason === r ? '' : r)}>
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className="form">
+          <label htmlFor="kds-problem-detail">Précision</label>
+          <input id="kds-problem-detail" maxLength={150} value={detail} onChange={(e) => setDetail(e.target.value)} />
+        </div>
+      </div>
+    </Dialog>,
+    document.body,
   );
 }

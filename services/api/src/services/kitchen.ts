@@ -14,6 +14,7 @@ import {
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import { requireTenant, type AuthState, type TenantScope } from '../lib/access.ts';
 import { recordChange, writeAudit } from '../lib/journal.ts';
+import { notifyOrder } from '../lib/notify.ts';
 import { loadStations } from './menu.ts';
 import { addHistory, assertLocation, emitOrder, hydrateOrders } from './orders.ts';
 
@@ -162,6 +163,7 @@ export async function kitchenAction(ctx: AppContext, auth: AuthState | null, ord
         await addHistory(trx, ctx, order, order.status, next, { userId: scope.userId, source: 'STAFF' }, hlc);
       }
       await emitOrder(trx, ctx, orderId, 'ORDER_STATUS_CHANGED', hlc);
+      if (next === 'READY') await notifyOrder(trx, ctx, orderId, 'ORDER_READY', scope.userId);
     } else {
       await trx.updateTable('orders').set({ updated_at: now, updated_hlc: hlc }).where('id', '=', orderId).execute();
       await emitOrder(trx, ctx, orderId, 'ORDER_UPDATED', hlc);

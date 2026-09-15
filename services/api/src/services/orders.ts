@@ -24,6 +24,7 @@ import type { OrdersTable } from '@afrikaisse/database';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import { requireTenant, type AuthState, type TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
+import { notifyOrder, notifyRequest } from '../lib/notify.ts';
 import { enqueueKitchenTickets } from './printing.ts';
 import { consumeStock, restoreStock } from './stock.ts';
 
@@ -359,6 +360,7 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
         await insertItems(trx, ctx, order, priced);
         await addHistory(trx, ctx, order, null, 'PENDING', { userId: null, source: 'QR' }, hlc);
         await emitOrder(trx, ctx, orderId, 'ORDER_PLACED', hlc);
+        await notifyOrder(trx, ctx, orderId, 'ORDER_NEW', null);
         await writeAudit(trx, ctx, { tenantId: qr.tenant_id, locationId: qr.location_id, action: 'order.qr_placed', subject: `table ${qr.table_label}`, entityType: 'order', entityId: orderId, data: { number, total, lines: priced.length }, meta });
       });
       const [order] = await hydrateOrders(ctx.db, await ctx.db.selectFrom('orders').selectAll().where('id', '=', orderId).execute());
@@ -464,6 +466,7 @@ export async function createServiceRequest(ctx: AppContext, token: string, input
       .values({ id, tenant_id: qr.tenant_id, location_id: qr.location_id, table_id: qr.table_id, table_session_id: session?.id ?? null, kind: input.kind, status: 'OPEN', client_token: input.clientToken, created_at: now, handled_at: null, handled_by: null, updated_hlc: hlc })
       .execute();
     await emitRequest(trx, ctx, id, hlc);
+    await notifyRequest(trx, ctx, id);
   });
   return (await loadRequests(ctx.db, (q) => q.where('r.id', '=', id)))[0]!;
 }
@@ -563,6 +566,7 @@ export async function updateOrderStatus(ctx: AppContext, auth: AuthState | null,
     }
     await addHistory(trx, ctx, order, order.status, to, { userId: scope.userId, source: 'STAFF', reason: cleanReason }, hlc);
     await emitOrder(trx, ctx, orderId, 'ORDER_STATUS_CHANGED', hlc);
+    if (to === 'READY') await notifyOrder(trx, ctx, orderId, 'ORDER_READY', scope.userId);
     // Stock : consommé à la confirmation, restitué si la commande est annulée ensuite.
     if (to === 'CONFIRMED') {
       await consumeStock(trx, ctx, order, scope.userId);

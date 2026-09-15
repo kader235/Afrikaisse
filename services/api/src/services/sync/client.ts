@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import { AppError, type PairResponse, type PullResponse, type PushResponse, type SyncRun, type SyncStatus } from '@afrikaisse/core';
 import type { AppContext, Db } from '../../context.ts';
 import { applyEvent, decodeRow, recordReceived, toWire } from './apply.ts';
+import { notifyReceived } from '../../lib/notify.ts';
 
 /**
  * Côté serveur local : appairage, puis boucle envoi / réception toutes les 5 s. Tout part du
@@ -147,7 +148,7 @@ export async function runSyncOnce(ctx: AppContext): Promise<SyncRun> {
         try {
           await ctx.db.transaction().execute(async (trx) => {
             ctx.clock.receive(event.hlc);
-            await applyEvent(trx, event, { onlyLocationId: locationId });
+            if (await applyEvent(trx, event, { onlyLocationId: locationId })) await notifyReceived(trx, ctx, event);
             await recordReceived(trx, ctx, event, 'SYNCED');
           });
           pulled += 1;

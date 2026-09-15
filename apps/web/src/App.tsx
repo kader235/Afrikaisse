@@ -1,6 +1,6 @@
 import { LogoAfrikaisse } from './logo.tsx';
 import { useEffect, useState } from 'react';
-import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse } from '@afrikaisse/core';
+import { GRACE_DAYS, subscriptionState, type Me, type NotificationKind, type Role, type SessionResponse } from '@afrikaisse/core';
 import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
 import { useI18n } from './i18n.tsx';
 import { ROLE_LABELS } from './labels.ts';
@@ -17,6 +17,8 @@ import { DashboardPage } from './pages/Dashboard.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
 import { useActivityFeed } from './activity.ts';
+import { useNotifications } from './notifications.ts';
+import { NotificationPanel } from './pages/Notifications.tsx';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
 import type { ServerSwitch } from './pages/Auth.tsx';
@@ -164,6 +166,9 @@ const TAB_PRIORITY: Record<Role, Section[]> = {
   STOCK_MANAGER: ['stock', 'menu'],
 };
 
+/** Déjà signalés par le flux d'activité (pastille et signal sonore) : la cloche ne sonne pas une deuxième fois. */
+const SIGNALED_BY_FEED: readonly NotificationKind[] = ['ORDER_NEW', 'WAITER_CALL', 'BILL_REQUESTED'];
+
 /** Initiales affichées dans la barre supérieure : « Achta Démo » → « AD ». */
 const initials = (name: string) =>
   name
@@ -182,6 +187,9 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   // Le signal des commandes QR et des appels de table concerne la salle, pas la cuisine.
   const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK', can('orders.create'));
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
+  // Centre de notifications : la salle et la caisse (service), la gestion du stock (ruptures).
+  const notifyEnabled = me.tenantAccess === 'OK' && (can('orders.create') || can('inventory.read'));
+  const notifications = useNotifications(me.locations[0]?.id ?? null, notifyEnabled, can('orders.read') && can('orders.create') ? SIGNALED_BY_FEED : []);
 
   const sections: NavItem[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard', visible: can('reports.read'), group: 'home' },
@@ -204,7 +212,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     .filter((s): s is NavItem => !!s)
     .slice(0, 4);
   if (quick.length === 0 && visible[0]) quick.push(visible[0]);
-  const [panel, setPanel] = useState<'account' | 'nav' | null>(null);
+  const [panel, setPanel] = useState<'account' | 'nav' | 'notifications' | null>(null);
   const [section, setSection] = useState<Section>(() => quick[0]?.id ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
   const roleLabel = me.role ? ROLE_LABELS[lang][me.role] : '';
@@ -275,10 +283,15 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
             <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
             {online ? 'En ligne' : 'Hors ligne'}
           </span>
-          {can('orders.read') && (
-            <button className="topbar-bell" aria-label={waiting > 0 ? `${waiting} à traiter` : 'Commandes'} onClick={() => open('orders')}>
+          {notifyEnabled && (
+            <button
+              className="topbar-bell"
+              aria-haspopup="dialog"
+              aria-label={notifications.unread > 0 ? `Notifications : ${notifications.unread} non lues` : 'Notifications'}
+              onClick={() => setPanel('notifications')}
+            >
               <Icon name="bell" />
-              {waiting > 0 && <span className="badge-count">{waiting}</span>}
+              {notifications.unread > 0 && <span className="badge-count">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
             </button>
           )}
           <button className="topbar-user" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
@@ -315,7 +328,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'pos' && <PosPage me={me} />}
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
-        {current === 'reports' && <ReportsPage />}
+        {current === 'reports' && <ReportsPage me={me} />}
         {current === 'stock' && <StockPage me={me} />}
         {current === 'organization' && <OrganizationPage me={me} onRenamed={reloadMe} />}
         {current === 'locations' && <LocationsPage me={me} onChanged={reloadMe} />}
@@ -337,7 +350,8 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         </button>
       </nav>
 
-      {panel && (
+      {panel === 'notifications' && <NotificationPanel center={notifications} onOpen={open} onClose={() => setPanel(null)} />}
+      {(panel === 'account' || panel === 'nav') && (
         <SidePanel
           mode={panel}
           me={me}

@@ -20,3 +20,6 @@ export * from './printing.ts';
 export * from './sync.ts';
 export * from './plans.ts';
 export * from './catalogue.ts';
+export * from './prep.ts';
+export * from './analytics.ts';
+export * from './notifications.ts';
