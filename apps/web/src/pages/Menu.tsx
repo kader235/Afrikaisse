@@ -22,12 +22,13 @@ import { QrTab } from './Qr.tsx';
 import { CatalogueImport } from './CatalogueImport.tsx';
 import { StationsTab } from './Stations.tsx';
 import { PrintersTab } from './Printers.tsx';
+import { PricingTab } from './Pricing.tsx';
 
 /**
  * Menu d'un établissement, pour la tablette du gérant et de la cuisine.
  * Chaque action renvoie le menu complet à jour : l'écran n'a qu'une source de vérité.
  */
-type Tab = 'products' | 'options' | 'stations' | 'printers' | 'qr';
+type Tab = 'products' | 'options' | 'stations' | 'printers' | 'qr' | 'pricing';
 type Save = (method: string, path: string, body?: unknown, message?: string) => Promise<void>;
 
 export function MenuPage({ me }: { me: Me }) {
@@ -83,6 +84,7 @@ export function MenuPage({ me }: { me: Me }) {
     ['stations', 'Postes'],
     ...(can('devices.manage') ? ([['printers', 'Imprimantes']] as [Tab, string][]) : []),
     ...(can('tables.read') ? ([['qr', t('menu.tabQr')]] as [Tab, string][]) : []),
+    ['pricing', 'Taxes et promotions'],
   ];
 
   return (
@@ -142,6 +144,7 @@ export function MenuPage({ me }: { me: Me }) {
       {menu && tab === 'stations' && <StationsTab menu={menu} canManage={can('menu.manage')} onChanged={() => locationId && load(locationId)} />}
       {menu && locationId && tab === 'printers' && <PrintersTab locationId={locationId} stations={menu.stations} />}
       {locationId && tab === 'qr' && <QrTab locationId={locationId} canManage={can('tables.manage')} />}
+      {locationId && tab === 'pricing' && <PricingTab locationId={locationId} canManage={can('menu.manage')} />}
       {importing && menu && (
         <CatalogueImport
           menu={menu}

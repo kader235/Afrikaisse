@@ -65,7 +65,7 @@ describe.each(ENGINES)('Phase 14 — rapports de ventes — %s', (engine) => {
     }
 
     const report = (await o.get(`/api/locations/${r.locationId}/reports/sales?from=${day1}&to=${day2}`)).json();
-    expect(report.totals).toEqual({ revenue: 12800, orders: 3, averageTicket: 4266, collected: 12800, discounts: 200, itemsSold: 5, cancelledCount: 1, cancelledAmount: 1000 });
+    expect(report.totals).toEqual({ revenue: 12800, orders: 3, averageTicket: 4266, collected: 12800, discounts: 200, promotions: 0, taxCollected: 0, revenueExclTax: 12800, itemsSold: 5, cancelledCount: 1, cancelledAmount: 1000 });
     expect(report.byDay[0]).toEqual({ date: day1, revenue: 7800, orders: 2, collected: 7800 });
     expect(report.byDay.at(-1)).toEqual({ date: day2, revenue: 5000, orders: 1, collected: 5000 });
     expect(report.byMethod).toEqual([

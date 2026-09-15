@@ -139,6 +139,23 @@ Quantités en **millièmes entiers**. Le niveau n'est pas stocké : c'est `SUM(q
 | `printers` | Imprimante réseau (donnée maître, synchronisée) | name, host, port, width, station_id, prints_kitchen, prints_receipts, last_ok_at, last_error |
 | `print_jobs` | File d'impression, **propre au nœud** (jamais synchronisée) | printer_id, kind `KITCHEN/RECEIPT/TEST`, status, payload (ESC/POS en base64), attempts, next_attempt_at, last_error, order_id |
 
+## Tables livrées pour les taxes et promotions (migration `0011_pricing`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `pricing_settings` | Réglages de taxe d'un établissement (donnée maître synchronisée, `pricing_settings`) | id = location_id, `tax_mode` `INCLUSIVE/EXCLUSIVE`, `default_tax_rate_id` ; ligne absente = TVA incluse, sans taux |
+| `tax_rates` | Taux de taxe (synchronisé, `tax_rate`) | name, `rate_bp` (points de base : 1800 = 18 %), sort, status |
+| `promotions` | Promotion (synchronisée, `promotion`) | name, kind `PERCENT/AMOUNT/FREE_ITEM`, scope `ORDER/CATEGORY/PRODUCT`, target_id, value, buy_quantity, free_quantity, min_amount, code, **code_key** (majuscules, unique par établissement parmi les non archivées : index unique partiel), start_date, end_date, **days_mask** (bit 0 = lundi, 0 = tous), start_minute, end_minute, max_uses, is_active, status |
+| `menu_categories`, `products` (colonne ajoutée) | Taux propre | `tax_rate_id` (null : hérité) |
+| `orders` (colonnes ajoutées) | Montants figés à la commande | `tax_mode`, `tax_total`, `taxes` (JSON par taux), `promotion_discount`, `order_promotion_id`, `order_promotion_discount`, `promo_code`, `promo_code_promotion_id`, `promo_code_discount`, `applied_promotions` (JSON récapitulatif) ; index sur les deux identifiants de promotion |
+| `order_items` (colonnes ajoutées) | Promotion et taux copiés | `promotion_id`, `promotion_discount`, `code_discount`, `tax_rate_id`, `tax_rate_bp`, `tax_name` ; index sur `promotion_id` |
+
+Total d'une commande = `subtotal` − `promotion_discount` − `discount` (+ `tax_total` en hors taxe).
+Les références à un taux n'ont pas de clé étrangère (un événement peut précéder le taux qu'il cite ; un
+taux n'est jamais supprimé). Les utilisations d'une promotion ne sont pas stockées : elles se comptent
+sur les commandes non annulées, donc restent justes après synchronisation. SQL commun à SQLite et
+PostgreSQL 9.6 : ni colonne d'identité, ni colonne générée.
+
 ## Tables livrées pour §67-§73 (migration `0013_platform`)
 
 | Table | Rôle | Colonnes clés |
@@ -199,8 +216,7 @@ Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` 
 - `cash_sessions` (location_id, device_id, opened_by, opened_at, opening_float, closed_by, closed_at, counted_cash, expected_cash, z_report)
 - `payments` (location_id, order_id | table_session_id, cash_session_id, method `CASH/CARD/MOBILE_MONEY/ONLINE`, amount, tip, currency, reference, status)
 - `payment_transactions` (payment_id, provider, provider_ref, status, raw) — pour les intégrations
-- `discounts` (location_id, kind `PERCENT/FIXED/FREE_ITEM`, value, applies_to)
-- `promotions` (location_id, kind, rule, schedule `HAPPY_HOUR`, code, starts_at, ends_at)
+- remises et promotions : **livrées** (`orders.discount` pour la remise manuelle ; `promotions`, `tax_rates`, `pricing_settings` en `0011_pricing`)
 
 ### Stock — phase 13
 - `inventory_items` (location_id, name, unit, is_critical, min_level)

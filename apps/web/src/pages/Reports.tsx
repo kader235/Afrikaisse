@@ -4,6 +4,7 @@ import {
   SERVICE_TYPE_LABELS,
   businessDate,
   formatMoney,
+  formatRate,
   moneyToInput,
   shiftDate,
   type LocationDetails,
@@ -181,6 +182,12 @@ export function ReportsPage() {
                 </span>
                 <span>
                   Remises <strong className="num">{money(report.totals.discounts)}</strong>
+                </span>
+                <span>
+                  Promotions <strong className="num">{money(report.totals.promotions)}</strong>
+                </span>
+                <span>
+                  Taxes <strong className="num">{money(report.totals.taxCollected)}</strong>
                 </span>
                 <span>
                   Annulées <strong className="num">{report.totals.cancelledCount}</strong>
@@ -366,6 +373,11 @@ function exportCsv(report: SalesReport, locationName: string) {
     ['Panier moyen', m(report.totals.averageTicket)],
     ['Articles vendus', report.totals.itemsSold],
     ['Remises', m(report.totals.discounts)],
+    ['Promotions', m(report.totals.promotions)],
+    ['Taxes collectées', m(report.totals.taxCollected)],
+    ["Chiffre d'affaires hors taxes", m(report.totals.revenueExclTax)],
+    ...report.byTax.map((x) => [`${x.name} ${formatRate(x.rateBp)}`, m(x.tax)] as [string, string]),
+    ...report.byPromotion.map((p) => [`Promotion ${p.code ?? p.name} (${p.orders})`, m(p.amount)] as [string, string]),
     ['Commandes annulées', report.totals.cancelledCount],
     ['Montant annulé', m(report.totals.cancelledAmount)],
     [],

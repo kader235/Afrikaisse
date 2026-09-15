@@ -170,6 +170,53 @@ Règles transverses :
 
 Espèces attendues = fond + ventes en espèces + entrées − sorties.
 
+## Routes des §47-48 — taxes et promotions
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/pricing` | `menu.read` | Configuration : `taxMode` (`INCLUSIVE` par défaut, `EXCLUSIVE`), `defaultTaxRateId`, taux (avec `isDefault`, `overrides`), promotions (avec `usesCount`), catégories et produits avec leur `taxRateId` propre |
+| PATCH | `/api/locations/{id}/pricing` | `menu.manage` | `{taxMode?, defaultTaxRateId?}` ; tracé `pricing.settings_updated` |
+| POST | `/api/locations/{id}/tax-rates` | `menu.manage` | `{name, rateBp, isDefault?}` — taux en **points de base** (1800 = 18 %) ; nom unique (409) ; tracé `pricing.tax_rate_created` |
+| PATCH | `/api/tax-rates/{id}` | `menu.manage` | Nom, taux, `isDefault` ; les commandes passées gardent l'ancien taux ; tracé `pricing.tax_rate_updated` |
+| POST | `/api/tax-rates/{id}/archive` | `menu.manage` | Refusé (409) pour le taux par défaut ou un taux encore cité par une catégorie ou un produit |
+| PUT | `/api/categories/{id}/tax-rate` | `menu.manage` | `{taxRateId \| null}` ; null : taux par défaut ; tracé `pricing.tax_override` |
+| PUT | `/api/products/{id}/tax-rate` | `menu.manage` | `{taxRateId \| null}` ; null : taux de la catégorie |
+| POST | `/api/locations/{id}/promotions` | `menu.manage` | Créer (voir règles) ; code déjà pris (409) ; cible hors de l'établissement (404) ; tracé `pricing.promotion_created` |
+| PUT | `/api/promotions/{id}` | `menu.manage` | Remplacer les règles ; tracé `pricing.promotion_updated` (avant / après) |
+| POST | `/api/promotions/{id}/active` | `menu.manage` | `{isActive}` : suspendre ou reprendre |
+| POST | `/api/promotions/{id}/archive` | `menu.manage` | Ne s'applique plus, son code se libère ; les commandes passées la gardent |
+| POST | `/api/locations/{id}/orders/quote` | `orders.create` | `{lines, promoCode?}` → ticket calculé (lignes, promotions, taxes, total) sans rien enregistrer |
+| POST | `/api/locations/{id}/promo-codes/check` | `orders.create` | `{code}` → règle du code (casse indifférente) ; 409 si inconnu, suspendu, hors calendrier ou épuisé |
+| GET | `/api/public/menu/{jeton}/pricing` | — | Menu client : mode de taxe, taux, taux résolu et catégorie de chaque produit visible, promotions automatiques non terminées (jamais les codes) |
+| POST | `/api/public/menu/{jeton}/promo-code` | — | Vérifier le code du panier (30 essais / 10 min par table) |
+| POST | `/api/public/menu/{jeton}/quote` | — | Devis du panier, même calcul que la commande |
+
+Les commandes (`POST /locations/{id}/orders`, `POST /public/menu/{jeton}/orders`) acceptent
+`promoCode`. Un code inconnu, suspendu, hors calendrier, épuisé, sous le montant minimal ou sans
+article visé refuse la commande (409, message pour l'utilisateur). Commandes, notes, reçus et flux
+d'activité portent `subtotal`, `promotionDiscount`, `promotions[]` (`{id, name, code, amount}`),
+`promoCode`, `discount` (remise manuelle), `taxMode`, `taxTotal`, `taxes[]`
+(`{rateId, name, rateBp, base, tax}`), `total` ; chaque ligne porte `promotionName` et
+`promotionDiscount`.
+
+Règles (calcul unique dans `packages/core/src/taxes.ts` et `promotions.ts`, rejoué par le serveur) :
+- **genres** : `PERCENT` (`value` en points de base), `AMOUNT` (par article, ou sur la commande),
+  `FREE_ITEM` (`buyQuantity` achetés + `freeQuantity` offerts, par ligne, produit ou catégorie) ;
+- **portée** : `ORDER` (`minAmount` facultatif), `CATEGORY` ou `PRODUCT` (`targetId`) ;
+- **calendrier** dans le fuseau de l'établissement : `startDate`/`endDate` incluses, `days` (1 = lundi),
+  `startMinute`/`endMinute` (happy hour ; une plage qui passe minuit compte pour la veille) ;
+- **cumul**, dans l'ordre, chaque étape sur le reste : une promotion automatique par ligne (la plus
+  avantageuse, à égalité la plus ancienne), code visant des lignes, meilleure promotion automatique de
+  commande, code visant la commande, remise manuelle, puis taxes. Un produit à prix promotionnel ne
+  reçoit pas de promotion de ligne. Un seul code par commande ;
+- **utilisations** : commandes non annulées qui en ont bénéficié ; `maxUses` revérifié dans la
+  transaction (ligne verrouillée en PostgreSQL) ; annuler ou refuser la commande rend l'utilisation ;
+- **taxes** : taux du produit, sinon de sa catégorie, sinon par défaut ; TVA incluse = extraite du
+  total, hors taxe = ajoutée ; arrondi au plus proche (demi-unité vers le haut) **une fois par taux**
+  sur la somme des lignes ; remises de commande réparties au prorata des lignes ;
+- **historique** : taux, promotions et montants sont copiés sur la commande ; une remise manuelle
+  ultérieure recalcule les taxes avec ces taux figés.
+
 ## Routes de la phase 7 — postes et écran cuisine
 
 | Méthode | Route | Permission | Rôle |
@@ -191,7 +238,7 @@ et « Bar ». Annoncer une commande « prête » depuis l'écran Commandes marqu
 |---|---|---|---|
 | GET | `/api/health` | — | En profil `local`, ajoute `lanUrls` : adresses à saisir sur les tablettes (`http://192.168.1.20:7300`) |
 | GET | `/*` (hors `/api`) | — | Serveur local lancé avec `AFK_WEB_DIR` : application web (`assets/` en cache définitif, pages sans cache), `/m/{jeton}` → menu client, toute autre adresse sans extension → `index.html` ; jamais de fichier hors du dossier |
-| GET | `/api/locations/{id}/reports/sales?from=AAAA-MM-JJ&to=AAAA-MM-JJ` | `reports.read` | Ventes par **journée d'exploitation** (366 jours au plus) : `totals` (chiffre d'affaires, encaissé, commandes, ticket moyen, articles, remises, annulées), `byDay` (tous les jours de la période), `byMethod`, `byHour` (fuseau de l'établissement), `bySource`, `byServiceType`, `topProducts` (15). Chiffre d'affaires = commandes confirmées non annulées ; les commandes QR encore en attente n'y entrent pas |
+| GET | `/api/locations/{id}/reports/sales?from=AAAA-MM-JJ&to=AAAA-MM-JJ` | `reports.read` | Ventes par **journée d'exploitation** (366 jours au plus) : `totals` (chiffre d'affaires, encaissé, commandes, ticket moyen, articles, remises, annulées), `byDay` (tous les jours de la période), `byMethod`, `byHour` (fuseau de l'établissement), `bySource`, `byServiceType`, `topProducts` (15), `byTax` (base et taxe par taux), `byPromotion` (commandes et remise par promotion) ; `totals` porte aussi `promotions`, `taxCollected`, `revenueExclTax`. Chiffre d'affaires = commandes confirmées non annulées ; les commandes QR encore en attente n'y entrent pas |
 
 ## Routes de la phase 13 — stock et recettes
 

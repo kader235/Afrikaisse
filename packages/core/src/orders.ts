@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CURRENCY_CODES } from './currency.ts';
 import type { Permission } from './roles.ts';
+import { TAX_MODES } from './taxes.ts';
 
 /**
  * Commandes. Une commande confirmée est un événement métier : son état évolue par
@@ -100,10 +101,14 @@ export const orderLineInputSchema = z.object({
 });
 export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
 
+/** Code promo saisi (casse indifférente) ; vérifié et appliqué par le serveur. */
+export const orderPromoCodeSchema = z.string().trim().max(30).nullable().optional();
+
 export const placeQrOrderSchema = z.object({
   clientToken: clientTokenSchema,
   lines: z.array(orderLineInputSchema).min(1, 'Le panier est vide.').max(50),
   note: z.string().trim().max(300).nullable().optional(),
+  promoCode: orderPromoCodeSchema,
 });
 export type PlaceQrOrderInput = z.infer<typeof placeQrOrderSchema>;
 
@@ -121,6 +126,12 @@ export type ServiceRequestInput = z.infer<typeof serviceRequestInputSchema>;
 
 // --- Réponses ---------------------------------------------------------------
 
+/** Détail d'un taux de taxe, figé sur la commande. */
+export const taxLineSchema = z.object({ rateId: z.string(), name: z.string(), rateBp: z.number(), base: z.number(), tax: z.number() });
+
+/** Promotion appliquée à une commande (récapitulatif des tickets). */
+export const appliedPromotionSchema = z.object({ id: z.string(), name: z.string(), code: z.string().nullable(), amount: z.number() });
+
 export const orderItemSchema = z.object({
   id: z.string(),
   productId: z.string(),
@@ -129,6 +140,9 @@ export const orderItemSchema = z.object({
   unitPrice: z.number(),
   quantity: z.number(),
   total: z.number(),
+  /** Promotion de la ligne (automatique ou code) et sa remise. */
+  promotionName: z.string().nullable(),
+  promotionDiscount: z.number(),
   note: z.string().nullable(),
   modifiers: z.array(z.object({ groupName: z.string(), name: z.string(), priceDelta: z.number() })),
   stationId: z.string().nullable(),
@@ -151,8 +165,16 @@ export const orderSchema = z.object({
   customerName: z.string().nullable(),
   currency: z.enum(CURRENCY_CODES),
   subtotal: z.number(),
+  /** Toutes promotions (lignes, commande, code). */
+  promotionDiscount: z.number(),
+  promotions: z.array(appliedPromotionSchema),
+  promoCode: z.string().nullable(),
+  /** Remise manuelle d'un responsable. */
   discount: z.number(),
   discountReason: z.string().nullable(),
+  taxMode: z.enum(TAX_MODES),
+  taxTotal: z.number(),
+  taxes: z.array(taxLineSchema),
   total: z.number(),
   paid: z.number(),
   paymentStatus: z.enum(['UNPAID', 'PARTIAL', 'PAID']),
@@ -178,6 +200,12 @@ export const publicOrderSchema = z.object({
   status: z.enum(ORDER_STATUSES),
   tableLabel: z.string().nullable(),
   currency: z.enum(CURRENCY_CODES),
+  subtotal: z.number(),
+  promotionDiscount: z.number(),
+  promotions: z.array(appliedPromotionSchema),
+  taxMode: z.enum(TAX_MODES),
+  taxTotal: z.number(),
+  taxes: z.array(taxLineSchema),
   total: z.number(),
   note: z.string().nullable(),
   items: z.array(

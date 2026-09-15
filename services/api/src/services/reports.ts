@@ -1,7 +1,8 @@
-import { ORDER_SOURCES, PAYMENT_METHODS, SERVICE_TYPES, dateRange, type SalesReport } from '@afrikaisse/core';
+import { ORDER_SOURCES, PAYMENT_METHODS, SERVICE_TYPES, dateRange, mergeTaxLines, type SalesReport } from '@afrikaisse/core';
 import type { AppContext } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { assertLocation } from './orders.ts';
+import { parseApplied, parseTaxes } from './pricing.ts';
 
 /** Rapport de ventes d'un établissement sur une période de journées d'exploitation. */
 export async function salesReport(ctx: AppContext, scope: TenantScope, locationId: string, from: string, to: string): Promise<SalesReport> {
@@ -12,7 +13,7 @@ export async function salesReport(ctx: AppContext, scope: TenantScope, locationI
   const [orders, payments, products] = await Promise.all([
     ctx.db
       .selectFrom('orders')
-      .select(['business_date', 'status', 'total', 'discount', 'created_at', 'source', 'service_type'])
+      .select(['business_date', 'status', 'total', 'discount', 'created_at', 'source', 'service_type', 'tax_total', 'taxes', 'promotion_discount', 'applied_promotions'])
       .where('location_id', '=', locationId)
       .where('business_date', '>=', from)
       .where('business_date', '<=', to)
@@ -56,6 +57,17 @@ export async function salesReport(ctx: AppContext, scope: TenantScope, locationI
     .map((p) => ({ name: p.name, quantity: Number(p.quantity), revenue: Number(p.revenue) }))
     .sort((a, b) => b.revenue - a.revenue || b.quantity - a.quantity)
     .slice(0, 15);
+  // Montants figés sur les commandes : un taux ou une promotion modifiés depuis ne changent rien.
+  const taxCollected = sum(sold, (o) => o.tax_total);
+  const promotions = new Map<string, { name: string; code: string | null; orders: number; amount: number }>();
+  for (const o of sold) {
+    for (const a of parseApplied(o.applied_promotions)) {
+      const entry = promotions.get(a.id) ?? { name: a.name, code: a.code, orders: 0, amount: 0 };
+      entry.orders += 1;
+      entry.amount += a.amount;
+      promotions.set(a.id, entry);
+    }
+  }
 
   return {
     currency: location.currency,
@@ -67,6 +79,9 @@ export async function salesReport(ctx: AppContext, scope: TenantScope, locationI
       averageTicket: sold.length ? Math.floor(revenue / sold.length) : 0,
       collected: sum(payments, (p) => p.amount),
       discounts: sum(sold, (o) => o.discount),
+      promotions: sum(sold, (o) => o.promotion_discount),
+      taxCollected,
+      revenueExclTax: revenue - taxCollected,
       itemsSold: sum(topProducts.length === products.length ? topProducts : products, (p) => p.quantity),
       cancelledCount: cancelled.length,
       cancelledAmount: sum(cancelled, (o) => o.total),
@@ -89,5 +104,7 @@ export async function salesReport(ctx: AppContext, scope: TenantScope, locationI
       return { serviceType, orders: list.length, revenue: sum(list, (o) => o.total) };
     }).filter((s) => s.orders > 0),
     topProducts,
+    byTax: mergeTaxLines(sold.map((o) => parseTaxes(o.taxes))).map(({ name, rateBp, base, tax }) => ({ name, rateBp, base, tax })),
+    byPromotion: [...promotions.values()].sort((a, b) => b.amount - a.amount),
   };
 }

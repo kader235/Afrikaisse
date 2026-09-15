@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { CURRENCY_CODES } from './currency.ts';
 import { MONEY_MAX } from './money.ts';
-import { orderLineInputSchema, orderSchema } from './orders.ts';
+import { orderLineInputSchema, orderPromoCodeSchema, orderSchema } from './orders.ts';
 
 /**
  * Caisse : prise de commande par le personnel, remises, encaissement, sessions de caisse.
@@ -102,6 +102,7 @@ export const createStaffOrderSchema = z.object({
   customerName: z.string().trim().max(60).nullable().optional(),
   lines: z.array(orderLineInputSchema).min(1, 'La commande est vide.').max(80),
   note: z.string().trim().max(300).nullable().optional(),
+  promoCode: orderPromoCodeSchema,
 });
 export type CreateStaffOrderInput = z.infer<typeof createStaffOrderSchema>;
 

@@ -11,7 +11,13 @@ import {
   cashSuggestions,
   discountAmount,
   formatMoney,
+  formatRate,
+  localMoment,
+  mergeTaxLines,
   priceLine,
+  priceOrder,
+  promoCodeMessage,
+  resolveTaxRateId,
   splitEvenly,
   type AdminMenu,
   type CashSession,
@@ -23,14 +29,20 @@ import {
   type Order,
   type Payment,
   type PaymentMethod,
+  type OrderPricing,
+  type PricingConfig,
   type PricingProduct,
   type Printer,
+  type PromotionRule,
+  type TaxLine,
+  type TaxMode,
   type Product,
   type Receipt,
 } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { isNativeApp, mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
+import '../styles/pricing.css';
 
 /**
  * Caisse, pensée pour la tablette au comptoir :
@@ -78,6 +90,26 @@ function toPricing(menu: AdminMenu, p: Product): PricingProduct {
       })),
   };
 }
+
+/** Même calcul que le serveur : promotions automatiques, code saisi, taxes de l'établissement. */
+function ticketPricing(menu: AdminMenu, pricing: PricingConfig, lines: TicketLine[], code: PromotionRule | null, now: number): OrderPricing {
+  const rates = new Map(pricing.taxRates.map((r) => [r.id, { id: r.id, name: r.name, rateBp: r.rateBp }]));
+  const categoryRate = new Map(pricing.categories.map((c) => [c.id, c.taxRateId]));
+  const productRate = new Map(pricing.products.map((p) => [p.id, p.taxRateId]));
+  return priceOrder({
+    lines: lines.map((l) => {
+      const product = menu.products.find((p) => p.id === l.productId);
+      const rateId = resolveTaxRateId(productRate.get(l.productId), product ? categoryRate.get(product.categoryId) : null, pricing.defaultTaxRateId);
+      return { productId: l.productId, categoryId: product?.categoryId ?? null, unitPrice: l.unitPrice, quantity: l.quantity, promoPriced: product ? product.promoPrice !== null : false, taxRate: rateId ? (rates.get(rateId) ?? null) : null };
+    }),
+    promotions: pricing.promotions.filter((p) => p.maxUses === null || p.usesCount < p.maxUses),
+    code,
+    moment: localMoment(now, pricing.location.timezone),
+    taxMode: pricing.taxMode,
+  });
+}
+
+const taxLabel = (t: TaxLine, mode: TaxMode) => `${mode === 'INCLUSIVE' ? 'Dont ' : ''}${t.name} ${formatRate(t.rateBp)}`;
 
 export function checkTitle(c: Check): string {
   if (c.kind === 'session') return `Table ${c.tableLabel}`;
@@ -423,6 +455,21 @@ export function SaleTab({
   const [options, setOptions] = useState<PricingProduct | null>(null);
   const [picking, setPicking] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [pricing, setPricing] = useState<PricingConfig | null>(null);
+  const [code, setCode] = useState<PromotionRule | null>(null);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [clock, setClock] = useState(() => Date.now());
+
+  // Promotions et taxes relues chaque minute : une happy hour qui commence ou finit change le ticket.
+  useEffect(() => {
+    const read = () => api<PricingConfig>('GET', `/locations/${locationId}/pricing`).then(setPricing, () => setPricing(null));
+    void read();
+    const id = setInterval(() => {
+      setClock(Date.now());
+      if (!document.hidden) void read();
+    }, 60_000);
+    return () => clearInterval(id);
+  }, [locationId]);
 
   const categories = useMemo(() => (menu ? [...menu.categories].sort((a, b) => a.sort - b.sort) : []), [menu]);
   const activeCategory = categoryId ?? categories[0]?.id ?? null;
@@ -440,8 +487,10 @@ export function SaleTab({
     return counts;
   }, [lines]);
 
-  const total = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
+  const quote = useMemo(() => (menu && pricing && lines.length > 0 ? ticketPricing(menu, pricing, lines, code, clock) : null), [menu, pricing, lines, code, clock]);
+  const total = quote ? quote.total : lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
   const count = lines.reduce((s, l) => s + l.quantity, 0);
+  const money = (v: number) => formatMoney(v, currency);
   const table = floor?.tables.find((t) => t.id === (fixedTableId ?? tableId)) ?? null;
   const tableZone = table ? floor?.zones.find((z) => z.id === table.zoneId) : undefined;
 
@@ -474,8 +523,10 @@ export function SaleTab({
         customerName: serviceType === 'TAKEAWAY' ? customerName.trim() || null : null,
         note: note.trim() || null,
         lines: lines.map((l) => ({ productId: l.productId, variantId: l.variantId, modifierIds: l.modifierIds, quantity: l.quantity, note: l.note })),
+        promoCode: code?.code ?? null,
       });
       setLines([]);
+      setCode(null);
       setNote('');
       setNoteOpen(false);
       setCustomerName('');
@@ -582,7 +633,7 @@ export function SaleTab({
             ) : (
               <li className="pos-empty muted">Ticket vide</li>
             ))}
-          {lines.map((l) => (
+          {lines.map((l, index) => (
             <li key={l.key} className="pos-line">
               <strong className="pos-line-name">{l.name}</strong>
               <span className="pos-line-total num">{formatMoney(l.unitPrice * l.quantity, currency)}</span>
@@ -594,6 +645,7 @@ export function SaleTab({
                   </span>
                 )}
                 {l.note && <span className="order-note">« {l.note} »</span>}
+                <LinePromo quote={quote} index={index} code={code} money={money} />
               </div>
               <span className="qty">
                 <button className="btn" aria-label={`Retirer un ${l.name}`} onClick={() => changeQty(l.key, -1)}>
@@ -613,22 +665,35 @@ export function SaleTab({
           {(noteOpen || !!note) && (
             <input className="pos-note" autoFocus={!note} placeholder="Remarque pour la cuisine" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} aria-label="Remarque pour la cuisine" />
           )}
+          {quote && <TicketSums quote={quote} money={money} />}
+          {code && (
+            <div className="pos-code">
+              <span className="tag">Code {code.code}</span>
+              <button className="btn" onClick={() => setCode(null)}>
+                Retirer le code
+              </button>
+            </div>
+          )}
+          {quote?.codeProblem && <div className="msg msg-error">{promoCodeMessage(quote.codeProblem, money)}</div>}
           <div className="pos-total">
             <span>
               Total · {count} article{count > 1 ? 's' : ''}
             </span>
             <strong>{formatMoney(total, currency)}</strong>
           </div>
-          <button className="btn btn-primary pos-send" disabled={busy || lines.length === 0} onClick={() => send(false)}>
+          <button className="btn btn-primary pos-send" disabled={busy || lines.length === 0 || !!quote?.codeProblem} onClick={() => send(false)}>
             Envoyer la commande
           </button>
           <div className="pos-tools">
             {canCollect && drawerOpen && (
-              <button className="btn pos-collect" disabled={busy || lines.length === 0} onClick={() => send(true)}>
+              <button className="btn pos-collect" disabled={busy || lines.length === 0 || !!quote?.codeProblem} onClick={() => send(true)}>
                 <Icon name="cash" />
                 Encaisser
               </button>
             )}
+            <button className="btn btn-icon" title="Code promo" aria-label="Code promo" aria-pressed={!!code} onClick={() => setCodeOpen(true)}>
+              <Icon name="ticket" />
+            </button>
             <button className="btn btn-icon" title="Remarque pour la cuisine" aria-label="Remarque pour la cuisine" aria-pressed={noteOpen || !!note} onClick={() => setNoteOpen((open) => !open)}>
               <Icon name="edit" />
             </button>
@@ -641,6 +706,7 @@ export function SaleTab({
                 setLines([]);
                 setNote('');
                 setNoteOpen(false);
+                setCode(null);
               }}
             >
               <Icon name="trash" />
@@ -648,6 +714,17 @@ export function SaleTab({
           </div>
         </div>
       </aside>
+
+      {codeOpen && (
+        <PromoCodeDialog
+          locationId={locationId}
+          onClose={() => setCodeOpen(false)}
+          onApply={(rule) => {
+            setCode(rule);
+            setCodeOpen(false);
+          }}
+        />
+      )}
 
       {options && (
         <OptionsDialog
@@ -675,6 +752,80 @@ export function SaleTab({
         />
       )}
     </div>
+  );
+}
+
+/** Remise d'une ligne du ticket (promotion automatique et part du code). */
+function LinePromo({ quote, index, code, money }: { quote: OrderPricing | null; index: number; code: PromotionRule | null; money: (v: number) => string }) {
+  const line = quote?.lines[index];
+  const off = line ? line.promotionDiscount + line.codeDiscount : 0;
+  if (!line || off <= 0) return null;
+  const label = [line.promotion?.name, line.codeDiscount > 0 && code ? `Code ${code.code}` : null].filter(Boolean).join(' + ');
+  return (
+    <span className="pos-line-promo">
+      {label} −{money(off)}
+    </span>
+  );
+}
+
+/** Sous-total, promotions et taxes du ticket ; rien quand il n'y a ni promotion ni taxe. */
+function TicketSums({ quote, money }: { quote: OrderPricing; money: (v: number) => string }) {
+  if (quote.applied.length === 0 && quote.taxes.length === 0) return null;
+  return (
+    <dl className="pos-sums">
+      <div>
+        <dt>Sous-total</dt>
+        <dd>{money(quote.subtotal)}</dd>
+      </div>
+      {quote.applied.map((a) => (
+        <div key={a.id}>
+          <dt>{a.code ? `Code ${a.code}` : a.name}</dt>
+          <dd>−{money(a.amount)}</dd>
+        </div>
+      ))}
+      {quote.taxes.map((t) => (
+        <div key={`${t.rateId}:${t.rateBp}`}>
+          <dt>{taxLabel(t, quote.taxMode)}</dt>
+          <dd>{money(t.tax)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function PromoCodeDialog({ locationId, onApply, onClose }: { locationId: string; onApply: (rule: PromotionRule) => void; onClose: () => void }) {
+  const [value, setValue] = useState('');
+  const { busy, error, run } = useAction();
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void run(async () => onApply(await api<PromotionRule>('POST', `/locations/${locationId}/promo-codes/check`, { code: value.trim() })));
+      }}
+    >
+      <Dialog
+        title="Code promo"
+        onClose={onClose}
+        footer={
+          <>
+            <button className="btn btn-primary" disabled={busy || !value.trim()}>
+              Appliquer
+            </button>
+            <button type="button" className="btn" onClick={onClose}>
+              Annuler
+            </button>
+          </>
+        }
+      >
+        <div className="dialog-body pricing-form">
+          <ErrorMessage error={error} />
+          <div className="form">
+            <label htmlFor="promo-code-input">Code</label>
+            <input id="promo-code-input" className="pricing-code-input" autoFocus autoComplete="off" autoCapitalize="characters" maxLength={30} value={value} onChange={(e) => setValue(e.target.value.toUpperCase())} />
+          </div>
+        </div>
+      </Dialog>
+    </form>
   );
 }
 
@@ -912,6 +1063,14 @@ function CheckoutTab({
                       {i.modifiers.length > 0 && <div className="muted">{i.modifiers.map((m) => m.name).join(', ')}</div>}
                     </li>
                   ))}
+                  {o.promotions.map((p) => (
+                    <li key={p.id}>
+                      <div className="order-line-head">
+                        <span>{p.code ? `Code ${p.code}` : p.name}</span>
+                        <span className="num">−{formatMoney(p.amount, o.currency)}</span>
+                      </div>
+                    </li>
+                  ))}
                   {o.discount > 0 && (
                     <li>
                       <div className="order-line-head">
@@ -934,6 +1093,12 @@ function CheckoutTab({
               <span>Total</span>
               <span className="num">{formatMoney(selected.total, selected.currency)}</span>
             </div>
+            {mergeTaxLines(selected.orders.map((o) => o.taxes)).map((x) => (
+              <div key={`${x.name}:${x.rateBp}`} className="order-line-head">
+                <span>{taxLabel(x, 'INCLUSIVE')}</span>
+                <span className="num">{formatMoney(x.tax, selected.currency)}</span>
+              </div>
+            ))}
             {selected.paid > 0 && (
               <div className="order-line-head">
                 <span>Déjà payé</span>
@@ -1233,7 +1398,11 @@ function DiscountDialog({ order, onDone, onClose }: { order: Order; onDone: (o: 
   const [valueKey, setValueKey] = useState(0);
   const [reason, setReason] = useState(order.discountReason ?? '');
   const { busy, error, run } = useAction();
-  const preview = discountAmount(order.subtotal, kind, value ?? 0);
+  const base = order.subtotal - order.promotionDiscount;
+  const preview = discountAmount(base, kind, value ?? 0);
+  // Hors taxe : la taxe suit le montant net ; le serveur la recalcule exactement, taux par taux.
+  const currentNet = base - order.discount;
+  const previewTotal = base - preview + (order.taxMode === 'EXCLUSIVE' && currentNet > 0 ? Math.round((order.taxTotal * (base - preview)) / currentNet) : 0);
 
   const save = (body: object) =>
     run(async () => {
@@ -1317,7 +1486,7 @@ function DiscountDialog({ order, onDone, onClose }: { order: Order; onDone: (o: 
             <input id="disc-reason" required maxLength={200} placeholder="Client fidèle, erreur de service…" value={reason} onChange={(e) => setReason(e.target.value)} />
             <label>Nouveau total</label>
             <strong className="big-amount">
-              {formatMoney(order.subtotal - preview, order.currency)} <small className="muted">(−{formatMoney(preview, order.currency)})</small>
+              {formatMoney(previewTotal, order.currency)} <small className="muted">(−{formatMoney(preview, order.currency)})</small>
             </strong>
           </div>
         </div>
@@ -1838,7 +2007,35 @@ function OrderLines({ order }: { order: Order }) {
           {i.modifiers.length > 0 && <div className="ticket-small">  {i.modifiers.map((m) => m.name).join(', ')}</div>}
         </div>
       ))}
+      {order.promotions.map((p) => (
+        <Row key={p.id} left={p.code ? `Code ${p.code}` : p.name} right={`−${money(p.amount)}`} />
+      ))}
       {order.discount > 0 && <Row left={`Remise${order.discountReason ? ` (${order.discountReason})` : ''}`} right={`−${money(order.discount)}`} />}
+    </>
+  );
+}
+
+/** Total du ticket et détail des taxes : hors taxe (HT, taxes, TTC) ou TVA incluse (« dont »). */
+function TotalRows({ orders, total, money }: { orders: Order[]; total: number; money: (v: number) => string }) {
+  const taxes = mergeTaxLines(orders.map((o) => o.taxes));
+  if (taxes.length > 0 && orders.some((o) => o.taxMode === 'EXCLUSIVE')) {
+    const taxTotal = taxes.reduce((s, x) => s + x.tax, 0);
+    return (
+      <>
+        <Row left="Total HT" right={money(total - taxTotal)} />
+        {taxes.map((x) => (
+          <Row key={`${x.name}:${x.rateBp}`} left={`${x.name} ${formatRate(x.rateBp)}`} right={money(x.tax)} />
+        ))}
+        <Row left="Total TTC" right={money(total)} strong />
+      </>
+    );
+  }
+  return (
+    <>
+      <Row left="Total" right={money(total)} strong />
+      {taxes.map((x) => (
+        <Row key={`${x.name}:${x.rateBp}`} left={`Dont ${x.name} ${formatRate(x.rateBp)} (base ${money(x.base)})`} right={money(x.tax)} />
+      ))}
     </>
   );
 }
@@ -1865,7 +2062,7 @@ export function ReceiptTicket({ receipt }: { receipt: Receipt }) {
         <OrderLines key={o.id} order={o} />
       ))}
       <hr />
-      <Row left="Total" right={money(total)} strong />
+      <TotalRows orders={receipt.orders} total={total} money={money} />
       <Row left={`Payé · ${PAYMENT_METHOD_LABELS[payment.method]}${payment.provider ? ` ${payment.provider}` : ''}`} right={money(payment.amount)} />
       {payment.method === 'CASH' && payment.tendered > payment.amount && (
         <>
@@ -1895,7 +2092,7 @@ export function BillTicket({ check, locationName }: { check: Check; locationName
         <OrderLines key={o.id} order={o} />
       ))}
       <hr />
-      <Row left="Total" right={money(check.total)} strong />
+      <TotalRows orders={check.orders} total={check.total} money={money} />
       {check.paid > 0 && <Row left="Déjà payé" right={money(check.paid)} />}
       <Row left="Reste à payer" right={money(check.remaining)} strong />
       <hr />

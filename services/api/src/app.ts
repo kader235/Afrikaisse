@@ -27,6 +27,7 @@ import { floorRoutes } from './routes/floor.ts';
 import { menuRoutes, publicRoutes } from './routes/menu.ts';
 import { orderRoutes, publicOrderRoutes } from './routes/orders.ts';
 import { posRoutes } from './routes/pos.ts';
+import { pricingRoutes, publicPricingRoutes } from './routes/pricing.ts';
 import { kitchenRoutes } from './routes/kitchen.ts';
 import { reportRoutes } from './routes/reports.ts';
 import { setupRoutes } from './routes/setup.ts';
@@ -183,6 +184,8 @@ export async function buildApp(opts: BuildOptions) {
   await app.register(orderRoutes(ctx), { prefix: '/api' });
   await app.register(publicOrderRoutes(ctx), { prefix: '/api' });
   await app.register(posRoutes(ctx), { prefix: '/api' });
+  await app.register(pricingRoutes(ctx), { prefix: '/api' });
+  await app.register(publicPricingRoutes(ctx), { prefix: '/api' });
   await app.register(kitchenRoutes(ctx), { prefix: '/api' });
   await app.register(reportRoutes(ctx), { prefix: '/api' });
   await app.register(setupRoutes(ctx), { prefix: '/api' });

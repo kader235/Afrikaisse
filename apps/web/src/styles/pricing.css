@@ -1,0 +1,254 @@
+/*
+ * Taxes et promotions (§47-48) : onglet du Menu, ticket de caisse, panier du menu client.
+ * Feuille propre à la fonctionnalité : aucun composant global n'est restylé ici.
+ * WebView Chrome 83 : pas de gap sur flexbox (marges), grid-gap accepté sur les grilles.
+ */
+
+/* === Onglet « Taxes et promotions » ===================================== */
+.pricing-body > * + * {
+  margin-top: 16px;
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .pricing-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pricing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 0 4px;
+}
+
+.pricing-actions > * {
+  margin: 0 8px 8px 0;
+}
+
+[dir='rtl'] .pricing-actions > * {
+  margin: 0 0 8px 8px;
+}
+
+.pricing-settings {
+  margin-bottom: 16px;
+}
+
+.pricing-settings select {
+  width: auto;
+  min-width: 220px;
+  max-width: 100%;
+}
+
+.pricing-body .grid-wrap {
+  overflow-x: auto;
+}
+
+.pricing-body table.grid select {
+  width: 100%;
+  min-width: 180px;
+}
+
+.pricing-child td:first-child {
+  padding-inline-start: 32px;
+  color: var(--text-soft);
+}
+
+.pricing-empty {
+  color: var(--muted);
+}
+
+.pricing-code {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Fenêtre de promotion */
+.pricing-form .pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.pricing-form .pair > * {
+  margin: 0 8px 6px 0;
+}
+
+[dir='rtl'] .pricing-form .pair > * {
+  margin: 0 0 6px 8px;
+}
+
+.pricing-form .pair input {
+  width: 130px;
+}
+
+.pricing-form .pair input[type='date'] {
+  width: 170px;
+}
+
+.pricing-days {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.pricing-days .chip {
+  min-width: 58px;
+  margin: 0 8px 8px 0;
+}
+
+[dir='rtl'] .pricing-days .chip {
+  margin: 0 0 8px 8px;
+}
+
+.pricing-code-input {
+  text-transform: uppercase;
+}
+
+/* === Caisse : ticket en cours ============================================ */
+.pos-sums {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.pos-sums > div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.pos-sums > div + div {
+  margin-top: 2px;
+}
+
+.pos-sums dt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-sums dd {
+  flex: none;
+  margin: 0;
+  margin-inline-start: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-line-promo {
+  color: var(--text);
+}
+
+.pos-code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pos-code .tag {
+  margin: 0;
+  font-size: 14px;
+  line-height: 24px;
+}
+
+/* === Écran tactile ======================================================== */
+@media (pointer: coarse) {
+  .pricing-body select,
+  .pricing-body input,
+  .pricing-body .btn,
+  .pricing-form select,
+  .pricing-form input,
+  .pricing-days .chip,
+  .pos-code .btn {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .pos-sums {
+    font-size: 16px;
+  }
+}
+
+/* === Menu client (téléphone) ============================================= */
+.m-promo-badge {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--m-accent);
+  border-radius: 4px;
+  color: var(--m-accent);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.m-promo-ht {
+  margin-inline-start: 4px;
+  color: var(--m-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.m-sums {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.m-sums > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.m-sums dd {
+  margin: 0;
+  margin-inline-start: 12px;
+  white-space: nowrap;
+}
+
+.m-code {
+  display: flex;
+  margin: 0 0 10px;
+}
+
+.m-code input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--m-line);
+  border-radius: 8px;
+  background: var(--m-bg);
+  color: var(--m-text);
+  font: inherit;
+  text-transform: uppercase;
+}
+
+.m-code .m-button {
+  margin: 0;
+  margin-inline-start: 8px;
+  min-height: 48px;
+}
+
+.m-code-on {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 10px;
+}
+
+.m-link {
+  min-height: 48px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--m-accent);
+  font-weight: 600;
+}

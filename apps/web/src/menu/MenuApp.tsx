@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 // Types seulement (effacés à la compilation) : ce bundle n'embarque pas Zod.
-import type { PublicMenu, PublicOrder, PublicProduct } from '@afrikaisse/core';
+import type { PublicMenu, PublicOrder, PublicPricing, PublicProduct } from '@afrikaisse/core';
 import { formatMoney } from '@afrikaisse/core/money';
 import { priceLine, type PricedLine } from '@afrikaisse/core/pricing';
+import { bestProductPromotion, lineDiscount, localMoment, priceOrder, promoCodeMessage, promotionBadge, type OrderPricing, type PromotionRule } from '@afrikaisse/core/promotions';
+import { formatRate } from '@afrikaisse/core/taxes';
 import { ALLERGEN_LABELS, choiceRule } from '../allergens.ts';
+import '../styles/pricing.css';
 
 /**
  * Menu client ouvert par le QR d'une table : consulter, composer son plat, commander,
@@ -104,6 +107,8 @@ export function MenuApp() {
   const [cart, setCart] = useStoredCart(`afk.cart.${token}`);
   const [orders, setOrders] = useState<PublicOrder[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [pricing, setPricing] = useState<PublicPricing | null>(null);
+  const [code, setCode] = useState<PromotionRule | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -125,6 +130,11 @@ export function MenuApp() {
   useEffect(() => {
     if (token) loadOrders();
   }, [token, loadOrders]);
+
+  // Promotions et taxes : sans elles le menu reste utilisable (prix de la carte), le serveur recalcule tout.
+  useEffect(() => {
+    if (token) request<PublicPricing>('GET', `/api/public/menu/${token}/pricing`).then(setPricing, () => setPricing(null));
+  }, [token]);
 
   // Suivi : tant qu'une commande est en cours, on relit toutes les 6 s (sauf page masquée),
   // et aussitôt que le client revient sur la page (téléphone déverrouillé, onglet repris).
@@ -189,13 +199,33 @@ export function MenuApp() {
 
   const { restaurant, table } = state.menu;
   const money = (v: number) => formatMoney(v, restaurant.currency);
+  const moment = pricing ? localMoment(Date.now(), pricing.timezone) : null;
+  const rateOf = (productId: string) => {
+    const id = pricing?.productTaxRates[productId];
+    return (id && pricing?.taxRates.find((r) => r.id === id)) || null;
+  };
+  const showcase = (p: PublicProduct) =>
+    pricing && moment && p.promoPrice === null ? bestProductPromotion(pricing.promotions, { productId: p.id, categoryId: pricing.productCategories[p.id] ?? null, unitPrice: p.price, promoPriced: false }, moment) : null;
+  const ht = (p: PublicProduct) => pricing?.taxMode === 'EXCLUSIVE' && !!rateOf(p.id);
   const priced = cart.map((line) => {
     const product = products.get(line.productId);
     const result: PricedLine = product ? priceLine(product, line) : { ok: false, code: 'PRODUCT_UNAVAILABLE', message: "Cet article n'est plus au menu." };
     return { line, product, result };
   });
   const cartCount = cart.reduce((sum, l) => sum + l.quantity, 0);
-  const cartTotal = priced.reduce((sum, p) => sum + (p.result.ok ? p.result.total : 0), 0);
+  const quote: OrderPricing | null =
+    pricing && moment
+      ? priceOrder({
+          lines: priced.flatMap(({ line, product, result }) =>
+            result.ok && product ? [{ productId: line.productId, categoryId: pricing.productCategories[line.productId] ?? null, unitPrice: result.unitPrice, quantity: line.quantity, promoPriced: product.promoPrice !== null, taxRate: rateOf(line.productId) }] : [],
+          ),
+          promotions: pricing.promotions,
+          code,
+          moment,
+          taxMode: pricing.taxMode,
+        })
+      : null;
+  const cartTotal = quote ? quote.total : priced.reduce((sum, p) => sum + (p.result.ok ? p.result.total : 0), 0);
   const latest = orders.find((o) => ACTIVE.has(o.status));
 
   function addToCart(line: Omit<CartLine, 'key'>) {
@@ -266,8 +296,7 @@ export function MenuApp() {
                   <strong>{p.name}</strong>
                   {p.description && <span className="m-desc">{p.description}</span>}
                   <span className="m-price">
-                    {money(p.promoPrice ?? p.price)}
-                    {p.promoPrice !== null && <s>{money(p.price)}</s>}
+                    <PriceContent product={p} promo={showcase(p)} ht={ht(p)} money={money} />
                     {!p.isAvailable && <em>Épuisé</em>}
                   </span>
                 </span>
@@ -312,11 +341,15 @@ export function MenuApp() {
         </div>
       )}
 
-      {sheet?.kind === 'product' && <ProductSheet product={sheet.product} money={money} onAdd={addToCart} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'product' && <ProductSheet product={sheet.product} promo={showcase(sheet.product)} ht={ht(sheet.product)} money={money} onAdd={addToCart} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'cart' && (
         <CartSheet
           lines={priced}
           total={cartTotal}
+          quote={quote}
+          code={code}
+          onCode={setCode}
+          token={token}
           money={money}
           onChange={setCart}
           cart={cart}
@@ -325,9 +358,11 @@ export function MenuApp() {
             const order = await request<PublicOrder>('POST', `/api/public/menu/${token}/orders`, {
               clientToken: me,
               note: note.trim() || null,
+              promoCode: code?.code ?? null,
               lines: cart.map((l) => ({ productId: l.productId, variantId: l.variantId, modifierIds: l.modifierIds, quantity: l.quantity, note: l.note.trim() || null })),
             });
             setCart([]);
+            setCode(null);
             setOrders([order, ...orders]);
             setSheet({ kind: 'orders' });
           }}
@@ -361,13 +396,30 @@ function Sheet({ title, onClose, children, footer }: { title?: string; onClose: 
   );
 }
 
-function ProductSheet({ product: p, money, onAdd, onClose }: { product: PublicProduct; money: (v: number) => string; onAdd: (line: Omit<CartLine, 'key'>) => void; onClose: () => void }) {
+type Showcase = ReturnType<typeof bestProductPromotion>;
+
+/** Prix affiché : remise de la meilleure promotion en cours, prix barré, badge ; « HT » en mode hors taxe. */
+function PriceContent({ product: p, promo, ht, money }: { product: PublicProduct; promo: Showcase; ht: boolean; money: (v: number) => string }) {
+  const base = p.promoPrice ?? p.price;
+  const off = promo?.discount ?? 0;
+  return (
+    <>
+      {money(base - off)}
+      {ht && <small className="m-promo-ht">HT</small>}
+      {(p.promoPrice !== null || off > 0) && <s>{money(p.price)}</s>}
+      {promo && <span className="m-promo-badge">{promotionBadge(promo.promotion, money)}</span>}
+    </>
+  );
+}
+
+function ProductSheet({ product: p, promo, ht, money, onAdd, onClose }: { product: PublicProduct; promo: Showcase; ht: boolean; money: (v: number) => string; onAdd: (line: Omit<CartLine, 'key'>) => void; onClose: () => void }) {
   const firstVariant = p.variants.find((v) => v.isAvailable)?.id ?? null;
   const [variantId, setVariantId] = useState<string | null>(firstVariant);
   const [modifierIds, setModifierIds] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState('');
   const result = priceLine(p, { variantId, modifierIds, quantity });
+  const promoOff = promo && result.ok ? lineDiscount(promo.promotion, result.unitPrice, quantity, result.total) : 0;
   const delta = (v: number) => (v === 0 ? '' : `${v > 0 ? '+' : '−'} ${money(Math.abs(v))}`);
 
   function toggle(groupId: string, modifierId: string) {
@@ -401,7 +453,7 @@ function ProductSheet({ product: p, money, onAdd, onClose }: { product: PublicPr
                 </button>
               </div>
               <button className="m-button m-grow" disabled={!result.ok} onClick={() => onAdd({ productId: p.id, variantId, modifierIds, quantity, note: note.trim() })}>
-                Ajouter · {result.ok ? money(result.total) : '—'}
+                Ajouter · {result.ok ? money(result.total - promoOff) : '—'}
               </button>
             </div>
           </>
@@ -414,8 +466,7 @@ function ProductSheet({ product: p, money, onAdd, onClose }: { product: PublicPr
       <div className="m-sheet-body">
         <h3>{p.name}</h3>
         <p className="m-price big">
-          {money(p.promoPrice ?? p.price)}
-          {p.promoPrice !== null && <s>{money(p.price)}</s>}
+          <PriceContent product={p} promo={promo} ht={ht} money={money} />
         </p>
         {p.description && <p className="m-long">{p.description}</p>}
         {p.tags.length > 0 && (
@@ -476,6 +527,10 @@ function ProductSheet({ product: p, money, onAdd, onClose }: { product: PublicPr
 function CartSheet({
   lines,
   total,
+  quote,
+  code,
+  onCode,
+  token,
   money,
   cart,
   onChange,
@@ -484,6 +539,10 @@ function CartSheet({
 }: {
   lines: { line: CartLine; product: PublicProduct | undefined; result: PricedLine }[];
   total: number;
+  quote: OrderPricing | null;
+  code: PromotionRule | null;
+  onCode: (code: PromotionRule | null) => void;
+  token: string;
   money: (v: number) => string;
   cart: CartLine[];
   onChange: (cart: CartLine[]) => void;
@@ -502,11 +561,13 @@ function CartSheet({
       onClose={onClose}
       footer={
         <>
+          <CartSums quote={quote} money={money} />
+          <PromoCodeField token={token} code={code} onCode={onCode} problem={quote?.codeProblem ?? null} money={money} />
           {error && <p className="m-error">{error}</p>}
           {invalid && <p className="m-hint">Retirez les articles signalés pour commander.</p>}
           <button
             className="m-button m-wide"
-            disabled={busy || invalid || lines.length === 0}
+            disabled={busy || invalid || lines.length === 0 || !!quote?.codeProblem}
             onClick={async () => {
               setBusy(true);
               setError(null);
@@ -559,6 +620,81 @@ function CartSheet({
         </label>
       </div>
     </Sheet>
+  );
+}
+
+/** Sous-total, promotions et, hors taxe, les taxes ajoutées. */
+function CartSums({ quote, money }: { quote: OrderPricing | null; money: (v: number) => string }) {
+  const taxes = quote?.taxMode === 'EXCLUSIVE' ? quote.taxes : [];
+  if (!quote || (quote.applied.length === 0 && taxes.length === 0)) return null;
+  return (
+    <dl className="m-sums">
+      <div>
+        <dt>Sous-total</dt>
+        <dd>{money(quote.subtotal)}</dd>
+      </div>
+      {quote.applied.map((a) => (
+        <div key={a.id}>
+          <dt>{a.code ? `Code ${a.code}` : a.name}</dt>
+          <dd>−{money(a.amount)}</dd>
+        </div>
+      ))}
+      {taxes.map((t) => (
+        <div key={`${t.rateId}:${t.rateBp}`}>
+          <dt>
+            {t.name} {formatRate(t.rateBp)}
+          </dt>
+          <dd>{money(t.tax)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function PromoCodeField({ token, code, onCode, problem, money }: { token: string; code: PromotionRule | null; onCode: (code: PromotionRule | null) => void; problem: OrderPricing['codeProblem']; money: (v: number) => string }) {
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (code) {
+    return (
+      <>
+        <div className="m-code-on">
+          <span>
+            Code <strong>{code.code}</strong>
+          </span>
+          <button className="m-link" onClick={() => onCode(null)}>
+            Retirer
+          </button>
+        </div>
+        {problem && <p className="m-error">{promoCodeMessage(problem, money)}</p>}
+      </>
+    );
+  }
+  return (
+    <>
+      <form
+        className="m-code"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setBusy(true);
+          setError(null);
+          try {
+            onCode(await request<PromotionRule>('POST', `/api/public/menu/${token}/promo-code`, { code: value.trim() }));
+            setValue('');
+          } catch (err) {
+            setError((err as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        <input aria-label="Code promo" placeholder="Code promo" autoComplete="off" autoCapitalize="characters" maxLength={30} value={value} onChange={(e) => setValue(e.target.value.toUpperCase())} />
+        <button className="m-button" disabled={busy || !value.trim()}>
+          Appliquer
+        </button>
+      </form>
+      {error && <p className="m-error">{error}</p>}
+    </>
   );
 }
 
