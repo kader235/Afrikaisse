@@ -49,6 +49,11 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
   const [sent, setSent] = useState<string | null>(null);
   const queued = useQueuedOrders().filter((o) => o.locationId === locationId);
   const waiting = queued.filter((o) => !o.error);
+  // File vidée au retour du réseau : le message de coupure laisse la place à la confirmation.
+  const offlineNotice = !!sent?.startsWith('Pas de connexion');
+  useEffect(() => {
+    if (offlineNotice && waiting.length === 0 && queued.every((o) => !o.error)) setSent('Connexion revenue : les commandes gardées sont parties en cuisine.');
+  }, [offlineNotice, waiting.length]);
 
   const loadMenu = useCallback(async () => {
     if (!locationId) return;
