@@ -756,6 +756,33 @@ export interface TaxRatesTable {
   updated_hlc: string;
 }
 
+/** Annonce du menu client (bandeau qui défile). Liée à une promotion : sa période est celle de la promotion. */
+export interface AnnouncementsTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  title: string;
+  body: string | null;
+  button_label: string | null;
+  target_kind: 'CATEGORY' | 'PRODUCT' | null;
+  target_id: string | null;
+  promotion_id: string | null;
+  media_id: string | null;
+  is_published: Bool;
+  start_date: string | null;
+  end_date: string | null;
+  /** Bit 0 = lundi … bit 6 = dimanche ; 0 = tous les jours. */
+  days_mask: number;
+  start_minute: number | null;
+  end_minute: number | null;
+  display_seconds: number;
+  sort: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
 export interface PromotionsTable {
   id: string;
   tenant_id: string;
@@ -830,6 +857,7 @@ export interface Database {
   pricing_settings: PricingSettingsTable;
   tax_rates: TaxRatesTable;
   promotions: PromotionsTable;
+  announcements: AnnouncementsTable;
   error_logs: ErrorLogsTable;
   screen_heartbeats: ScreenHeartbeatsTable;
   app_releases: AppReleasesTable;

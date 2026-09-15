@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { publicAnnouncementSchema } from './announcements.ts';
 import { CURRENCY_CODES, LOCATION_TYPES } from './currency.ts';
 import { BILL_MODES } from './guests.ts';
 import { stationSchema } from './kitchen.ts';
@@ -297,5 +298,7 @@ export const publicMenuSchema = z.object({
   popular: z.array(z.string()),
   /** Réglages de l'établissement utiles au client. */
   service: z.object({ tableCodeRequired: z.boolean(), billMode: z.enum(BILL_MODES) }),
+  /** Annonces publiées (bandeau qui défile) ; le téléphone n'affiche que celles dont la période est en cours. */
+  announcements: z.array(publicAnnouncementSchema),
 });
 export type PublicMenu = z.infer<typeof publicMenuSchema>;

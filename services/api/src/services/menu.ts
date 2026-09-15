@@ -27,6 +27,7 @@ import type {
   ProductsTable,
   ProductVariantsTable,
 } from '@afrikaisse/database';
+import { publicAnnouncements } from './announcements.ts';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { inspectImage } from '../lib/images.ts';
@@ -707,6 +708,7 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
     table: { label: found.label },
     popular: await popularProductIds(ctx.db, found.location_id, ctx.now(), eligible),
     service: { tableCodeRequired: found.table_code_required === 1, billMode: found.bill_mode },
+    announcements: await publicAnnouncements(ctx.db, found.location_id),
     categories: visibleCategories
       .map((c) => ({
         id: c.id,

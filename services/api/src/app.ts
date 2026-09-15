@@ -22,6 +22,7 @@ import { initNode } from './lib/node.ts';
 import { lanUrls, registerWebApp } from './lib/web.ts';
 import { setSyncTransport, type SyncTransport } from './services/sync/client.ts';
 import { syncRoutes } from './routes/sync.ts';
+import { announcementRoutes } from './routes/announcements.ts';
 import { authRoutes } from './routes/auth.ts';
 import { floorRoutes } from './routes/floor.ts';
 import { menuRoutes, publicRoutes } from './routes/menu.ts';
@@ -180,6 +181,7 @@ export async function buildApp(opts: BuildOptions) {
 
   await app.register(authRoutes(ctx), { prefix: '/api/auth' });
   await app.register(teamRoutes(ctx), { prefix: '/api/team' });
+  await app.register(announcementRoutes(ctx), { prefix: '/api' });
   await app.register(tenantRoutes(ctx), { prefix: '/api' });
   await app.register(floorRoutes(ctx), { prefix: '/api' });
   await app.register(menuRoutes(ctx), { prefix: '/api' });

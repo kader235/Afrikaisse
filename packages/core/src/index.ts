@@ -31,3 +31,4 @@ export * from './analytics.ts';
 export * from './notifications.ts';
 export * from './guests.ts';
 export * from './client.ts';
+export * from './announcements.ts';

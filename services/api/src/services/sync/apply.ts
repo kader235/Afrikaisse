@@ -39,6 +39,7 @@ export const MASTER_TABLES: Record<string, string> = {
   pricing_settings: 'pricing_settings',
   tax_rate: 'tax_rates',
   promotion: 'promotions',
+  announcement: 'announcements',
 };
 
 /** Ajout seulement. */
