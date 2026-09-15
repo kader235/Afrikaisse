@@ -17,6 +17,7 @@ import type { InventoryItemsTable } from '@afrikaisse/database';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { recordChange, writeAudit } from '../lib/journal.ts';
+import { notifyStockLevels } from '../lib/notify.ts';
 import { emitRow } from './menu.ts';
 import { assertLocation } from './orders.ts';
 
@@ -196,6 +197,9 @@ export async function addStockMovement(ctx: AppContext, scope: TenantScope, item
 
   await ctx.db.transaction().execute(async (trx) => {
     await insertMovement(trx, ctx, { tenantId: scope.tenantId, locationId: item.location_id, itemId, kind: input.kind, milli, unitCost: input.kind === 'IN' ? input.unitCost : null, reason: input.reason, userId: scope.userId });
+    await notifyStockLevels(trx, ctx, { tenantId: scope.tenantId, locationId: item.location_id, createdBy: scope.userId }, [
+      { itemId, name: item.name, unit: item.unit, minMilli: Number(item.min_level_milli), beforeMilli: current, afterMilli: current + milli },
+    ]);
     // Coût de la dernière réception = coût de référence de l'article.
     if (input.kind === 'IN' && input.unitCost != null && input.unitCost !== item.unit_cost) {
       const hlc = ctx.clock.now();
@@ -308,9 +312,18 @@ export async function consumeStock(trx: Db, ctx: AppContext, order: { id: string
       need.set(r.item_id, (need.get(r.item_id) ?? 0) + Number(r.quantity_milli) * line.quantity);
     }
   }
+  const before = await levels(trx, [...need.keys()]);
   for (const [itemId, milli] of need) {
     await insertMovement(trx, ctx, { tenantId: order.tenant_id, locationId: order.location_id, itemId, kind: 'SALE', milli: -milli, orderId: order.id, userId });
   }
+  // Rupture causée par une vente : tout le monde la voit, y compris qui a confirmé la commande.
+  const touched = need.size ? await trx.selectFrom('inventory_items').select(['id', 'name', 'unit', 'min_level_milli']).where('id', 'in', [...need.keys()]).execute() : [];
+  await notifyStockLevels(
+    trx,
+    ctx,
+    { tenantId: order.tenant_id, locationId: order.location_id, createdBy: null },
+    touched.map((i) => ({ itemId: i.id, name: i.name, unit: i.unit, minMilli: Number(i.min_level_milli), beforeMilli: before.get(i.id) ?? 0, afterMilli: (before.get(i.id) ?? 0) - need.get(i.id)! })),
+  );
   await refreshAvailability(trx, ctx, userId, order.location_id, [...need.keys()]);
 }
 

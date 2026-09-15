@@ -343,12 +343,13 @@ Menu **Menu**, onglet **Postes**.
 Menu **Cuisine** : cuisiniers et barmen arrivent directement dessus.
 - En haut, choisir **son poste**. Le choix reste mémorisé sur la tablette. « Tous mes postes » affiche tout ce qu'on a le droit de voir.
 - Trois colonnes : **À préparer**, **En préparation**, **Prêt**. Chaque ticket montre :
-  - le numéro, la table (ou « À emporter ») et un **minuteur** depuis la confirmation, orange après 15 min et rouge après 25 min ;
+  - le numéro, la table (ou « À emporter ») et un **minuteur** depuis la confirmation. Le cadre devient orange quand le **temps de préparation** des plats (fiche produit, 15 min si vide) est dépassé, rouge quand le retard devient franc ;
   - les quantités en gros, les options et les remarques du client en jaune.
 - **Commencer** puis **Prêt**. Un signal sonore annonce chaque nouveau ticket.
 - **Rappeler** remet un ticket en préparation (erreur de manipulation), tant que la commande n'est pas annoncée prête en salle.
 - Quand **tous les postes** d'une commande ont fini, elle passe « Prête » sur l'écran Commandes des serveurs.
 - Les commandes QR n'arrivent en cuisine qu'une fois **confirmées** par la salle.
+- **Problème** : choisir le motif (produit manquant, retard important, commande incomplète, question) et, si besoin, une précision. La salle et la caisse sont prévenues par une notification.
 - **Plein écran** masque tout le reste sur une tablette murale.
 
 ## Les imprimantes de tickets
@@ -405,6 +406,31 @@ Menu **Tableau de bord** (propriétaire, administrateur, gérant).
 
 Le chiffre d'affaires compte les commandes confirmées, payées ou non ; « Encaissé » compte l'argent
 réellement reçu. L'écart entre les deux, ce sont les additions encore ouvertes.
+
+## Les rapports
+
+Menu **Rapports** (propriétaire, administrateur, gérant).
+- **Période** : Aujourd'hui, Hier, 7 jours, 30 jours, Ce mois, Cette année, ou deux dates.
+- **Onglets** :
+  - **Ventes** : l'essentiel de la période et l'écart avec la période précédente ;
+  - **Périodes** : par jour, par semaine ou par mois (rapports journalier, hebdomadaire, mensuel ; « Cette année » + « Mois » = rapport annuel) ;
+  - **Produits**, **Catégories** : quantités, montants et part de chacun ;
+  - **Personnel** : commandes et chiffre d'affaires de chaque membre (la commande QR compte pour qui l'a confirmée), encaissements ;
+  - **Paiements** : par mode, par jour, paiements annulés ;
+  - **Cuisine** : temps moyen de préparation (de la confirmation à « prête »), temps par poste et par produit comparé au temps prévu, tickets en retard ;
+  - **Stock** (avec le droit de voir le stock) : début, réceptions, consommation, pertes, inventaires, fin de période, en quantité et en valeur.
+- **Exporter** : fichier CSV qui s'ouvre dans Excel. **Imprimer** : feuille A4 avec l'en-tête de l'établissement ; choisir « Enregistrer au format PDF » pour obtenir un PDF. Ces deux boutons sont sur ordinateur, pas sur la tablette.
+
+Sur le **tableau de bord**, « Temps moyen » donne le temps de préparation du jour et le nombre de commandes en retard.
+
+## Les notifications
+
+La **cloche** en haut de l'écran compte les notifications non lues.
+- La salle et la caisse reçoivent : nouvelle commande QR, commande prête, appel d'un serveur, addition demandée, problème signalé par la cuisine. Un signal court retentit pour ces alertes.
+- Qui gère le stock reçoit : stock faible et rupture.
+- On ne reçoit pas la notification de son propre geste (le serveur qui annonce une commande prête, par exemple).
+- Toucher une notification la marque lue et ouvre l'écran concerné (Commandes ou Stock). **Tout marquer lu** vide le compteur.
+- Chaque personne a ses propres notifications lues ; elles restent 3 jours dans la liste.
 
 ## Installer AfriKaisse sur le PC du restaurant (sans Internet)
 

@@ -9,6 +9,7 @@ import type { AppContext, Db, RequestMeta } from '../../context.ts';
 import type { TenantScope } from '../../lib/access.ts';
 import { recordChange, writeAudit } from '../../lib/journal.ts';
 import { applyEvent, encodeRow, isRejected, recordReceived, toWire } from './apply.ts';
+import { notifyReceived } from '../../lib/notify.ts';
 
 /**
  * Côté Cloud de la synchronisation : codes d'appairage, appairage avec copie initiale,
@@ -173,7 +174,7 @@ export async function pushEvents(ctx: AppContext, device: DeviceScope, events: W
     try {
       await ctx.db.transaction().execute(async (trx) => {
         ctx.clock.receive(event.hlc);
-        await applyEvent(trx, event, { guard: (table, row) => guardRow(trx, device, table, row) });
+        if (await applyEvent(trx, event, { guard: (table, row) => guardRow(trx, device, table, row) })) await notifyReceived(trx, ctx, event);
         await recordReceived(trx, ctx, event, 'SYNCED');
       });
       results.push({ eventId: event.eventId, status: 'APPLIED' });

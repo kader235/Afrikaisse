@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ORDER_STATUS_LABELS, businessDate, formatMoney, moneyToInput, shiftDate, type LocationDetails, type Me, type Order, type SalesReport } from '@afrikaisse/core';
+import { ORDER_STATUS_LABELS, businessDate, formatDuration, formatMoney, moneyToInput, shiftDate, type KitchenReport, type LocationDetails, type Me, type Order, type SalesReport } from '@afrikaisse/core';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { ErrorMessage, Icon } from '../ui.tsx';
+import '../styles/reports.css';
 
 /**
  * Tableau de bord : ce qui se passe aujourd'hui dans l'établissement.
@@ -40,6 +41,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const [locationId, setLocationId] = useState<string | null>(null);
   const [today, setToday] = useState<SalesReport | null>(null);
   const [yesterday, setYesterday] = useState<SalesReport | null>(null);
+  const [kitchen, setKitchen] = useState<KitchenReport | null>(null);
   const [tablesTotal, setTablesTotal] = useState<number | null>(null);
   const [lowStock, setLowStock] = useState<string[] | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -58,9 +60,14 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
     if (!locationId || !day) return;
     const url = (d: string) => `/locations/${locationId}/reports/sales?from=${d}&to=${d}`;
     try {
-      const [current, before] = await Promise.all([api<SalesReport>('GET', url(day)), api<SalesReport>('GET', url(shiftDate(day, -1))).catch(() => null)]);
+      const [current, before, prep] = await Promise.all([
+        api<SalesReport>('GET', url(day)),
+        api<SalesReport>('GET', url(shiftDate(day, -1))).catch(() => null),
+        api<KitchenReport>('GET', `/locations/${locationId}/reports/kitchen?from=${day}&to=${day}`).catch(() => null),
+      ]);
       setToday(current);
       setYesterday(before);
+      setKitchen(prep);
       setError(null);
     } catch (err) {
       setError(err);
@@ -135,6 +142,11 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         <Kpi label="Chiffre d'affaires" value={t ? money(t.revenue) : '—'} change={t && y ? change(t.revenue, y.revenue) : null} before={y ? `hier à ${hourNow} h : ${money(y.revenue)}` : null} />
         <Kpi label="Commandes" value={t ? String(t.orders) : '—'} change={t && y ? change(t.orders, y.orders) : null} before={y ? `hier à ${hourNow} h : ${y.orders}` : null} />
         <Kpi label="Panier moyen" value={t ? money(t.averageTicket) : '—'} change={t && y ? change(t.averageTicket, y.averageTicket) : null} before={y ? `hier à ${hourNow} h : ${money(y.averageTicket)}` : null} />
+        <Kpi
+          label="Temps moyen"
+          value={kitchen && kitchen.totals.measured > 0 ? formatDuration(kitchen.totals.averageMs) : '—'}
+          before={kitchen ? (kitchen.totals.measured > 0 ? `${kitchen.totals.lateCount} en retard sur ${kitchen.totals.measured}` : 'Aucune commande prête') : null}
+        />
         {tablesTotal !== null && (
           <Kpi label="Tables occupées" value={`${occupied} / ${tablesTotal}`} before={tablesTotal > 0 ? `${Math.round((occupied * 100) / tablesTotal)} % de la salle` : null} />
         )}

@@ -333,6 +333,44 @@ l'établissement, au reçu (`location.logoUrl`), à la liste des QR (`logoUrl`) 
 Commande d'exploitation : `node dist/cli.cjs create-demo [e-mail]` crée la même organisation de
 démonstration et affiche les identifiants une seule fois.
 
+## Rapports détaillés et temps de préparation (§30, §38-39)
+
+Toutes les périodes sont des **journées d'exploitation** (`from`, `to` au format AAAA-MM-JJ, 366 jours au plus). Une vente = commande confirmée non annulée.
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/reports/breakdown?from&to` | `reports.read` | `byWeek` (semaines ISO, clé = lundi) et `byMonth` (AAAA-MM), `products` (tous, avec la catégorie actuelle du produit), `categories`, `staff` (commande attribuée à qui l'a saisie, sinon à qui l'a confirmée ; encaissements par auteur du paiement), `payments` (`byMethod`, `byDay` par mode, `voidedCount`, `voidedAmount`) |
+| GET | `/api/locations/{id}/reports/kitchen?from&to` | `reports.read` | Temps de préparation : `totals` (commandes mesurées, moyenne, médiane, plus long, en retard, retard moyen, articles mesurés), `byStation`, `byProduct` (portions, moyenne, prévu, en retard), `byDay`, `lateTickets` (50 plus gros retards). Durées en millisecondes |
+| GET | `/api/locations/{id}/reports/stock?from&to` | `inventory.read` | Par article : début, reçu, consommé (ventes nettes des annulations), pertes, sorties, ajustements d'inventaire (signés), fin ; valeurs au coût unitaire actuel (réceptions : coût saisi) ; `events` = pertes, sorties et inventaires (200 derniers) |
+
+**Calcul des durées** (`packages/core/src/prep.ts`) :
+- durée d'une commande = premier passage `CONFIRMED` → premier passage `READY` dans `order_status_history` (à défaut, le dernier article prêt) ;
+- durée d'un article = confirmation → `order_items.kds_updated_at` quand `kds_status = READY` (dernier « prêt » de son poste) ;
+- temps prévu d'un article = `products.prep_time_min` (15 min si vide, 1 min au moins) ; d'une commande = le plus long de ses articles ;
+- retard = durée − temps prévu, s'il est positif. Les articles marqués prêts avant la phase 7 (sans heure) ne sont pas mesurés.
+
+Les écrans exportent chaque rapport en **CSV** (Excel français : point-virgule, BOM UTF-8, virgule décimale) et l'impriment en **A4** (PDF via l'impression du navigateur ; masqué dans l'application tablette).
+
+## Notifications (§42)
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/notifications?since=` | connecté à l'organisation | `{ cursor, full, unread, items }` : notifications de l'établissement dont le public est une permission du rôle, sauf celles dont on est l'auteur, sur 3 jours (50 au plus). `since=0` (ou curseur inconnu) : liste complète ; sinon seulement les nouvelles. `items[]` : id, seq, kind, urgent, title, body, data, entityType, entityId, createdAt, read |
+| POST | `/api/notifications/{id}/read` | public de la notification | 204 ; 404 hors organisation, hors établissement ou hors public |
+| POST | `/api/locations/{id}/notifications/read-all` | connecté | Corps `{ upTo? }` (curseur affiché) → `{ unread }` ; purge les notifications de plus de 30 jours |
+| POST | `/api/orders/{id}/kitchen/problem` | `kitchen.use` / `bar.use` selon les postes touchés | Corps `{ stationId: uuid ou null, message }` → 204, notification `KITCHEN_PROBLEM` + audit `kitchen.problem` ; 409 si la commande n'est pas en cuisine |
+
+| Type | Écrit quand | Public | Urgent |
+|---|---|---|---|
+| `ORDER_NEW` | commande QR reçue (en attente) | `orders.create` | oui |
+| `ORDER_READY` | commande passée « prête » (écran cuisine ou Commandes) | `orders.create` | oui |
+| `WAITER_CALL` | appel d'un serveur ou demande d'aide depuis le QR | `orders.create` | oui |
+| `BILL_REQUESTED` | addition demandée depuis le QR | `orders.create` | oui |
+| `KITCHEN_PROBLEM` | problème signalé depuis l'écran cuisine | `orders.create` | oui |
+| `STOCK_LOW` | un article franchit son seuil (faible) ou tombe à zéro (rupture), par un mouvement ou une vente | `inventory.read` | non |
+
+Chaque notification est écrite **dans la transaction** de l'événement qui la cause (`services/api/src/lib/notify.ts`) ; `dedupe_key` + `ON CONFLICT DO NOTHING` empêchent les doublons. Le texte (`title`, `body`) est calculé à la lecture depuis `data` (`notificationText` du cœur).
+
 ## Phase 18 — limites par adresse IP
 
 Routes `POST` ouvertes sans connexion : 429 `TOO_MANY_ATTEMPTS` et en-tête `Retry-After` au-delà de
@@ -387,6 +425,7 @@ Publication : `cli release-sign` puis `cli release-publish` (DEPLOYMENT.md §4.1
   aucune file ni processus permanent, donc compatible o2switch, serveur local, tablette native et
   vieille WebView. Un seul flux pour toute l'application (pastille de l'onglet Commandes, signal
   sonore sur n'importe quel écran).
+- **Notifications (§42)** : `GET /api/locations/{id}/notifications?since=` suit le même principe (5 s à l'écran, 20 s en arrière-plan), curseur = `notifications.seq` local.
 - **Optimisation possible ensuite** : SSE sur le serveur local, et dans le Cloud si la sonde o2switch
   confirme qu'il n'est pas bufferisé. Pas de WebSocket (ADR-010).
 

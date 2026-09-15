@@ -759,7 +759,47 @@ export interface PromotionsTable {
   updated_hlc: string;
 }
 
+/** §42 : notification d'un établissement. Propre au nœud : jamais synchronisée. */
+export interface NotificationsTable {
+  /** Curseur local (interrogation `since=`) ; l'identité est `id`. */
+  seq: Generated<number>;
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  kind: 'ORDER_NEW' | 'ORDER_READY' | 'WAITER_CALL' | 'BILL_REQUESTED' | 'KITCHEN_PROBLEM' | 'STOCK_LOW';
+  /** Permission qui rend la notification visible (NOTIFICATION_AUDIENCE). */
+  audience: string;
+  urgent: Bool;
+  /** JSON : données brutes (numéro, table, article…), le texte est calculé à l'affichage. */
+  data: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  /** Évite les doublons (ex. `ORDER_READY:<id>`) ; null : pas de contrôle. */
+  dedupe_key: string | null;
+  /** Auteur du geste : il ne reçoit pas sa propre notification. */
+  created_by: string | null;
+  created_at: number;
+}
+
+/** Notification lue par une personne. Propre au nœud. */
+export interface NotificationReadsTable {
+  notification_id: string;
+  user_id: string;
+  read_at: number;
+}
+
+/** « Tout marquer lu » : toutes les notifications jusqu'à `read_seq` sont lues. Propre au nœud. */
+export interface NotificationMarksTable {
+  user_id: string;
+  location_id: string;
+  read_seq: number;
+  updated_at: number;
+}
+
 export interface Database {
+  notifications: NotificationsTable;
+  notification_reads: NotificationReadsTable;
+  notification_marks: NotificationMarksTable;
   pricing_settings: PricingSettingsTable;
   tax_rates: TaxRatesTable;
   promotions: PromotionsTable;

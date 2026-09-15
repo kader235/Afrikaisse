@@ -26,3 +26,6 @@ export * from './catalogue.ts';
 export * from './releases.ts';
 export * from './monitoring.ts';
 export * from './platform.ts';
+export * from './prep.ts';
+export * from './analytics.ts';
+export * from './notifications.ts';
