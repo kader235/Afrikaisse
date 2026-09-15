@@ -1,0 +1,188 @@
+/* === Annonces du menu client (onglet du Menu) ============================
+ * L'aperçu reprend le bandeau du menu client : dégradé bleu nuit → bleu, photo ronde à droite.
+ * WebView Chrome 83 : pas de gap sur flexbox (marges), grid-gap accepté.
+ */
+.ann {
+  padding: 16px 20px 24px;
+}
+
+.ann-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ann-head p {
+  margin: 0 16px 0 0;
+  color: var(--text-soft);
+}
+
+.ann-empty {
+  padding: 32px 0;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.ann-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-gap: 16px;
+}
+
+.ann-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(15, 32, 68, 0.05);
+}
+
+.ann-info {
+  display: flex;
+  flex-direction: column;
+  margin: 12px 4px 10px;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ann-state {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ann-live::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-inline-end: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  vertical-align: 1px;
+}
+
+/* Trois actions sur une rangée, de même largeur. */
+.ann-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-gap: 8px;
+  margin-top: auto;
+}
+
+.ann-actions .btn,
+.ann-actions .btn + .btn {
+  justify-content: center;
+  margin: 0;
+  padding: 0 8px;
+}
+
+/* Bandeau : aperçu fidèle du menu client */
+.ann-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: linear-gradient(120deg, #0f2044 0%, #1d4ed8 100%);
+  color: #ffffff;
+}
+
+.ann-banner-text-block {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 58%;
+  padding-inline-start: 18px;
+}
+
+.ann-banner-text .ann-banner-text-block {
+  width: 100%;
+  padding-inline-end: 18px;
+}
+
+.ann-banner strong {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.ann-banner span {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.ann-banner em {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  margin-top: 10px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.ann-banner em .ico {
+  width: 18px;
+  height: 18px;
+  margin-inline-start: 6px;
+}
+
+.ann-banner img {
+  position: absolute;
+  top: 50%;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  transform: translateY(-50%);
+}
+
+[dir='rtl'] .ann-banner img {
+  right: auto;
+  left: -40px;
+}
+
+.ann-dialog .ann-banner {
+  max-width: 420px;
+  margin: 0 auto 16px;
+}
+
+.ann-photo,
+.ann-inline,
+.ann-days {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ann-photo .btn,
+.ann-days .chip {
+  margin: 0 8px 6px 0;
+}
+
+.ann-inline input {
+  width: auto;
+  flex: 1;
+  min-width: 140px;
+}
+
+.ann-inline span {
+  margin: 0 10px;
+  color: var(--text-soft);
+}
