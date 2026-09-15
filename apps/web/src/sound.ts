@@ -32,8 +32,8 @@ export function beep(times = 2, frequency = 880): void {
     osc.type = 'sine';
     osc.frequency.value = frequency;
     gain.gain.setValueAtTime(0.0001, at);
-    gain.gain.exponentialRampToValueAtTime(0.5, at + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
+    gain.gain.exponentialRampToValueAtTime(0.9, at + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start(at);

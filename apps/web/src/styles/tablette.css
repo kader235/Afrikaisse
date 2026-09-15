@@ -489,3 +489,24 @@
     grid-column: 1;
   }
 }
+
+/* === Barres d'Android ====================================================
+ * Application bord à bord (WebView récente) : la barre d'état et la barre des tâches Samsung
+ * se posent SUR la page. Le bandeau bleu passe sous l'heure, son contenu commence en dessous ;
+ * rien n'est caché en bas. Sur une WebView ancienne, Capacitor garde ses marges et env() vaut 0.
+ */
+.tablette .app {
+  grid-template-rows: calc(var(--topbar-h) + env(safe-area-inset-top, 0px)) minmax(0, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
+
+.tablette .topbar {
+  height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.tablette .login-screen {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
