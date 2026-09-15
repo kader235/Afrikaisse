@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CURRENCY_CODES } from './currency.ts';
+import { BILL_SCOPES, CLIENT_PAYMENT_METHODS, NICKNAME_MAX } from './guests.ts';
 import type { Permission } from './roles.ts';
 
 /**
@@ -100,10 +101,18 @@ export const orderLineInputSchema = z.object({
 });
 export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
 
+/** Code de table à 4 chiffres (I-9). */
+export const tableCodeSchema = z.string().regex(/^\d{4}$/, 'Le code de table compte 4 chiffres.');
+/** Surnom facultatif affiché aux autres clients de la table et au personnel. */
+export const nicknameInputSchema = z.string().max(NICKNAME_MAX * 4).nullable().optional();
+
 export const placeQrOrderSchema = z.object({
   clientToken: clientTokenSchema,
   lines: z.array(orderLineInputSchema).min(1, 'Le panier est vide.').max(50),
   note: z.string().trim().max(300).nullable().optional(),
+  /** Exigé à la première commande si l'établissement active le code de table. */
+  tableCode: tableCodeSchema.optional(),
+  nickname: nicknameInputSchema,
 });
 export type PlaceQrOrderInput = z.infer<typeof placeQrOrderSchema>;
 
@@ -116,6 +125,10 @@ export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
 export const serviceRequestInputSchema = z.object({
   clientToken: clientTokenSchema,
   kind: z.enum(SERVICE_REQUEST_KINDS),
+  /** Addition : comment le client compte payer (le serveur vient préparé, I-7). */
+  paymentMethod: z.enum(CLIENT_PAYMENT_METHODS).optional(),
+  /** Addition : toute la table ou la part de ce téléphone (établissement en addition par client). */
+  scope: z.enum(BILL_SCOPES).optional(),
 });
 export type ServiceRequestInput = z.infer<typeof serviceRequestInputSchema>;
 
@@ -146,6 +159,8 @@ export const orderSchema = z.object({
   tableId: z.string().nullable(),
   tableLabel: z.string().nullable(),
   sessionId: z.string().nullable(),
+  /** Commande QR : surnom du client à la table, sinon « Client n ». */
+  guestName: z.string().nullable(),
   note: z.string().nullable(),
   serviceType: z.enum(['DINE_IN', 'TAKEAWAY', 'DELIVERY']),
   customerName: z.string().nullable(),
@@ -177,6 +192,10 @@ export const publicOrderSchema = z.object({
   number: z.number(),
   status: z.enum(ORDER_STATUSES),
   tableLabel: z.string().nullable(),
+  /** Surnom du client qui a commandé (null : commande saisie par le personnel). */
+  guestName: z.string().nullable(),
+  /** Commande passée depuis ce téléphone. */
+  mine: z.boolean(),
   currency: z.enum(CURRENCY_CODES),
   total: z.number(),
   note: z.string().nullable(),
@@ -205,6 +224,14 @@ export const serviceRequestSchema = z.object({
   createdAt: z.number(),
   handledAt: z.number().nullable(),
   handledBy: z.string().nullable(),
+  /** Addition : moyen annoncé par le client. */
+  paymentMethod: z.enum(CLIENT_PAYMENT_METHODS).nullable(),
+  /** Addition : toute la table ou la part d'un client. */
+  billScope: z.enum(BILL_SCOPES).nullable(),
+  /** Client qui appelle (surnom ou « Client n »), s'il est connu à la table. */
+  guestName: z.string().nullable(),
+  /** Addition : reste à payer au moment de la lecture (table ou part du client). */
+  amount: z.number().nullable(),
 });
 export type ServiceRequest = z.infer<typeof serviceRequestSchema>;
 

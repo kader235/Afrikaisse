@@ -1,0 +1,245 @@
+/*
+ * Menu client — ajouts (§17, §23, §43, §45, §49) : langue, hors ligne, « Ma table », addition,
+ * favoris, code de table, arabe (RTL). S'appuie sur les jetons de menu.css (--m-*).
+ * Pas de gap sur flexbox (Chrome 83) : grilles et marges.
+ */
+
+.m-head-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.m-lang {
+  margin-top: 8px;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 1px solid var(--m-line);
+  border-radius: 6px;
+  background: var(--m-bg);
+  color: var(--m-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+/* Hors ligne (I-1) : le menu reste lisible, la commande est coupée. */
+.m-offline {
+  margin: 0 16px 10px;
+  padding: 10px 12px;
+  border: 1px solid #d9a441;
+  border-radius: 8px;
+  background: #fff6e0;
+  color: #5c4205;
+  font-size: 14px;
+}
+
+.m-offline strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.m-offline-paused {
+  border-color: var(--m-line);
+  background: var(--m-soft);
+  color: var(--m-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  .m-offline {
+    border-color: #8a6a24;
+    background: #2e2410;
+    color: #f1dca8;
+  }
+}
+
+.m-service {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-column-gap: 8px;
+}
+
+.m-service button + button {
+  margin-inline-start: 0;
+}
+
+.m-service button:disabled {
+  opacity: 0.5;
+}
+
+/* Favoris (ce téléphone seulement). */
+.m-fav {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin-top: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--m-line);
+  border-radius: 999px;
+  background: var(--m-bg);
+  color: var(--m-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.m-fav svg {
+  margin-inline-end: 6px;
+}
+
+.m-fav.on {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+
+.m-fav-mark {
+  margin-inline-end: 4px;
+  vertical-align: -2px;
+  color: var(--m-accent);
+}
+
+/* Code de table et surnom. */
+.m-code-field input {
+  max-width: 160px;
+  font-size: 24px;
+  letter-spacing: 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-code-field small {
+  display: block;
+  margin-top: 4px;
+  color: var(--m-muted);
+  font-size: 13px;
+}
+
+.m-join {
+  margin: 12px 0 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--m-line);
+}
+
+.m-join .m-button {
+  margin-top: 12px;
+}
+
+.m-blocked {
+  font-weight: 600;
+}
+
+/* Ma table : clients, commandes, totaux. */
+.m-guests h4 {
+  margin: 16px 0 4px;
+  font-size: 15px;
+}
+
+.m-guests ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.m-guests li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--m-line);
+}
+
+.m-guests li.me {
+  font-weight: 600;
+}
+
+.m-guest-share {
+  color: var(--m-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.m-order.mine {
+  border-inline-start: 3px solid var(--m-accent);
+  padding-inline-start: 10px;
+}
+
+.m-order-guest {
+  margin: 2px 0 0;
+  color: var(--m-muted);
+  font-size: 13px;
+}
+
+.m-totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-row-gap: 6px;
+  margin: 16px 0 0;
+}
+
+.m-totals dt {
+  color: var(--m-muted);
+}
+
+.m-totals dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Payer : demande d'addition avec le moyen choisi (I-7). */
+.m-pay-amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--m-soft);
+}
+
+.m-pay-amount strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-pay-pending {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--m-accent-soft);
+  color: var(--m-accent);
+  font-weight: 600;
+}
+
+/* Arabe : sens de lecture inversé pour les éléments positionnés en absolu. */
+[dir='rtl'] .m-close {
+  right: auto;
+  left: 10px;
+}
+
+[dir='rtl'] .m-plus {
+  right: auto;
+  left: 12px;
+}
+
+[dir='rtl'] .m-item.has-photo .m-plus {
+  right: auto;
+  left: 6px;
+}
+
+[dir='rtl'] .m-item {
+  padding-right: 14px;
+  padding-left: 56px;
+}
+
+[dir='rtl'] .m-item.has-photo {
+  padding-left: 12px;
+}
+
+[dir='rtl'] .m-head-side {
+  align-items: flex-start;
+}
+
+[dir='rtl'] .m-code-field input,
+[dir='rtl'] .m-price,
+[dir='rtl'] .m-pay-amount strong {
+  direction: ltr;
+  unicode-bidi: isolate;
+}

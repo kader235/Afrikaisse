@@ -23,6 +23,8 @@ export const RATE_RULES: RateRule[] = [
   { method: 'POST', url: '/api/auth/refresh', max: 120, windowSec: 600 },
   { method: 'POST', url: '/api/public/menu/:token/orders', max: 30, windowSec: 600, perParam: 'token' },
   { method: 'POST', url: '/api/public/menu/:token/requests', max: 30, windowSec: 600, perParam: 'token' },
+  // Code de table : s'ajoute au blocage par table ouverte (10 codes faux en 10 min, compté en base).
+  { method: 'POST', url: '/api/public/menu/:token/join', max: 30, windowSec: 600, perParam: 'token' },
   { method: 'POST', url: '/api/sync/pair', max: 20, windowSec: 600 },
   { method: 'POST', url: '/api/system/sync/pair', max: 20, windowSec: 600 },
 ];

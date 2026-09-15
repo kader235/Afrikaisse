@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CURRENCY_CODES } from './currency.ts';
+import { BILL_MODES } from './guests.ts';
 import { MONEY_MAX } from './money.ts';
 import { orderLineInputSchema, orderSchema } from './orders.ts';
 
@@ -178,6 +179,9 @@ export const checkSchema = z.object({
   paid: z.number(),
   remaining: z.number(),
   currency: z.enum(CURRENCY_CODES),
+  /** Table ouverte d'un établissement à code de table : code à donner aux clients (imprimé sur l'addition). */
+  joinCode: z.string().nullable(),
+  billMode: z.enum(BILL_MODES),
 });
 export type Check = z.infer<typeof checkSchema>;
 

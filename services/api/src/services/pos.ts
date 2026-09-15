@@ -29,6 +29,7 @@ import type { TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { enqueueKitchenTickets } from './printing.ts';
 import { consumeStock } from './stock.ts';
+import { upsertGuest } from './guests.ts';
 import {
   addHistory,
   assertLocation,
@@ -191,10 +192,11 @@ export async function listChecks(ctx: AppContext, scope: TenantScope, locationId
   const sessions = await db
     .selectFrom('table_sessions as s')
     .innerJoin('dining_tables as t', 't.id', 's.table_id')
-    .select(['s.id', 's.table_id', 't.label', 's.opened_at'])
+    .select(['s.id', 's.table_id', 't.label', 's.opened_at', 's.join_code'])
     .where('s.location_id', '=', locationId)
     .where('s.status', '=', 'OPEN')
     .execute();
+  const codes = location.table_code_required === 1;
   const sessionOrders = sessions.length
     ? await db.selectFrom('orders').selectAll().where('table_session_id', 'in', sessions.map((s) => s.id)).where('status', '!=', 'CANCELLED').orderBy('created_at').execute()
     : [];
@@ -219,11 +221,37 @@ export async function listChecks(ctx: AppContext, scope: TenantScope, locationId
 
   const checks: Check[] = sessions.map((s) => {
     const orders = sessionOrders.filter((o) => o.table_session_id === s.id).map((o) => hydrated.get(o.id)!);
-    return { kind: 'session', id: s.id, tableId: s.table_id, tableLabel: s.label, serviceType: 'DINE_IN', customerName: null, openedAt: s.opened_at, orders, currency: location.currency, ...sums(orders) };
+    return {
+      kind: 'session',
+      id: s.id,
+      tableId: s.table_id,
+      tableLabel: s.label,
+      serviceType: 'DINE_IN',
+      customerName: null,
+      openedAt: s.opened_at,
+      orders,
+      currency: location.currency,
+      ...sums(orders),
+      joinCode: codes ? s.join_code : null,
+      billMode: location.bill_mode,
+    };
   });
   for (const row of loose) {
     const order = hydrated.get(row.id)!;
-    checks.push({ kind: 'order', id: order.id, tableId: order.tableId, tableLabel: order.tableLabel, serviceType: order.serviceType, customerName: order.customerName, openedAt: order.createdAt, orders: [order], currency: order.currency, ...sums([order]) });
+    checks.push({
+      kind: 'order',
+      id: order.id,
+      tableId: order.tableId,
+      tableLabel: order.tableLabel,
+      serviceType: order.serviceType,
+      customerName: order.customerName,
+      openedAt: order.createdAt,
+      orders: [order],
+      currency: order.currency,
+      ...sums([order]),
+      joinCode: null,
+      billMode: location.bill_mode,
+    });
   }
   return checks.sort((a, b) => a.openedAt - b.openedAt);
 }
@@ -637,6 +665,9 @@ export async function transferTable(ctx: AppContext, scope: TenantScope, session
       // Regroupement : tout part sur la table déjà occupée, la table d'origine se libère.
       await trx.updateTable('orders').set({ table_session_id: target.id, table_id: tableId, updated_at: now, updated_hlc: hlc }).where('table_session_id', '=', sessionId).execute();
       await trx.updateTable('service_requests').set({ table_session_id: target.id, table_id: tableId, updated_hlc: hlc }).where('table_session_id', '=', sessionId).execute();
+      // Les clients de la table d'origine rejoignent la table d'accueil (sans redemander le code).
+      const guests = await trx.selectFrom('session_guests').select(['client_token', 'nickname']).where('table_session_id', '=', sessionId).orderBy('joined_at').execute();
+      for (const g of guests) await upsertGuest(trx, ctx, { id: target.id, tenant_id: session.tenant_id, location_id: session.location_id }, g.client_token, g.nickname, hlc);
       await closeSessionRow(trx, ctx, session, scope.userId);
     } else {
       await trx.updateTable('table_sessions').set({ table_id: tableId, updated_at: now, updated_hlc: hlc }).where('id', '=', sessionId).execute();

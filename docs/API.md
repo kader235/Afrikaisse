@@ -127,7 +127,7 @@ min/max, article ou option épuisé, quantité hors 1-99. Il servira à chaque c
 |---|---|---|
 | POST | `/api/public/menu/{jeton}/orders` | Commander : `clientToken` (identifiant aléatoire du téléphone), lignes `{productId, variantId, modifierIds, quantity, note}`, remarque. **Aucun prix n'est accepté** : tout est recalculé par `priceLine` depuis le menu du moment. La commande arrive `PENDING`. 409 avec le message du premier article invalide ; 429 au-delà de 5 commandes par minute d'un même téléphone dans l'établissement, ou de 10 commandes en attente sur la table ; **503** si l'établissement est exploité par un serveur local muet depuis 20 s (SYNC.md §6) |
 | GET | `/api/public/menu/{jeton}/orders?clientToken=` | Suivi : commandes de ce téléphone sur cette table (12 dernières heures) |
-| POST | `/api/public/menu/{jeton}/requests` | `CALL_WAITER`, `BILL`, `HELP` ; une demande déjà ouverte n'est pas dupliquée |
+| POST | `/api/public/menu/{jeton}/requests` | `CALL_WAITER`, `BILL`, `HELP` ; une demande déjà ouverte n'est pas dupliquée. Addition : `paymentMethod` `CASH/MOBILE_MONEY/CARD` et `scope` `TABLE/MINE` (voir « Menu client ») |
 
 ### Côté personnel
 
@@ -143,6 +143,51 @@ min/max, article ou option épuisé, quantité hors 1-99. Il servira à chaque c
 Cycle d'une commande : `PENDING → CONFIRMED → PREPARING → READY → SERVED → COMPLETED`, annulation
 possible jusqu'à `READY`. Le numéro repart à 1 à chaque **journée d'exploitation** (fuseau et heure
 de bascule de l'établissement) et reste unique même avec deux tablettes au même instant.
+
+## Menu client — table partagée, code de table, addition, PWA (§17, §23, §43, §45, §49)
+
+Réglages de l'établissement (`PATCH /api/locations/{id}`) : `tableCodeRequired` (booléen, faux par
+défaut) et `billMode` `SHARED` (une addition pour la table, défaut) ou `PER_CUSTOMER` (chaque client
+voit et demande sa part). `GET /api/public/menu/{jeton}` renvoie en plus `service`
+`{ tableCodeRequired, billMode }` et `popular` (identifiants de produits, voir plus bas).
+
+### Côté client (sans compte)
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/api/public/menu/{jeton}/session?clientToken=` | **Ma table** : `orderingAvailable` (faux si serveur local muet, I-1), `session` (null : table fermée), `joined`, `nickname`, `guests` (nom, rang, part), `orders` (commandes de la table avec `guestName` et `mine`), `table` et `mine` (`total/paid/remaining`), `bill` (addition demandée). Code exigé et téléphone hors de la table : ni clients ni commandes des autres. Table fermée : commandes de ce téléphone sur 12 h. `no-store` |
+| POST | `/api/public/menu/{jeton}/join` | Rejoindre la table ouverte : `clientToken`, `code` (4 chiffres, si exigé), `nickname` facultatif (24 caractères, nettoyé). Renvoie la vue « Ma table ». Sans code exigé et table fermée : rien n'est créé, le surnom partira avec la première commande |
+| GET | `/api/public/menu/{jeton}/manifest.webmanifest` | Manifeste de l'application installable : nom de l'établissement, `start_url` `/m/{jeton}`, `scope` `/m/`, icônes `/m/icon-192.png`, `/m/icon-512.png`, `/m/icon-maskable-512.png` ; `application/manifest+json`, cache 1 h |
+
+`POST /api/public/menu/{jeton}/orders` accepte en plus `tableCode` et `nickname`. Le téléphone qui
+commande devient client de la table (`session_guests`). Addition `BILL` : en `SHARED`, la portée est
+toujours `TABLE` ; en `PER_CUSTOMER`, `MINE` par défaut (une demande par téléphone), `TABLE` sur
+demande. Une demande déjà ouverte n'est pas dupliquée, seul le moyen de paiement est mis à jour.
+
+Refus (motif dans `error.details.reason`, traduit par le menu) :
+
+| HTTP | Motif | Cas |
+|---|---|---|
+| 409 | `TABLE_NOT_OPEN` | Code exigé et table pas encore ouverte par le personnel |
+| 403 | `TABLE_CODE_REQUIRED` | Code exigé, téléphone pas encore à la table, code absent |
+| 403 | `TABLE_CODE_INVALID` | Code faux (tracé `table.code_failed`) |
+| 429 | `TABLE_CODE_LOCKED` | 10 codes faux sur la table en 10 min : tout code est refusé jusqu'à la fin de la fenêtre |
+| 503 | `ORDERING_UNAVAILABLE` | Établissement hybride dont le serveur local est muet (SYNC.md §6) |
+
+**Populaires** : produits présents dans au moins 2 commandes `COMPLETED` des 30 derniers jours de
+l'établissement, classés par nombre de commandes puis quantité, 6 au plus, parmi les produits visibles
+et disponibles. Liste vide sous 5 ventes terminées ou sous 2 produits retenus : aucune donnée inventée.
+
+### Côté personnel
+
+| Méthode | Route | Permission | Rôle |
+|---|---|---|---|
+| POST | `/api/tables/{id}/open` | `orders.create` | Ouvrir la table sans commande (installer les clients). Renvoie `{ sessionId, tableId, joinCode }` (`joinCode` null si l'option est désactivée) ; table déjà ouverte : même session |
+| POST | `/api/table-sessions/{id}/code` | `orders.create` | Nouveau code ; les téléphones déjà à la table y restent |
+
+Réponses enrichies : `orders[].guestName` ; `checks[].joinCode` (si l'option est active) et
+`checks[].billMode` ; `requests[].paymentMethod`, `billScope`, `guestName` et `amount` (reste à payer
+de la table ou de la part du client).
 
 ## Routes de la phase 6 — caisse
 
@@ -269,6 +314,7 @@ d'échéance. Le serveur local ne contrôle aucune limite.
 
 Routes `POST` ouvertes sans connexion : 429 `TOO_MANY_ATTEMPTS` et en-tête `Retry-After` au-delà de
 la limite (valeurs dans SECURITY.md). `AFK_RATE_LIMIT=false` les désactive (tests).
+`POST /api/public/menu/{jeton}/join` suit la même règle que les commandes QR (30 par 10 min par table).
 
 ## Temps réel (phases 5-8)
 

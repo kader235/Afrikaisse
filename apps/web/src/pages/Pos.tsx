@@ -31,6 +31,7 @@ import {
 import { api } from '../api.ts';
 import { isNativeApp, mediaSrc } from '../platform.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
+import { GuestShares, guestShares } from './TableGuests.tsx';
 
 /**
  * Caisse, pensée pour la tablette au comptoir :
@@ -275,6 +276,8 @@ export function PosPage({ me }: { me: Me }) {
                   paid: order.paid,
                   remaining: order.total - order.paid,
                   currency: order.currency,
+                  joinCode: null,
+                  billMode: 'SHARED',
                 });
               }
             }}
@@ -885,7 +888,14 @@ function CheckoutTab({
         <aside className="check-detail" aria-label={checkTitle(selected)}>
           <div className="check-detail-head">
             <strong>{checkTitle(selected)}</strong>
-            <span className="muted">Ouverte à {hhmm(selected.openedAt)}</span>
+            <span className="muted">
+              Ouverte à {hhmm(selected.openedAt)}
+              {selected.joinCode && (
+                <span className="table-code-inline">
+                  Code de table <strong className="num">{selected.joinCode}</strong>
+                </span>
+              )}
+            </span>
           </div>
           <div className="check-detail-body">
             {selected.orders.length === 0 && <p className="muted">Aucune commande en cours sur cette table.</p>}
@@ -894,6 +904,7 @@ function CheckoutTab({
                 <div className="order-line-head">
                   <strong>
                     Commande n°{o.number} <small className="muted">{hhmm(o.createdAt)}</small>
+                    {o.guestName && <small className="guest-name"> · {o.guestName}</small>}
                   </strong>
                   <span className="muted">
                     {ORDER_STATUS_LABELS[o.status]} · {PAYMENT_STATUS_LABELS[o.paymentStatus]}
@@ -930,6 +941,7 @@ function CheckoutTab({
             ))}
           </div>
           <div className="check-detail-foot">
+            <GuestShares check={selected} />
             <div className="order-line-head">
               <span>Total</span>
               <span className="num">{formatMoney(selected.total, selected.currency)}</span>
@@ -1888,12 +1900,21 @@ export function BillTicket({ check, locationName }: { check: Check; locationName
         <div className="ticket-strong ticket-big">{locationName}</div>
         <div>ADDITION · {checkTitle(check)}</div>
         <div>{dateTime(Date.now())}</div>
+        {check.joinCode && <div className="ticket-code">Code de table : {check.joinCode}</div>}
       </div>
       <hr />
       {check.orders.map((o) => (
         <OrderLines key={o.id} order={o} />
       ))}
       <hr />
+      {check.billMode === 'PER_CUSTOMER' && guestShares(check).length > 1 && (
+        <>
+          {guestShares(check).map((s) => (
+            <Row key={s.name} left={`Part ${s.name}`} right={money(s.remaining)} />
+          ))}
+          <hr />
+        </>
+      )}
       <Row left="Total" right={money(check.total)} strong />
       {check.paid > 0 && <Row left="Déjà payé" right={money(check.paid)} />}
       <Row left="Reste à payer" right={money(check.remaining)} strong />

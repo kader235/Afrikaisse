@@ -139,6 +139,19 @@ Quantités en **millièmes entiers**. Le niveau n'est pas stocké : c'est `SUM(q
 | `printers` | Imprimante réseau (donnée maître, synchronisée) | name, host, port, width, station_id, prints_kitchen, prints_receipts, last_ok_at, last_error |
 | `print_jobs` | File d'impression, **propre au nœud** (jamais synchronisée) | printer_id, kind `KITCHEN/RECEIPT/TEST`, status, payload (ESC/POS en base64), attempts, next_attempt_at, last_error, order_id |
 
+## Tables livrées pour le menu client (migration `0014_client`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `locations` (colonnes ajoutées) | Réglages du menu client | `table_code_required` 0/1 (défaut 0), `bill_mode` `SHARED/PER_CUSTOMER` (défaut `SHARED`) |
+| `table_sessions` (colonne ajoutée) | Code de table (I-9) | `join_code` : 4 chiffres tirés à l'ouverture (générateur cryptographique), renouvelable ; null pour les tables ouvertes avant la migration (bouton « Générer ») |
+| `session_guests` | Téléphones d'une table ouverte (§23) | table_session_id, client_token, nickname (null : « Client n », rang d'arrivée), joined_at, updated_at, updated_hlc ; **unique (table_session_id, client_token)** ; synchronisée comme donnée maître (`session_guest`, UPSERT) |
+| `service_requests` (colonnes ajoutées) | Addition demandée par le client (I-7) | `payment_method` `CASH/MOBILE_MONEY/CARD`, `bill_scope` `TABLE/MINE` |
+
+Index ajouté : `orders (location_id, created_at)` pour les recommandations « Populaires ».
+Les échecs de code sont comptés dans `audit_logs` (`table.code_failed`, par session), jamais en mémoire.
+Au regroupement de deux tables, les clients de la table d'origine rejoignent la table d'accueil.
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.

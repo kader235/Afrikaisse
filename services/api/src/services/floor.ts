@@ -47,6 +47,8 @@ const toLocation = (r: LocationRow): LocationDetails => ({
   phone: r.phone,
   businessDayCutoffMin: r.business_day_cutoff_min,
   operatingMode: r.operating_mode,
+  tableCodeRequired: r.table_code_required === 1,
+  billMode: r.bill_mode,
   status: r.status,
   createdAt: r.created_at,
 });
@@ -162,6 +164,8 @@ export async function createLocation(ctx: AppContext, scope: TenantScope, input:
         phone: blankToNull(input.phone) ?? null,
         business_day_cutoff_min: input.businessDayCutoffMin,
         operating_mode: input.operatingMode,
+        table_code_required: input.tableCodeRequired ? 1 : 0,
+        bill_mode: input.billMode,
         status: 'ACTIVE',
         created_at: now,
         updated_at: now,
@@ -201,6 +205,8 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
     ...(phone !== undefined && { phone }),
     ...(input.businessDayCutoffMin !== undefined && { business_day_cutoff_min: input.businessDayCutoffMin }),
     ...(input.operatingMode !== undefined && { operating_mode: input.operatingMode }),
+    ...(input.tableCodeRequired !== undefined && { table_code_required: input.tableCodeRequired ? (1 as const) : (0 as const) }),
+    ...(input.billMode !== undefined && { bill_mode: input.billMode }),
   };
   const modeChanged = input.operatingMode !== undefined && input.operatingMode !== before.operating_mode;
 

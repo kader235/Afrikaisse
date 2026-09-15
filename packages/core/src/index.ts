@@ -20,3 +20,5 @@ export * from './printing.ts';
 export * from './sync.ts';
 export * from './plans.ts';
 export * from './catalogue.ts';
+export * from './guests.ts';
+export * from './client.ts';

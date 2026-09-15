@@ -31,6 +31,9 @@ const CSP = [
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "connect-src 'self'",
+  // Menu client installable (§49) : manifeste et service worker servis par le serveur lui-même.
+  "manifest-src 'self'",
+  "worker-src 'self'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

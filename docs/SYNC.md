@@ -152,7 +152,7 @@ dernier push et pull réussis, écart d'horloge avec le Cloud. Ces valeurs alime
 
 | Événement | Règle |
 |---|---|
-| Maîtres (tenant, location, user, membership, zone, dining_table, qr_code, carte, station, printer, inventory_item, recipe_item, table_session, service_request, cash_session) | Insertion, ou mise à jour si `updated_hlc` reçu > local ; `DELETE` supprime |
+| Maîtres (tenant, location, user, membership, zone, dining_table, qr_code, carte, station, printer, inventory_item, recipe_item, table_session, session_guest, service_request, cash_session) | Insertion, ou mise à jour si `updated_hlc` reçu > local ; `DELETE` supprime |
 | `cash_movement`, `inventory_movement`, `media` (octets en `{ $bytes }`) | Insérés si absents, jamais réécrits |
 | `order` | La charge porte les lignes brutes (`rows.order/items/modifiers/history`) : commande par HLC, lignes rejouées, options et historique ajoutés si absents |
 | `payment` | `PAYMENT_RECORDED` : paiement et parts ajoutés si absents ; `PAYMENT_VOIDED` : ligne remplacée |

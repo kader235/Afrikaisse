@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { CURRENCY_CODES, LOCATION_TYPES, OPERATING_MODES, type LocalServerDevice, type LocationDetails, type Me, type PairingCode } from '@afrikaisse/core';
+import { BILL_MODES, BILL_MODE_LABELS, CURRENCY_CODES, LOCATION_TYPES, OPERATING_MODES, type LocalServerDevice, type LocationDetails, type Me, type PairingCode } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { COUNTRIES, CUTOFF_OPTIONS, LOCATION_TYPE_LABELS, OPERATING_MODE_LABELS, TIMEZONES, formatMinutes } from '../labels.ts';
@@ -245,6 +245,8 @@ function LocationDialog({ location, onSaved, onClose }: { location?: LocationDet
     phone: location?.phone ?? '',
     businessDayCutoffMin: location?.businessDayCutoffMin ?? 300,
     operatingMode: location?.operatingMode ?? 'CLOUD',
+    billMode: location?.billMode ?? 'SHARED',
+    tableCodeRequired: location?.tableCodeRequired ?? false,
   });
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -361,6 +363,18 @@ function LocationDialog({ location, onSaved, onClose }: { location?: LocationDet
                   </option>
                 ))}
               </select>
+              <label htmlFor="l-bill">{t('loc.billMode')}</label>
+              <select id="l-bill" value={form.billMode} onChange={set('billMode')}>
+                {BILL_MODES.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {BILL_MODE_LABELS[mode]}
+                  </option>
+                ))}
+              </select>
+              <label htmlFor="l-code">{t('loc.tableCode')}</label>
+              <label className="check">
+                <input id="l-code" type="checkbox" checked={form.tableCodeRequired} onChange={(e) => setForm((f) => ({ ...f, tableCodeRequired: e.target.checked }))} /> {t('loc.tableCodeHint')}
+              </label>
             </div>
           </fieldset>
         </div>
