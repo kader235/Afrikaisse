@@ -24,7 +24,7 @@
   - **Restaurant** : Cuisine, Menu ;
   - **Gestion** : Stock, Établissements ;
   - **Administration** : Personnel, Paramètres (organisation, abonnement, synchronisation,
-    sauvegardes), Journal.
+    sauvegardes), Journal, Supervision.
 - Sur tablette, la colonne se resserre : l'icône au-dessus du nom de la rubrique.
 - Sur téléphone, une barre en bas donne les écrans de votre métier et **Plus** ouvre toutes les
   rubriques :
@@ -405,6 +405,32 @@ emporterait aussi les copies. Pour revenir à une copie :
 1. quitter AfriKaisse ;
 2. remplacer `afrikaisse.sqlite` par la copie choisie ;
 3. relancer.
+
+**Mettre à jour AfriKaisse** : **Administration → Supervision**, cadre **Mise à jour**, affiche
+« Version actuelle » et, s'il y en a une, « Nouvelle version », avec ses notes et **Télécharger**.
+AfriKaisse n'installe jamais rien seul. Après le service :
+1. clôturer la caisse ; attendre « 0 en attente » en synchronisation ;
+2. télécharger, puis lancer l'installateur : il arrête AfriKaisse et copie la base dans
+   `sauvegardes\avant-mise-a-jour` avant de remplacer le logiciel ;
+3. rouvrir AfriKaisse : la Supervision affiche la nouvelle version.
+
+## La supervision
+
+**Administration → Supervision** (propriétaire, administrateur, gérant), actualisée toutes les 15 secondes :
+
+- en haut : **État du système**, **Dernière sauvegarde**, **Dernière synchronisation** ;
+- un cadre rouge liste ce qui est **en défaut** ;
+- le tableau : Cloud, base de données, API, serveur local, synchronisation, imprimantes, écrans
+  cuisine, sauvegarde, chacun avec son état et son dernier contact.
+
+| Pastille | État |
+|---|---|
+| Verte | Normal |
+| Jaune | À surveiller (retard, travaux d'impression en attente, conflits) |
+| Rouge | En défaut |
+| Grise | Non utilisé ici |
+
+Un écran **Cuisine** ouvert se signale seul ; fermé depuis plus de 10 minutes, il passe en défaut.
 
 ## L'abonnement
 

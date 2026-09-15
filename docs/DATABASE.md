@@ -30,7 +30,7 @@ Règles :
 |---|---|---|
 | Données maîtres | tenants, locations, users, memberships, zones, tables, menu, produits, modificateurs, stations, taxes, promotions, recettes, réglages | Oui, dernier écrivain gagnant par HLC, audité |
 | Transactions | table_sessions, orders, order_items, order_status_history, kitchen_tickets, payments, cash_sessions, inventory_movements | Oui, **ajout seulement**, l'état se déduit des événements |
-| Propres au nœud | auth_sessions, refresh_tokens, node_state, print_jobs locaux | **Non** |
+| Propres au nœud | auth_sessions, refresh_tokens, node_state, print_jobs locaux, error_logs, screen_heartbeats, app_releases, colonnes de supervision de `devices` | **Non** |
 | Journal | sync_events, audit_logs | sync_events : c'est le transport ; audit_logs : remonté au Cloud (phase 12) |
 
 ## Tables livrées en phase 1 (migration `0001_foundation`)
@@ -139,6 +139,20 @@ Quantités en **millièmes entiers**. Le niveau n'est pas stocké : c'est `SUM(q
 | `printers` | Imprimante réseau (donnée maître, synchronisée) | name, host, port, width, station_id, prints_kitchen, prints_receipts, last_ok_at, last_error |
 | `print_jobs` | File d'impression, **propre au nœud** (jamais synchronisée) | printer_id, kind `KITCHEN/RECEIPT/TEST`, status, payload (ESC/POS en base64), attempts, next_attempt_at, last_error, order_id |
 
+## Tables livrées pour §67-§73 (migration `0013_platform`)
+
+| Table | Rôle | Colonnes clés |
+|---|---|---|
+| `devices` (colonnes ajoutées) | Ce que le Cloud sait d'un serveur local relié | app_version, last_push_at, last_pull_at, reported_pending, reported_failed, reported_conflicts, reported_at |
+| `error_logs` | Erreurs 500 du nœud, lues par le back-office ; bornée à 2 000 lignes et 30 jours | request_id, method, route (motif), status, code, message nettoyé, tenant_id (sans clé étrangère), node_id |
+| `screen_heartbeats` | Signe de vie des écrans cuisine | id (tiré par l'écran), tenant_id, location_id, kind `KDS`, station_id, name, user_id, last_seen_at ; lignes de plus de 30 jours supprimées |
+| `app_releases` | Annonces de version signées (Cloud) | channel, version (unique par canal), released_at, notes, download_url, sha256, signature |
+
+**Rien n'est synchronisé** : ce sont des états du nœud qui les écrit. Le Cloud apprend l'état d'un
+serveur local par les en-têtes de ses appels (`x-afk-version`, `x-afk-pending`, `x-afk-failed`,
+`x-afk-conflicts`), pas par le flux d'événements. Écrit sans identité ni colonne générée (PostgreSQL
+9.6 d'o2switch) ; SQLite ajoute une colonne par instruction, d'où sept `ALTER TABLE`.
+
 ## Schéma cible (toutes phases)
 
 Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` sauf mention contraire.
@@ -209,8 +223,7 @@ Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` 
 - Démonstration : `tenants.is_demo = 1` et `plan_expires_at` null ; aucune table dédiée, tout le
   contenu passe par les services (commandes, paiements, caisses datés dans le passé).
 
-### Supervision — à venir
-- `sync_events` (déjà là), `sync_cursors` (device_id, stream, last_seq), `sync_conflicts` (event_id, entity, local, remote, resolution)
-- `notifications` (location_id, audience, kind, payload, read_at)
-- `backups` (device_id, kind, path, size, created_at, verified_at)
-- `audit_logs` (déjà là)
+### Supervision
+- En place (`0013_platform`) : `error_logs`, `screen_heartbeats`, `app_releases`, colonnes de supervision de `devices`.
+- Les sauvegardes du serveur local sont lues sur disque (`listBackups`), pas en base.
+- À venir : `sync_cursors` (device_id, stream, last_seq), `sync_conflicts` (event_id, entity, local, remote, resolution), `notifications` (location_id, audience, kind, payload, read_at)

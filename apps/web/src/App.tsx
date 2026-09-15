@@ -5,7 +5,9 @@ import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
 import { useI18n } from './i18n.tsx';
 import { ROLE_LABELS } from './labels.ts';
 import { AccessScreen, LoginPage, RegisterPage } from './pages/Auth.tsx';
-import { AccountPage, AuditPage, OrganizationPage, PlatformPage } from './pages/Other.tsx';
+import { AccountPage, AuditPage, OrganizationPage } from './pages/Other.tsx';
+import { PlatformPage } from './pages/Platform.tsx';
+import { MonitoringPage } from './pages/Monitoring.tsx';
 import { TeamPage } from './pages/Team.tsx';
 import { FloorPage } from './pages/Floor.tsx';
 import { LocationsPage } from './pages/Locations.tsx';
@@ -30,7 +32,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'dashboard' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform';
+type Section = 'dashboard' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform' | 'monitoring';
 
 export function App() {
   usePreferences();
@@ -197,6 +199,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'admin' },
     { id: 'organization', label: t('nav.organization'), icon: 'gear', visible: can('tenant.read'), group: 'admin' },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
+    { id: 'monitoring', label: 'Supervision', icon: 'server', visible: can('devices.manage'), group: 'admin' },
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin, group: 'admin' },
   ];
   const visible = sections.filter((s) => s.visible);
@@ -341,6 +344,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         {current === 'audit' && <AuditPage />}
         {current === 'account' && <AccountPage me={me} />}
         {current === 'platform' && <PlatformPage />}
+        {current === 'monitoring' && <MonitoringPage me={me} />}
       </main>
 
       <nav className="bottombar" aria-label="Accès rapide">

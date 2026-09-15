@@ -1,0 +1,34 @@
+/* Supervision (§68-69) et mise à jour (§73). Styles propres à la page : les composants globaux ne sont pas redéfinis. */
+
+.monitoring-summary {
+  margin-bottom: 16px;
+}
+
+.monitoring-summary .kpi-value .st {
+  font-size: inherit;
+}
+
+.monitoring-detail {
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.monitoring-location {
+  min-width: 180px;
+}
+
+.update-line {
+  margin: 4px 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-notes {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+}
+
+.update-sha {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}

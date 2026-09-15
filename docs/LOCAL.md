@@ -123,12 +123,43 @@ Prévu ensuite :
   virus ou un disque mort emporte aussi ce qui est sur le même disque.
 - Restauration guidée depuis la console, avec contrôle d'intégrité (`PRAGMA integrity_check`) avant
   remplacement.
-- La console affiche en permanence : dernière sauvegarde, dernière synchronisation, état du système.
+
+**En place (§68-69)** : **Administration → Supervision** (propriétaire, administrateur, responsable)
+affiche l'état du système, la dernière sauvegarde et la dernière synchronisation, puis le détail :
+Cloud, base, API, serveur local, synchronisation, imprimantes, écrans cuisine, sauvegarde.
+
+## Supervision (§68)
+
+`GET /api/locations/{id}/monitoring`, rafraîchi toutes les 15 s par l'écran. Chaque état vient d'une
+donnée réelle du nœud interrogé :
+
+| Contrôle | Serveur local | Cloud |
+|---|---|---|
+| Cloud | Dernier envoi ou réception réussi, dernière erreur | Normal (c'est lui) |
+| Base de données | `select 1` chronométré (au-delà de 300 ms : à surveiller) | idem |
+| API | Version, construction, durée de fonctionnement | idem |
+| Serveur local | Ce serveur | Dernier appel du serveur relié (1 min normal, 10 min à surveiller, au-delà en défaut) |
+| Synchronisation | Événements en attente, en échec, en conflit | Compteurs annoncés par le serveur local à chaque appel |
+| Imprimantes | Dernier succès, dernier échec, travaux en attente depuis plus d'une minute | idem (la file d'impression est sur le serveur local) |
+| Écrans cuisine | Signe de vie envoyé toutes les 30 s par l'écran Cuisine ouvert | Écrans qui appellent le Cloud |
+| Sauvegarde | Âge de la dernière copie (2 h normal, 26 h à surveiller) | Non utilisé (hébergeur) |
+
+## Journaux (§74)
+
+Un fichier par catégorie dans `C:\ProgramData\AfriKaisse\journaux` (`AFK_LOG_DIR`) :
+`application.log`, `security.log`, `sync.log`, `printer.log`, `database.log`, `system.log`. Rotation à
+2 Mo ou au changement de jour (`sync.1.log` … `sync.7.log`), archives supprimées après 30 jours. Écrit
+par le serveur lui-même (pas de module natif, pas de service à part). `serveur.log` garde la sortie
+brute du processus (erreurs de démarrage). Niveau : `warn` par défaut dans le lanceur.
 
 ## Mises à jour (§73)
 
-- Le serveur local interroge le Cloud : version disponible, empreinte SHA-256, signature Ed25519.
-- Téléchargement, vérification de la signature, **sauvegarde avant migration**, arrêt du service,
-  remplacement, migrations, redémarrage, contrôle `/api/health`. En cas d'échec : retour à la
-  version précédente **et** à la sauvegarde.
-- Jamais pendant une session de caisse ouverte.
+- Le serveur local interroge le Cloud (`GET /api/public/releases/latest`) une minute après le démarrage,
+  puis toutes les 6 h, et sur **Supervision → Rechercher une mise à jour**.
+- Il vérifie la **signature Ed25519** avec la clé embarquée, compare les versions (semver) et affiche
+  « Version actuelle : x.y.z — Nouvelle version : x.y.z », les notes, l'empreinte SHA-256 et le lien.
+- Il **n'installe rien et ne touche jamais aux données** : l'installateur reste un geste humain,
+  hors service (caisse clôturée).
+- L'installateur arrête AfriKaisse, copie la base dans `sauvegardes\avant-mise-a-jour\`, puis remplace
+  le programme ; au démarrage, le serveur refait une copie avant ses migrations. Procédure et retour
+  arrière : DEPLOYMENT.md §4.2.

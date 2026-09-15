@@ -3,7 +3,9 @@ import { connect } from 'node:net';
 import { createDatabase, databaseConfigFromUrl, migrateToLatest, type AppDatabase } from '@afrikaisse/database';
 import { buildApp } from './app.ts';
 import { backupNow, scheduleBackups } from './lib/backup.ts';
+import { loggerOptions } from './lib/logger.ts';
 import { startPrintWorker } from './services/printing.ts';
+import { startUpdateChecks } from './services/releases.ts';
 import { startSyncLoop } from './services/sync/client.ts';
 import { loadConfig } from './config.ts';
 
@@ -13,10 +15,13 @@ async function main() {
   const database = await createDatabase(await databaseConfigFromUrl(config.databaseUrl));
   const backups = config.profile === 'local' && config.backupDir && database.kind === 'sqlite' ? config.backupDir : null;
   // Copie avant toute migration : une mise à jour ratée se rattrape avec la base d'avant.
+  // Le logger n'existe pas encore : la sortie d'erreur va dans journaux/serveur.log (lanceur Windows).
   if (backups) await backupNow(database, backups, 'demarrage').catch((err) => console.error('Sauvegarde de démarrage impossible :', err));
-  if (config.autoMigrate) await migrateToLatest(database);
+  const applied = config.autoMigrate ? await migrateToLatest(database) : [];
 
-  const { app, ctx } = await buildApp({ database, config, logger: { level: config.logLevel } });
+  const { app, ctx } = await buildApp({ database, config, logger: loggerOptions(config) });
+  ctx.log.system.info({ profile: config.profile, version: ctx.version, build: ctx.build, nodeId: ctx.nodeId }, 'Démarrage');
+  if (applied.length) ctx.log.database.info({ applied }, 'Migrations appliquées');
   if (config.profile === 'cloud') {
     // Sous Passenger (o2switch), l'application doit écouter la socket « passenger ». Fastify appelé
     // avec { path: 'passenger' } échoue (EADDRINUSE, fastify#5407) : on prépare Fastify, puis on
@@ -32,13 +37,16 @@ async function main() {
     // Le lanceur Windows attend ce fichier pour ouvrir le navigateur sur le bon port ; l'identifiant
     // du nœud lui permet de vérifier qu'il parle bien à CE serveur et pas à un autre logiciel.
     if (config.portFile) writeFileSync(config.portFile, JSON.stringify({ port, nodeId: ctx.nodeId }));
-    if (backups) scheduleBackups(database, backups, (err) => app.log.error({ err }, 'Sauvegarde horaire impossible'));
+    if (backups) scheduleBackups(database, backups, (err) => ctx.log.database.error({ err }, 'Sauvegarde horaire impossible'));
     // Seul le serveur du restaurant voit les imprimantes du réseau local.
-    startPrintWorker(ctx, (err) => app.log.error({ err }, "File d'impression"));
-    startSyncLoop(ctx, (err) => app.log.warn({ err }, 'Synchronisation avec le Cloud'));
+    startPrintWorker(ctx, (err) => ctx.log.printer.error({ err }, "File d'impression"));
+    startSyncLoop(ctx, (err) => ctx.log.sync.warn({ err }, 'Synchronisation avec le Cloud'));
+    // Annonce seulement : aucune installation automatique (§73).
+    startUpdateChecks(ctx);
   }
 
   const shutdown = async () => {
+    ctx.log.system.info('Arrêt demandé');
     await app.close();
     await database.close();
     process.exit(0);
@@ -56,6 +64,7 @@ async function main() {
  * appairés le retrouvent.
  */
 async function listenLocal(app: Awaited<ReturnType<typeof buildApp>>['app'], database: AppDatabase, host: string, preferred: number): Promise<number> {
+  const log = app.log.child({ category: 'system' });
   const remembered = await database.db.selectFrom('node_state').select('value').where('key', '=', 'listen_port').executeTakeFirst();
   // Jamais de port de la liste « unsafe » des navigateurs (6000, 6665-6669, 10080…) :
   // le serveur démarrerait, mais aucune tablette ne pourrait l'appeler.
@@ -65,7 +74,7 @@ async function listenLocal(app: Awaited<ReturnType<typeof buildApp>>['app'], dat
     // Windows laisse deux programmes écouter le même port sur 0.0.0.0 et 127.0.0.1 : listen()
     // réussit, mais le PC lui-même parlerait à l'autre programme. Un port qui répond déjà est sauté.
     if (candidate !== 0 && (await answers(candidate))) {
-      app.log.warn(`Port ${candidate} déjà utilisé par un autre programme.`);
+      log.warn(`Port ${candidate} déjà utilisé par un autre programme.`);
       continue;
     }
     try {
@@ -77,7 +86,7 @@ async function listenLocal(app: Awaited<ReturnType<typeof buildApp>>['app'], dat
         .values({ key: 'listen_port', value: String(port) })
         .onConflict((oc) => oc.column('key').doUpdateSet({ value: String(port) }))
         .execute();
-      if (port !== preferred) app.log.warn(`Port ${preferred} indisponible : serveur local sur le port ${port}.`);
+      if (port !== preferred) log.warn(`Port ${preferred} indisponible : serveur local sur le port ${port}.`);
       return port;
     } catch (err) {
       const code = (err as { code?: string }).code;

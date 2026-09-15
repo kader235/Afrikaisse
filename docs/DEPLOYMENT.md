@@ -24,6 +24,11 @@ Variables (fichier `services/api/.env`, jamais commité) :
 | `AFK_TRUST_PROXY` | `true` en cloud | IP réelle derrière LiteSpeed |
 | `AFK_AUTO_MIGRATE` | `true` | Migrations au démarrage |
 | `AFK_LOG_LEVEL` | `info` | Niveau des journaux |
+| `AFK_LOG_DIR` | vide (sortie standard) | Serveur local : un fichier par catégorie (`application`, `security`, `sync`, `printer`, `database`, `system`), rotation 2 Mo ou changement de jour, 7 archives, 30 jours au plus. Le lanceur Windows le fixe à `C:\ProgramData\AfriKaisse\journaux`. Ignoré dans le Cloud |
+| `AFK_RELEASE_PUBLIC_KEY` | clé embarquée à la construction | Clé publique Ed25519 (SPKI DER en base64) qui vérifie les annonces de version. **À définir au moment de `npm run build:api`** pour l'embarquer dans `server.cjs` |
+| `AFK_RELEASE_PRIVATE_KEY` | — | Clé privée (PKCS#8 DER en base64). Lue **uniquement** par `cli release-sign` / `release-publish`, jamais par le serveur web. Ne jamais la committer ni la laisser dans un `.env` de production |
+| `AFK_UPDATE_URL` | Cloud relié, sinon `DEFAULT_CLOUD_URL` | Serveur local : adresse interrogée pour les mises à jour |
+| `AFK_UPDATE_CHANNEL` | `stable` | `stable` ou `beta` |
 
 ## 1. o2switch — d'abord la sonde (une fois)
 
@@ -87,6 +92,62 @@ une base de test : `gunzip -c fichier.sql.gz | psql "<adresse de la base de test
 ## 4. Serveur local Windows
 
 Voir LOCAL.md. Installateur Inno Setup en phases 11 et 16.
+
+### 4.1 Publier une nouvelle version du serveur local (§73)
+
+Une seule fois : créer la paire de clés et ranger la clé privée hors du dépôt (coffre de mots de passe).
+
+```bash
+node services/api/dist/cli.cjs release-keygen
+```
+
+À chaque version :
+
+1. **Construire avec la clé publique** : `AFK_RELEASE_PUBLIC_KEY=<clé publique> node infrastructure/windows/build.mjs`
+   (la même variable pour `node infrastructure/o2switch/build.mjs`, afin que `cli release-publish` du
+   Cloud vérifie les annonces). Sans elle, les serveurs locaux affichent « Vérification impossible ».
+2. Déposer `AfriKaisse-Setup-<version>.exe` à une adresse **https** (hébergement o2switch, dossier
+   `telechargements/`).
+3. Écrire le manifeste, sur le poste de build :
+
+   ```json
+   { "channel": "stable", "version": "0.2.0", "notes": "Corrections de l'impression.", "downloadUrl": "https://afrikaisse.dametta.com/telechargements/AfriKaisse-Setup-0.2.0.exe", "installer": "../sortie/AfriKaisse-Setup-0.2.0.exe" }
+   ```
+
+4. **Signer sur le poste de build**, la clé privée seulement dans la session du terminal :
+   `AFK_RELEASE_PRIVATE_KEY=<clé privée> node services/api/dist/cli.cjs release-sign manifeste.json`
+   → `manifeste.signe.json` (empreinte SHA-256 calculée depuis l'installateur, signature vérifiée).
+5. **Publier dans le Cloud** (SSH o2switch, sans clé privée) : `node cli.cjs release-publish manifeste.signe.json`.
+   La signature est vérifiée avec la clé publique embarquée ; une annonce que les serveurs locaux
+   refuseraient n'est pas publiée. Une version déjà publiée sur un canal est refusée.
+
+`GET /api/public/releases/latest?channel=stable` sert la plus haute version (ordre semver). Les serveurs
+locaux la vérifient toutes les 6 h et sur **Supervision → Rechercher une mise à jour**. Ils affichent le
+lien ; **rien ne s'installe seul**.
+
+### 4.2 Procédure de mise à jour sûre, chez le client
+
+1. Fin de service : **clôturer la caisse** et laisser partir la synchronisation (Supervision :
+   « 0 en attente »).
+2. **Supervision → Mise à jour** : noter l'empreinte SHA-256, télécharger. Vérifier l'empreinte :
+   `certutil -hashfile AfriKaisse-Setup-<version>.exe SHA256`. Différente : ne pas installer.
+3. Lancer l'installateur. Il **arrête AfriKaisse**, puis **copie la base** (et son journal WAL) dans
+   `C:\ProgramData\AfriKaisse\sauvegardes\avant-mise-a-jour\` avant de remplacer le programme. Si la
+   copie échoue, l'installation s'annule sans rien modifier.
+4. Au redémarrage, le serveur refait une copie vérifiée **avant ses migrations**
+   (`afrikaisse-…-demarrage.sqlite`), puis migre.
+5. Contrôle : Supervision au vert, nouvelle version affichée.
+
+**Revenir en arrière** : réinstaller la version précédente, quitter AfriKaisse, remplacer
+`afrikaisse.sqlite` (et `afrikaisse.sqlite-wal` s'il existe dans la copie) par ceux de
+`sauvegardes\avant-mise-a-jour\`, supprimer un éventuel `afrikaisse.sqlite-wal` restant à côté de la
+base, relancer. Les données saisies depuis la mise à jour sont perdues sur ce PC ; celles déjà
+synchronisées sont dans le Cloud.
+
+Pourquoi une copie dans l'installateur alors que le serveur en fait une au démarrage : la copie de
+démarrage sort de la rotation horaire au bout d'un jour. Pour revenir à l'ancienne version plusieurs
+jours après, il faut la base d'avant la mise à jour ; l'installateur en garde une, hors rotation,
+remplacée à chaque mise à jour.
 
 ## 5. Application tablette Android
 

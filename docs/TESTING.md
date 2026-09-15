@@ -286,6 +286,17 @@ PGlite est un PostgreSQL compilé en WebAssembly dans le processus de test : sur
 d'o2switch les temps seront différents. L'essai sert de garde-fou contre les régressions (seuils :
 300 ms par vente, 1,5 s par lecture).
 
+## §67-§74 — back-office, supervision, journaux, mises à jour (209 tests au total)
+
+| Fichier | Ce qui est prouvé |
+|---|---|
+| `platform.test.ts` | Restaurants (établissements, offre, dernière activité, recherche où `%` n'est pas un joker) ; comptes de toutes les organisations ; serveur local annonçant version et compteurs au push et au pull (mauvais secret : rien d'enregistré) ; erreur 500 journalisée avec l'identifiant de requête renvoyé au client, motif de route, organisation, sans e-mail, jeton ni numéro ; statistiques 7 et 30 jours par devise, démos exclues ; suspension : sessions révoquées, connexion refusée, événement `user` pour les serveurs locaux, audit, réactivation, refus sur soi-même et sur un autre compte back-office ; **propriétaire et responsable : 404 sur les 13 routes, même identifiant mal formé ; anonyme : 401** ; routes absentes du serveur local |
+| `monitoring.test.ts` | Règles d'état ; rotation des journaux par taille et par jour, archives bornées ; chaque catégorie pino dans son fichier ; nettoyage des messages et table d'erreurs bornée ; Cloud : imprimante normale → à surveiller (travail en attente) → en défaut (échec plus récent que le succès), écran cuisine normal → à surveiller → en défaut, serveur local relié puis muet ; droits (responsable oui ; serveur, caissier, cuisine non ; autre organisation 404, écran usurpé 404) ; serveur local : sauvegarde absente puis faite, liaison au Cloud normale, en erreur, puis en défaut |
+| `releases.test.ts` | Ordre semver (pré-versions, `0.10.0` > `0.9.0`) ; signature Ed25519 invalidée par chaque champ modifié, une autre clé ou une signature tronquée ; lien https et empreinte obligatoires ; Cloud : plus haute version servie sans connexion, doublon refusé ; serveur local : nouvelle version détectée, annonce falsifiée en chemin refusée (la dernière vérifiée reste), Cloud injoignable, version déjà à jour, sans clé embarquée ; réservé à `settings.manage` ; 409 dans le Cloud |
+
+Le `[Code]` de `AfriKaisse.iss` (copie de la base avant mise à jour) a été compilé à part avec
+ISCC 6 (`/O-`) ; l'installateur complet n'a pas été reconstruit.
+
 ## Vérification de l'application tablette (phase 2 bis)
 
 Banc : APK de débogage sur l'AVD `WifiHub_83` (**Android 11, WebView Chrome 83.0.4103.106**, le cas

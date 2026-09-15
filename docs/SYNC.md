@@ -180,6 +180,14 @@ Limites connues, à reprendre :
 - il n'y a pas encore d'écran de revue des conflits (compteur « à revoir » dans Organisation) ;
 - la révocation d'un appareil se fait depuis la base.
 
+**Supervision (§67-68)** : à chaque push et pull, le serveur local envoie sa version et ses compteurs
+(`x-afk-version`, `x-afk-pending`, `x-afk-failed`, `x-afk-conflicts`). Le Cloud les garde dans
+`devices` avec les heures du dernier envoi et de la dernière réception ; le back-office et la
+supervision de l'établissement les affichent. Ces valeurs, le journal d'erreurs, les signes de vie des
+écrans cuisine et les annonces de version **ne passent pas par le flux d'événements** : chacun reste sur
+le nœud qui l'écrit. Une suspension de compte depuis le back-office, elle, est un `UPSERT` de `user`
+envoyé à chaque organisation du compte.
+
 ## 10. Tests exigés (phase 12)
 
 - renvoi d'un lot déjà appliqué → aucun doublon ;

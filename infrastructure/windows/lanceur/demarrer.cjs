@@ -125,6 +125,8 @@ async function main() {
       AFK_WEB_DIR: path.join(APP, 'app', 'web'),
       AFK_PORT_FILE: PORT_FILE,
       AFK_BACKUP_DIR: path.join(DATA, 'sauvegardes'),
+      // Un journal par catégorie (application, security, sync, printer, database, system), à rotation.
+      AFK_LOG_DIR: LOGS,
       AFK_LOG_LEVEL: process.env.AFK_LOG_LEVEL || 'warn',
       NODE_NO_WARNINGS: '1',
     },
