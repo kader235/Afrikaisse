@@ -44,6 +44,7 @@ import { useDishPhoto } from '../dishPhotos.ts';
 import { isNativeApp, mediaSrc } from '../platform.ts';
 import { isTablet } from '../touch.ts';
 import { Dialog, ErrorMessage, Icon, MoneyInput, OkMessage, Window } from '../ui.tsx';
+import { zoneVars } from '../zoneColors.ts';
 import '../styles/pricing.css';
 import { GuestShares, guestShares } from './TableGuests.tsx';
 
@@ -863,12 +864,15 @@ function TablePicker({ floor, checks, currency, value, onPick, onClose }: { floo
           if (tables.length === 0) return null;
           return (
             <section key={z.id} className="pick-zone">
-              <h3>{z.name}</h3>
+              <h3>
+                <i className="zone-dot" style={zoneVars(z)} aria-hidden="true" />
+                {z.name}
+              </h3>
               <div className="pick-grid">
                 {tables.map((t) => {
                   const check = open.get(t.id);
                   return (
-                    <button type="button" key={t.id} className="pick-table" aria-pressed={value === t.id} onClick={() => onPick(t.id)}>
+                    <button type="button" key={t.id} className="pick-table zone-stripe" style={zoneVars(z)} aria-pressed={value === t.id} onClick={() => onPick(t.id)}>
                       <strong>{t.label}</strong>
                       <span className={check ? 'st st-progress' : 'st st-ready'}>{check ? 'Occupée' : 'Libre'}</span>
                       <small className="muted">{check ? formatMoney(check.remaining, currency) : `${t.capacity} places`}</small>

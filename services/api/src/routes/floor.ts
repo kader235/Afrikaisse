@@ -3,11 +3,13 @@ import { z } from 'zod';
 import {
   createLocationSchema,
   createTableSchema,
+  createTablesRangeSchema,
   createZoneSchema,
   diningTableSchema,
   floorSchema,
   layoutSchema,
   locationDetailsSchema,
+  tablesRangeResultSchema,
   updateLocationSchema,
   updateTableSchema,
   updateZoneSchema,
@@ -20,6 +22,7 @@ import {
   archiveZone,
   createLocation,
   createTable,
+  createTablesRange,
   createZone,
   getFloor,
   listLocations,
@@ -120,6 +123,25 @@ export function floorRoutes(ctx: AppContext): FastifyPluginAsyncZod {
         const table = await createTable(ctx, requireTenant(request.auth, 'tables.manage'), request.params.zoneId, request.body, requestMeta(request));
         reply.code(201);
         return table;
+      },
+    );
+
+    app.post(
+      '/zones/:zoneId/tables/range',
+      {
+        schema: {
+          tags: ['floor'],
+          summary: 'Ajouter plusieurs tables d’un coup (T1 à T20), placées automatiquement',
+          security,
+          params: zoneParams,
+          body: createTablesRangeSchema,
+          response: { 201: tablesRangeResultSchema },
+        },
+      },
+      async (request, reply) => {
+        const result = await createTablesRange(ctx, requireTenant(request.auth, 'tables.manage'), request.params.zoneId, request.body, requestMeta(request));
+        reply.code(201);
+        return result;
       },
     );
 

@@ -359,7 +359,8 @@
   left: auto;
 }
 
-.tablette .form > label {
+.tablette .form > label,
+.tablette .form > .form-label {
   color: var(--text);
   font-size: 15px;
   font-weight: 600;
@@ -1503,6 +1504,38 @@
 
 .tablette .access-question {
   border-inline-start: 0;
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+/* === Couleurs de zone (tablette) ======================================== */
+.tablette .zone-dot {
+  width: 12px;
+  height: 12px;
+}
+
+/* Onglet ouvert en bleu plein : la pastille garde un anneau blanc pour rester visible. */
+.tablette .subtabs button[aria-current='page'] .zone-dot {
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.tablette .zone-stripe::before {
+  height: 6px;
+}
+
+.tablette .plan-table.shape-round.zone-stripe::before {
+  height: 5px;
+}
+
+/* Huit pastilles sur une ligne dans la fenêtre de la tablette. */
+.tablette .swatch {
+  width: 32px;
+  height: 32px;
+  margin-inline-end: 5px;
+}
+
+.tablette .range-preview {
+  border: 0;
   border-radius: 14px;
   background: var(--bg);
 }
