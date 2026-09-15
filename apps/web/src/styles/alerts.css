@@ -1,0 +1,165 @@
+/* === Alertes du personnel : cartes d'alerte et section « Son et notifications » ===
+   Fichier autonome : n'altère aucune règle globale ; préfixes pour l'emporter sans dépendre de l'ordre. */
+
+.staff-alerts {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  /* Sous le panneau latéral et les fenêtres (60) : une alerte ne cache jamais un réglage ouvert. */
+  z-index: 55;
+  display: grid;
+  grid-gap: 8px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+
+.staff-alerts .staff-alert-card {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  pointer-events: auto;
+}
+
+.staff-alerts .staff-alert-ready {
+  border-left-color: var(--ok);
+}
+
+.staff-alerts .staff-alert-call {
+  border-left-color: var(--warn);
+}
+
+.staff-alerts .staff-alert-card-main {
+  display: grid;
+  flex: 1 1 auto;
+  grid-gap: 2px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.staff-alerts .staff-alert-card-main strong {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.staff-alerts .staff-alert-card-main span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.staff-alerts .staff-alert-card-close {
+  flex: 0 0 48px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.staff-alerts .staff-alert-more {
+  justify-self: end;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12.5px;
+  pointer-events: auto;
+}
+
+.panel-section.alert-settings {
+  display: grid;
+  grid-gap: 10px;
+}
+
+.alert-settings .alert-status {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 13.5px;
+}
+
+.alert-settings .alert-status-dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.alert-settings .alert-status-warn {
+  color: var(--warn);
+}
+
+.alert-settings .alert-status-warn .alert-status-dot {
+  background: var(--warn);
+}
+
+.alert-settings .alert-volume {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-gap: 6px;
+}
+
+.alert-settings .alert-volume .btn {
+  justify-content: center;
+  min-height: 40px;
+}
+
+.alert-settings .alert-volume .btn[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.alert-settings .alert-test {
+  justify-content: center;
+  min-height: 44px;
+}
+
+.alert-settings .alert-heard {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.alert-settings .alert-toggle {
+  display: flex;
+  align-items: flex-start;
+  min-height: 40px;
+  cursor: pointer;
+}
+
+.alert-settings .alert-toggle input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 1px 10px 0 0;
+}
+
+.alert-settings .alert-toggle span {
+  display: grid;
+  grid-gap: 2px;
+  font-size: 14px;
+}
+
+.alert-settings .alert-toggle small {
+  color: var(--muted);
+  font-size: 12.5px;
+}

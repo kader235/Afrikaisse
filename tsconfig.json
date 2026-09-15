@@ -24,6 +24,7 @@
     "services/*/src",
     "services/*/test",
     "apps/web/src",
+    "apps/web/test",
     "apps/site/src",
     "apps/site/scripts",
     "apps/site/test",

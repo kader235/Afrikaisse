@@ -36,6 +36,11 @@ const config: CapacitorConfig = {
       // Icônes claires sur le bleu foncé de l'application.
       style: 'DARK',
     },
+    LocalNotifications: {
+      // Alertes du personnel (apps/web/src/systemNotify.ts) : cloche blanche dans la barre d'état.
+      smallIcon: 'ic_stat_afrikaisse',
+      iconColor: '#065FD4',
+    },
   },
 };
 

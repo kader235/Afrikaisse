@@ -1,16 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { KITCHEN_PROBLEM_REASONS, ticketDelay, ticketState, type AdminMenu, type KitchenAction, type Me, type Order, type OrderItem, type Station } from '@afrikaisse/core';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
-import { beep } from '../sound.ts';
 import { orderPlace } from '../labels.ts';
 import { Dialog, ErrorMessage, FloatMessage, Icon } from '../ui.tsx';
 import { useScreenHeartbeat } from '../heartbeat.ts';
 
 /**
  * Écran cuisine (KDS), sombre et lisible à 2 m : trois colonnes, minuteur par ticket (en retard selon
- * le temps de préparation de ses plats), signal à chaque nouveau ticket, problème signalé à la salle. Chaque poste ne voit et n'avance que SES articles.
+ * le temps de préparation de ses plats), signal à chaque nouveau ticket (alerts.tsx), problème signalé à la salle. Chaque poste ne voit et n'avance que SES articles.
  */
 
 type Column = 'queued' | 'preparing' | 'ready';
@@ -20,6 +19,8 @@ const COLUMNS: [Column, string][] = [
   ['ready', 'Prêt'],
 ];
 const STORAGE_KEY = 'afk.kds.station';
+/** Poste changé : les alertes (alerts.tsx) reprennent l'existant du nouveau poste sans sonner. */
+export const KDS_STATION_EVENT = 'afk:kds-station';
 
 function readStored(): string {
   try {
@@ -43,7 +44,6 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const [prepTimes, setPrepTimes] = useState<Map<string, number | null>>(new Map());
   const [problem, setProblem] = useState<Order | null>(null);
   const [, setTick] = useState(0);
-  const known = useRef<Set<string> | null>(null);
 
   const canUse = (s: Station) => me.permissions.includes(s.kind === 'BAR' ? 'bar.use' : 'kitchen.use');
   const allowed = (stations ?? []).filter(canUse);
@@ -76,7 +76,7 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
     } catch {
       /* préférence pour la session seulement */
     }
-    known.current = null;
+    window.dispatchEvent(new Event(KDS_STATION_EVENT));
   }, [stationId]);
 
   useEffect(() => {
@@ -93,23 +93,6 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
     })
     .filter((t) => t.items.length > 0)
     .sort((a, b) => a.order.createdAt - b.order.createdAt);
-
-  // Nouveau ticket à préparer : signal (pas au premier affichage ni au changement de poste).
-  const queuedKey = tickets
-    .filter((t) => t.state === 'queued')
-    .map((t) => t.order.id)
-    .join(',');
-  useEffect(() => {
-    if (!feed.loaded || stations === null) return;
-    const ids = queuedKey ? queuedKey.split(',') : [];
-    if (known.current === null) {
-      known.current = new Set(ids);
-      return;
-    }
-    const fresh = ids.filter((id) => !known.current!.has(id));
-    ids.forEach((id) => known.current!.add(id));
-    if (fresh.length > 0) beep(2, 660);
-  }, [queuedKey, feed.loaded, stations]);
 
   async function act(order: Order, action: KitchenAction) {
     setBusy(`${order.id}:${action}`);

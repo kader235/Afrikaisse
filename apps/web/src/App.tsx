@@ -1,6 +1,6 @@
 import { LogoAfrikaisse } from './logo.tsx';
 import { useEffect, useState } from 'react';
-import { GRACE_DAYS, subscriptionState, type Me, type NotificationKind, type Role, type SessionResponse, type SetupStatus } from '@afrikaisse/core';
+import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse, type SetupStatus } from '@afrikaisse/core';
 import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
 import { useI18n } from './i18n.tsx';
 import { ROLE_LABELS } from './labels.ts';
@@ -21,11 +21,12 @@ import { StockPage } from './pages/Stock.tsx';
 import { TakeOrderPage } from './pages/TakeOrder.tsx';
 import { isTablet } from './touch.ts';
 import { clearCache, readCache, saveCache, useOutboxSender } from './offline.ts';
-import { beep } from './sound.ts';
 import { OnboardingWizard } from './pages/Onboarding.tsx';
 import { RecoveryPrompt } from './pages/Recovery.tsx';
 import { useActivityFeed } from './activity.ts';
 import { useNotifications } from './notifications.ts';
+import { AlertStack, useStaffAlerts } from './alerts.tsx';
+import { SoundSettings } from './pages/SoundSettings.tsx';
 import { NotificationPanel } from './pages/Notifications.tsx';
 import { ServerPage } from './pages/Server.tsx';
 import { isNativeApp, readServer, saveServer } from './platform.ts';
@@ -206,9 +207,6 @@ const TABLET_NAV: Record<Role, Section[]> = {
   STOCK_MANAGER: ['stock', 'menu'],
 };
 
-/** Déjà signalés par le flux d'activité (pastille et signal sonore) : la cloche ne sonne pas une deuxième fois. */
-const SIGNALED_BY_FEED: readonly NotificationKind[] = ['ORDER_NEW', 'WAITER_CALL', 'BILL_REQUESTED'];
-
 /** Initiales affichées dans la barre supérieure : « Achta Démo » → « AD ». */
 const initials = (name: string) =>
   name
@@ -223,40 +221,14 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const [error, setError] = useState<unknown>(null);
   const { health, online } = useHealth();
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
-  // Un seul flux d'activité pour toute l'application : pastille et signal sonore sur tous les écrans.
-  // Le signal des commandes QR et des appels de table concerne la salle, pas la cuisine.
-  const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK', can('orders.create'));
+  // Un seul flux d'activité pour toute l'application : pastille et alertes du personnel sur tous les écrans.
+  const feed = useActivityFeed(me.locations[0]?.id ?? null, can('orders.read') && me.tenantAccess === 'OK');
   // Commandes prises pendant une coupure : envoyées dès le retour du réseau, quel que soit l'écran ouvert.
   useOutboxSender(() => feed.refresh());
   const waiting = feed.orders.filter((o) => o.status === 'PENDING').length + feed.requests.length;
   // Centre de notifications : la salle et la caisse (service), la gestion du stock (ruptures).
   const notifyEnabled = me.tenantAccess === 'OK' && (can('orders.create') || can('inventory.read'));
-  const notifications = useNotifications(me.locations[0]?.id ?? null, notifyEnabled, can('orders.read') && can('orders.create') ? SIGNALED_BY_FEED : []);
-
-  // Prise en charge : une commande QR confirmée ou un appel traité ne reste pas à lire. La notification
-  // disparaît d'elle-même, sur tous les appareils qui suivent le service.
-  useEffect(() => {
-    if (!feed.loaded || !notifications.loaded) return;
-    const now = Date.now();
-    const pending = new Set(feed.orders.filter((o) => o.status === 'PENDING').map((o) => o.id));
-    const known = new Set([...feed.orders, ...feed.closed].map((o) => o.id));
-    const open = new Set(feed.requests.map((r) => r.id));
-    for (const n of notifications.items) {
-      if (n.read || !n.entityId) continue;
-      // Une notification toute neuve peut précéder la commande dans le flux : on laisse 20 s au flux pour la voir.
-      const settled = now - n.createdAt > 20_000;
-      if (n.kind === 'ORDER_NEW' && !pending.has(n.entityId) && (known.has(n.entityId) || settled)) notifications.markRead(n);
-      if ((n.kind === 'WAITER_CALL' || n.kind === 'BILL_REQUESTED') && !open.has(n.entityId) && settled) notifications.markRead(n);
-    }
-  }, [feed.loaded, feed.orders, feed.closed, feed.requests, notifications.loaded, notifications.items]);
-
-  // Tant qu'une commande QR ou un appel de table attend quelqu'un : rappel sonore toutes les 30 s.
-  const unhandled = can('orders.create') && (feed.orders.some((o) => o.status === 'PENDING') || feed.requests.length > 0);
-  useEffect(() => {
-    if (!unhandled) return;
-    const id = setInterval(() => beep(2), 30_000);
-    return () => clearInterval(id);
-  }, [unhandled]);
+  const notifications = useNotifications(me.locations[0]?.id ?? null, notifyEnabled);
 
   const sections: NavItem[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard', visible: can('reports.read'), group: 'home' },
@@ -303,6 +275,8 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     setSection(id);
     setPanel(null);
   };
+  // Qui entend quoi (cuisine, salle, caisse), notification Android, prise en charge des notifications : alerts.tsx.
+  const alerts = useStaffAlerts({ me, feed, notifications, onKitchenScreen: current === 'kitchen', onOpen: open });
   // Console Windows : « État du système » ouvre l'application sur #supervision.
   useEffect(() => {
     const onHash = () => {
@@ -525,6 +499,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         />
       )}
 
+      <AlertStack alerts={alerts} onOpen={open} />
       {panel === 'notifications' && <NotificationPanel center={notifications} onOpen={open} onClose={() => setPanel(null)} />}
       {(panel === 'account' || panel === 'nav') && (
         <SidePanel
@@ -649,6 +624,7 @@ function SidePanel({
           <h2>Affichage</h2>
           <Preferences />
         </div>
+        <SoundSettings me={me} />
         <div className="panel-info">
           <span>
             <span className={online ? 'dot dot-ok' : 'dot dot-off'} />

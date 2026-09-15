@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ACTIVE_ORDER_STATUSES, type Activity, type Order, type ServiceRequest } from '@afrikaisse/core';
 import { api } from './api.ts';
-import { beep, unlockSound } from './sound.ts';
 
 export interface ActivityFeed {
   orders: Order[];
@@ -22,28 +21,18 @@ const OFFLINE_MS = 6000;
 /**
  * Flux d'activité d'un établissement, interrogé régulièrement (3 s à l'écran, 15 s en
  * arrière-plan). Un seul flux pour toute l'application : la pastille de l'onglet
- * Commandes et le signal sonore marchent quel que soit l'écran ouvert.
+ * Commandes et les alertes du personnel (alerts.tsx) marchent quel que soit l'écran ouvert.
  */
-export function useActivityFeed(locationId: string | null, enabled: boolean, alertStaff = true): ActivityFeed {
+export function useActivityFeed(locationId: string | null, enabled: boolean): ActivityFeed {
   const [orders, setOrders] = useState<Map<string, Order>>(new Map());
   const [requests, setRequests] = useState<Map<string, ServiceRequest>>(new Map());
   const [closed, setClosed] = useState<Order[]>([]);
   const [online, setOnline] = useState(true);
   const [loaded, setLoaded] = useState(false);
   const cursor = useRef(0);
-  const known = useRef<Set<string>>(new Set());
   const wake = useRef<() => void>(() => undefined);
-  const alertRef = useRef(alertStaff);
-  alertRef.current = alertStaff;
-
-  useEffect(() => {
-    const unlock = () => unlockSound();
-    window.addEventListener('pointerdown', unlock);
-    return () => window.removeEventListener('pointerdown', unlock);
-  }, []);
 
   const merge = useCallback((activity: Activity) => {
-    let alert = false;
     setOrders((current) => {
       const next = activity.full ? new Map<string, Order>() : new Map(current);
       for (const order of activity.orders) {
@@ -51,11 +40,6 @@ export function useActivityFeed(locationId: string | null, enabled: boolean, ale
         else {
           next.delete(order.id);
           setClosed((list) => [order, ...list.filter((o) => o.id !== order.id)].slice(0, 30));
-        }
-        const key = `order:${order.id}`;
-        if (order.status === 'PENDING' && !known.current.has(key)) {
-          if (cursor.current > 0) alert = true;
-          known.current.add(key);
         }
       }
       return next;
@@ -65,15 +49,9 @@ export function useActivityFeed(locationId: string | null, enabled: boolean, ale
       for (const request of activity.requests) {
         if (request.status === 'OPEN') next.set(request.id, request);
         else next.delete(request.id);
-        const key = `request:${request.id}`;
-        if (request.status === 'OPEN' && !known.current.has(key)) {
-          if (cursor.current > 0) alert = true;
-          known.current.add(key);
-        }
       }
       return next;
     });
-    if (alert && alertRef.current) beep(3);
   }, []);
 
   useEffect(() => {
@@ -81,7 +59,6 @@ export function useActivityFeed(locationId: string | null, enabled: boolean, ale
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     cursor.current = 0;
-    known.current = new Set();
     setLoaded(false);
 
     const tick = async () => {

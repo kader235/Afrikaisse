@@ -222,7 +222,7 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
     db
       .selectFrom('order_status_history as h')
       .leftJoin('users as u', 'u.id', 'h.by_user_id')
-      .select(['h.order_id', 'h.from_status', 'h.to_status', 'h.at', 'h.reason', 'h.source', 'u.display_name'])
+      .select(['h.order_id', 'h.from_status', 'h.to_status', 'h.at', 'h.reason', 'h.source', 'h.by_user_id', 'u.display_name'])
       .where('h.order_id', 'in', ids)
       .orderBy('h.at')
       .orderBy('h.hlc')
@@ -285,7 +285,7 @@ export async function hydrateOrders(db: Db, rows: OrderRow[]): Promise<Order[]> 
       statusChangedAt: o.status_changed_at,
       history: history
         .filter((h) => h.order_id === o.id)
-        .map((h) => ({ from: h.from_status, to: h.to_status, at: h.at, by: h.display_name ?? (h.source === 'QR' ? 'Client (QR)' : null), reason: h.reason })),
+        .map((h) => ({ from: h.from_status, to: h.to_status, at: h.at, by: h.display_name ?? (h.source === 'QR' ? 'Client (QR)' : null), byUserId: h.by_user_id, reason: h.reason })),
     };
   });
 }

@@ -202,6 +202,8 @@ export const orderSchema = z.object({
       to: z.enum(ORDER_STATUSES),
       at: z.number(),
       by: z.string().nullable(),
+      /** Auteur du geste (null : client QR ou système). Absent avec un serveur plus ancien. */
+      byUserId: z.string().nullable().optional(),
       reason: z.string().nullable(),
     }),
   ),

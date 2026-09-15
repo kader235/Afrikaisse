@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AppNotification, NotificationFeed, NotificationKind } from '@afrikaisse/core';
+import type { AppNotification, NotificationFeed } from '@afrikaisse/core';
 import { api } from './api.ts';
-import { beep } from './sound.ts';
 
 export interface NotificationCenter {
   items: AppNotification[];
@@ -19,17 +18,14 @@ const KEEP = 100;
 
 /**
  * Centre de notifications d'un établissement, interrogé régulièrement (`since=`), sans WebSocket.
- * Signal sonore court pour une nouvelle notification urgente, sauf pour les types déjà signalés
- * par le flux d'activité (`silentKinds`) : jamais deux signaux pour le même événement.
+ * Aucun son ici : alerts.tsx signale chaque événement une seule fois, selon le rôle.
  */
-export function useNotifications(locationId: string | null, enabled: boolean, silentKinds: readonly NotificationKind[] = []): NotificationCenter {
+export function useNotifications(locationId: string | null, enabled: boolean): NotificationCenter {
   const [items, setItems] = useState<AppNotification[]>([]);
   const [unread, setUnread] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const cursor = useRef(0);
   const wake = useRef<() => void>(() => undefined);
-  const silent = useRef(silentKinds);
-  silent.current = silentKinds;
 
   useEffect(() => {
     setItems([]);
@@ -52,7 +48,6 @@ export function useNotifications(locationId: string | null, enabled: boolean, si
           return [...feed.items, ...current.filter((n) => !fresh.has(n.id))].slice(0, KEEP);
         });
         setUnread(feed.unread);
-        if (!feed.full && feed.items.some((n) => n.urgent && !n.read && !silent.current.includes(n.kind))) beep(2, 988);
         cursor.current = feed.cursor;
         setLoaded(true);
       } catch {
