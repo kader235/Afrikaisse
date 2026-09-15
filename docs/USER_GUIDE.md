@@ -32,8 +32,59 @@
   - Gérant : Commandes, Caisse, Tables, Menu.
   - Caissier : Caisse, Commandes. Serveur : Tables, Commandes. Cuisine et bar : Cuisine.
 
-Pour démarrer vite : **Menu → Importer des plats** (voir plus bas), puis **Tables** pour les tables et
-leurs QR.
+## L'assistant de mise en route
+
+Après la création du restaurant, l'**assistant de mise en route** s'ouvre tout seul (propriétaire et
+administrateur). Il se rouvre à tout moment : **Administration → Paramètres → Assistant de mise en
+route**.
+
+- À gauche, les 12 étapes numérotées ; une étape faite est cochée en vert. Toucher une étape y va
+  directement.
+- En bas à droite : **Précédent**, **Suivant**, **Terminer**. **Suivant** enregistre l'étape ; sur une
+  étape laissée vide, il la **passe** (« passée »). On la reprend plus tard.
+- **Fermer** (en haut à droite) : rien n'est perdu. L'assistant reprend à la première étape ni faite
+  ni passée.
+
+| Étape | Ce qu'on y fait |
+|---|---|
+| 1. Restaurant | Nom et type de l'établissement |
+| 2. Logo | **Choisir une image** (réduite sur l'appareil) ; **Retirer**. Le logo apparaît sur le reçu, les chevalets QR et le menu client |
+| 3. Adresse | Adresse et téléphone (imprimés sur le reçu) |
+| 4. Devise | Pays (préremplit devise et fuseau), devise, fuseau horaire |
+| 5. Catégories | Saisie d'une catégorie, ajout en un toucher (Entrées, Plats, Grillades…), **Importer des plats** |
+| 6. Produits | Nom, catégorie, prix, **Ajouter** ; ou **Importer des plats** |
+| 7. Tables | Une ligne par zone : nom, nombre de tables, places. **Créer les tables** : « 10 tables en salle, 4 en terrasse » donne T1 à T10 et TE1 à TE4, rangées avec des allées, et l'aperçu du plan. Dans une zone qui existe déjà, les tables prennent les places libres et la numérotation continue |
+| 8. QR | Les chevalets de chaque table : affichage en grand, impression, régénération |
+| 9. Stations | Les postes de préparation (Cuisine, Bar, Grill…) |
+| 10. Utilisateurs | Nom, e-mail, rôle, mot de passe proposé. Le mot de passe s'affiche **une seule fois** après l'ajout : notez-le |
+| 11. Imprimantes | Ajouter une imprimante de tickets, ou **Suivant** pour passer |
+| 12. Test | **Lancer le test** : une vraie commande part aux postes (et aux imprimantes s'il y en a). Le tableau montre le poste qui l'a reçue. **Annuler la commande de test** l'annule avec le motif « Commande de test de la mise en route », inscrit au journal |
+
+Quand toutes les étapes sont faites ou passées : **Votre restaurant est prêt.** avec le bilan de ce qui
+est configuré. **Terminer** ouvre le tableau de bord ; l'assistant ne s'ouvre plus tout seul.
+
+La commande de test annulée compte dans les « annulées » du tableau de bord du jour.
+
+## Le restaurant de démonstration
+
+**AfriKaisse Demo Restaurant** sert à présenter le logiciel à un prospect, sans rien configurer.
+
+- **Créer** : back-office AfriKaisse (**Administration → Plateforme → Démonstration**), ou sur le
+  serveur : `node dist/cli.cjs create-demo` (e-mail du propriétaire en option).
+- **Contenu** : 20 tables (12 en salle, 8 en terrasse) avec leurs QR, postes Cuisine, Bar et Grill, une
+  carte de 25 plats tchadiens et ouest-africains avec photos et options, un compte par métier (gérant,
+  caissier, deux serveurs, cuisine, bar, magasinier), 14 jours de ventes (espèces, mobile money,
+  carte, quelques annulations, caisses clôturées chaque soir) et le service du jour en cours : une
+  commande QR à confirmer, une en cuisine, une prête, une servie avec l'addition demandée.
+- **Identifiants** : les mots de passe sont générés et affichés **une seule fois** à la création.
+  Ils ne sont enregistrés nulle part en clair. Les adresses se terminent par `@demo.afrikaisse.invalid` :
+  aucun e-mail ne peut y partir.
+- La démonstration est une organisation à part, marquée « Démonstration », isolée comme n'importe quel
+  client et sans échéance d'abonnement. Les ventes y sont passées par les vrais écrans du logiciel
+  (caisse, cuisine, encaissement), datées sur les 14 derniers jours.
+
+Dans une organisation ordinaire, **POST /locations/{id}/demo** (établissement vide) n'installe que la
+configuration : salle, postes et carte, sans équipe ni vente.
 
 ## Se connecter
 

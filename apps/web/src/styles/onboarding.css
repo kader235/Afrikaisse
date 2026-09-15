@@ -1,0 +1,478 @@
+/* === Assistant de mise en route (§70) ===================================
+   Fenêtre d'assistant : étapes numérotées à gauche, contenu à droite,
+   Précédent / Suivant / Terminer en bas à droite. Jetons de styles.css. */
+
+.onb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--overlay);
+}
+
+.onb-window {
+  display: flex;
+  flex-direction: column;
+  width: min(1180px, 100%);
+  height: min(780px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+
+.onb-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding-block: 0;
+  padding-inline: 20px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--band);
+}
+
+.onb-head h1 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.onb-place {
+  margin-inline-start: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.onb-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.onb-steps {
+  flex: none;
+  width: 230px;
+  margin: 0;
+  padding: 10px 0;
+  overflow-y: auto;
+  list-style: none;
+  border-inline-end: 1px solid var(--border);
+  background: var(--band);
+}
+
+.onb-steps button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.onb-steps button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.onb-steps button[aria-current='step'] {
+  background: var(--primary-soft);
+  box-shadow: inset 3px 0 0 var(--primary);
+  color: var(--primary-strong);
+  font-weight: 600;
+}
+
+[dir='rtl'] .onb-steps button[aria-current='step'] {
+  box-shadow: inset -3px 0 0 var(--primary);
+}
+
+.onb-num {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.onb-num .ico {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
+.onb-steps [aria-current='step'] .onb-num {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.onb-steps .done .onb-num {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: #ffffff;
+}
+
+.onb-steps .skipped .onb-label {
+  color: var(--muted);
+}
+
+.onb-steps .skipped .onb-label::after {
+  content: ' · passée';
+  font-weight: 400;
+}
+
+.onb-content {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 24px 28px;
+  overflow-y: auto;
+}
+
+.onb-content > h2 {
+  margin: 0 0 18px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.onb-content > .msg {
+  margin-bottom: 14px;
+}
+
+.onb-foot {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--band);
+}
+
+.onb-foot .btn + .btn {
+  margin-inline-start: 0;
+}
+
+.onb-foot .btn .ico:last-child:not(:first-child) {
+  margin-inline: 8px 0;
+}
+
+.onb-progress {
+  flex: 1;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.onb-form {
+  max-width: 640px;
+}
+
+.onb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.onb-actions .btn + .btn {
+  margin-inline-start: 0;
+}
+
+.onb-list {
+  margin-top: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.onb-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  max-width: 640px;
+}
+
+.onb-inline label {
+  color: var(--text-soft);
+  font-weight: 500;
+}
+
+.onb-inline input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.onb-product {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.onb-product label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-soft);
+  font-weight: 500;
+}
+
+/* Logo : aperçu sur fond blanc, comme sur le reçu. */
+.onb-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 180px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.onb-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.onb-file {
+  position: relative;
+  overflow: hidden;
+}
+
+.onb-file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.onb-file.disabled {
+  opacity: 0.5;
+}
+
+/* Tables en série. */
+.onb-zones {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+}
+
+.onb-zone-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 110px 44px;
+  gap: 10px;
+  align-items: center;
+}
+
+.onb-zone-head {
+  color: var(--text-soft);
+  font-weight: 500;
+}
+
+.onb-plan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.onb-plan figure {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.onb-plan figcaption {
+  margin-bottom: 8px;
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.onb-plan svg {
+  display: block;
+  width: 300px;
+  max-width: 100%;
+  height: auto;
+}
+
+.onb-plan rect {
+  fill: var(--primary-soft);
+  stroke: var(--primary);
+  stroke-width: 0.1;
+}
+
+.onb-plan rect.onb-plan-bg {
+  fill: var(--band);
+  stroke: var(--border-strong);
+}
+
+.onb-plan text {
+  fill: var(--text);
+  font-size: 0.8px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.onb-test {
+  margin-top: 18px;
+}
+
+.onb-ready th {
+  width: 160px;
+  color: var(--text-soft);
+  font-weight: 500;
+  text-align: start;
+}
+
+/* Logo sur le reçu imprimé et sur les chevalets QR. */
+.ticket-logo {
+  display: block;
+  max-width: 40mm;
+  max-height: 18mm;
+  margin: 0 auto 2mm;
+  object-fit: contain;
+}
+
+/* En-tête du chevalet bleu nuit : le logo garde son fond blanc pour rester lisible. */
+.table-card-logo {
+  display: block;
+  width: auto;
+  max-width: 7em;
+  height: 2.6em;
+  margin-bottom: 0.6em;
+  padding: 0.2em;
+  border-radius: 0.3em;
+  background: #ffffff;
+  object-fit: contain;
+}
+
+/* Tablette en portrait (800 × 1280) et écrans étroits : étapes en bandeau au-dessus du contenu. */
+@media (max-width: 900px), (orientation: portrait) and (max-width: 1100px) {
+  .onb-overlay {
+    padding: 0;
+  }
+
+  .onb-window {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .onb-body {
+    flex-direction: column;
+  }
+
+  .onb-steps {
+    display: flex;
+    width: auto;
+    padding: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .onb-steps li {
+    flex: none;
+  }
+
+  .onb-steps button {
+    flex-direction: column;
+    gap: 4px;
+    width: auto;
+    min-width: 76px;
+    min-height: 68px;
+    padding: 8px 8px 6px;
+    font-size: 13px;
+  }
+
+  .onb-steps button[aria-current='step'] {
+    box-shadow: inset 0 -3px 0 var(--primary);
+  }
+
+  .onb-steps .skipped .onb-label::after {
+    content: '';
+  }
+
+  .onb-content {
+    padding: 18px 16px 24px;
+  }
+
+  .onb-product {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .onb-place {
+    display: none;
+  }
+
+  .onb-product,
+  .onb-zone-row {
+    grid-template-columns: minmax(0, 1fr) 80px 80px 44px;
+  }
+
+  .onb-product {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Au doigt : cibles de 48 px, texte à 16 px (règles recopiées aussi dans l'application tablette). */
+@media (pointer: coarse) {
+  .onb-steps button {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .onb-num {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+
+  .onb-head .icon-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .onb-zone-row {
+    grid-template-columns: minmax(0, 1fr) 110px 110px 48px;
+  }
+
+  .onb-zone-row .icon-btn {
+    width: 48px;
+    height: 48px;
+  }
+
+  .onb-ready th,
+  .onb-ready td {
+    font-size: 16px;
+  }
+}

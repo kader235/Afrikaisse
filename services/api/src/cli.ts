@@ -1,13 +1,16 @@
 import { existsSync } from 'node:fs';
 import { sql } from 'kysely';
 import { createDatabase, databaseConfigFromUrl, migrateToLatest } from '@afrikaisse/database';
+import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
+import { createDemoTenant } from './services/demo.ts';
 
 /**
  * Commandes d'exploitation :
  *   migrate                        applique les migrations
  *   grant-platform-admin <e-mail>  donne l'accès au back-office AfriKaisse
  *   revoke-platform-admin <e-mail> le retire
+ *   create-demo [e-mail]           crée une organisation « AfriKaisse Demo Restaurant » pour un prospect
  */
 async function main() {
   if (existsSync('.env')) process.loadEnvFile('.env');
@@ -50,8 +53,22 @@ async function main() {
         console.log(`${command === 'grant-platform-admin' ? 'Accès back-office donné à' : 'Accès back-office retiré à'} ${arg}.`);
         break;
       }
+      case 'create-demo': {
+        await migrateToLatest(database);
+        const { app, ctx } = await buildApp({ database, config });
+        try {
+          const demo = await createDemoTenant(ctx, { ip: null, userAgent: 'cli' }, { email: arg });
+          const role = (r: string) => ({ OWNER: 'Propriétaire', MANAGER: 'Gérant', CASHIER: 'Caissier', WAITER: 'Serveur', KITCHEN: 'Cuisine', BAR: 'Bar', STOCK_MANAGER: 'Magasinier', ADMIN: 'Administrateur' })[r] ?? r;
+          console.log(`${demo.organizationName} créé : ${demo.status.tables} tables, ${demo.status.products} produits, ${demo.status.orders} commandes.`);
+          console.log('Identifiants (affichés une seule fois, notez-les) :');
+          for (const c of [demo.owner, ...demo.staff]) console.log(`  ${role(c.role).padEnd(14)} ${c.displayName.padEnd(18)} ${c.email}  ${c.password}`);
+        } finally {
+          await app.close();
+        }
+        break;
+      }
       default:
-        console.log('Usage : cli migrate | grant-platform-admin <e-mail> | revoke-platform-admin <e-mail>');
+        console.log('Usage : cli migrate | grant-platform-admin <e-mail> | revoke-platform-admin <e-mail> | create-demo [e-mail]');
         process.exitCode = 1;
     }
   } finally {

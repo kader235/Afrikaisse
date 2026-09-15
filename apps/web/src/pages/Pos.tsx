@@ -1850,6 +1850,7 @@ export function ReceiptTicket({ receipt }: { receipt: Receipt }) {
   return (
     <div className="ticket">
       <div className="ticket-center">
+        {location.logoUrl && <img className="ticket-logo" src={mediaSrc(location.logoUrl)} alt="" />}
         <div className="ticket-strong ticket-big">{location.name}</div>
         {receipt.organization !== location.name && <div>{receipt.organization}</div>}
         {location.address && <div>{location.address}</div>}

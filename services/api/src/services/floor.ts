@@ -45,6 +45,8 @@ const toLocation = (r: LocationRow): LocationDetails => ({
   country: r.country,
   address: r.address,
   phone: r.phone,
+  logoMediaId: r.logo_media_id,
+  logoUrl: r.logo_media_id ? `/api/media/${r.logo_media_id}` : null,
   businessDayCutoffMin: r.business_day_cutoff_min,
   operatingMode: r.operating_mode,
   status: r.status,
@@ -112,6 +114,13 @@ function assertActive(status: string, message: string) {
   if (status !== 'ACTIVE') throw new AppError('CONFLICT', message);
 }
 
+/** Logo : une image de l'organisation (et de cet établissement pour un membre rattaché). */
+async function assertLogo(db: Db, scope: TenantScope, mediaId: string | null | undefined) {
+  if (!mediaId) return;
+  const media = await db.selectFrom('media').select(['id', 'location_id']).where('id', '=', mediaId).where('tenant_id', '=', scope.tenantId).executeTakeFirst();
+  if (!media || (scope.locationId && media.location_id && media.location_id !== scope.locationId)) throw new AppError('NOT_FOUND', 'Image du logo introuvable.');
+}
+
 // --- Événements de synchronisation ------------------------------------------
 
 async function emitLocation(db: Db, ctx: AppContext, scope: TenantScope, id: string, hlc: string) {
@@ -143,6 +152,7 @@ export async function listLocations(ctx: AppContext, scope: TenantScope, include
 
 export async function createLocation(ctx: AppContext, scope: TenantScope, input: CreateLocationInput, meta: RequestMeta): Promise<LocationDetails> {
   if (scope.locationId) throw new AppError('FORBIDDEN', 'Votre accès est limité à un établissement.');
+  await assertLogo(ctx.db, scope, input.logoMediaId);
   const id = uuidv7();
   const now = ctx.now();
   return ctx.db.transaction().execute(async (trx) => {
@@ -160,6 +170,7 @@ export async function createLocation(ctx: AppContext, scope: TenantScope, input:
         country: input.country,
         address: blankToNull(input.address) ?? null,
         phone: blankToNull(input.phone) ?? null,
+        logo_media_id: input.logoMediaId ?? null,
         business_day_cutoff_min: input.businessDayCutoffMin,
         operating_mode: input.operatingMode,
         status: 'ACTIVE',
@@ -189,6 +200,7 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
   if (ctx.config.profile === 'local' && input.operatingMode === 'CLOUD') {
     throw new AppError('CONFLICT', "Un serveur local exploite toujours son établissement en mode « serveur local ».");
   }
+  await assertLogo(ctx.db, scope, input.logoMediaId);
   const address = blankToNull(input.address);
   const phone = blankToNull(input.phone);
   const patch = {
@@ -199,6 +211,7 @@ export async function updateLocation(ctx: AppContext, scope: TenantScope, id: st
     ...(input.country !== undefined && { country: input.country }),
     ...(address !== undefined && { address }),
     ...(phone !== undefined && { phone }),
+    ...(input.logoMediaId !== undefined && { logo_media_id: input.logoMediaId }),
     ...(input.businessDayCutoffMin !== undefined && { business_day_cutoff_min: input.businessDayCutoffMin }),
     ...(input.operatingMode !== undefined && { operating_mode: input.operatingMode }),
   };

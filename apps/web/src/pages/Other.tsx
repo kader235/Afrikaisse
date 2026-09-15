@@ -10,6 +10,7 @@ import {
   planOf,
   subscriptionState,
   type AuditEntry,
+  type DemoTenant,
   type Me,
   type PlanCode,
   type PlatformTenant,
@@ -17,7 +18,7 @@ import {
 } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
-import { AUDIT_ACTION_LABELS, formatDateTime } from '../labels.ts';
+import { AUDIT_ACTION_LABELS, ROLE_LABELS, formatDateTime } from '../labels.ts';
 import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
 import { BackupsPanel } from './Backups.tsx';
 import { SyncPanel } from './Sync.tsx';
@@ -33,7 +34,7 @@ interface TenantDetails {
   locations: Me['locations'];
 }
 
-export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => void }) {
+export function OrganizationPage({ me, onRenamed, onOpenSetup }: { me: Me; onRenamed: () => void; onOpenSetup?: () => void }) {
   const { t, locale } = useI18n();
   const [tenant, setTenant] = useState<TenantDetails | null>(null);
   const [renaming, setRenaming] = useState(false);
@@ -60,6 +61,12 @@ export function OrganizationPage({ me, onRenamed }: { me: Me; onRenamed: () => v
               <button className="btn" disabled={!tenant} onClick={() => setRenaming(true)}>
                 <Icon name="edit" />
                 {t('org.rename')}
+              </button>
+            )}
+            {onOpenSetup && (
+              <button className="btn" onClick={onOpenSetup}>
+                <Icon name="list" />
+                Assistant de mise en route
               </button>
             )}
             <button className="btn" onClick={load}>
@@ -287,6 +294,8 @@ export function PlatformPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [editing, setEditing] = useState(false);
+  const [demo, setDemo] = useState<DemoTenant | null>(null);
+  const [creating, setCreating] = useState(false);
   const selected = tenants?.find((x) => x.id === selectedId) ?? null;
 
   const load = useCallback(() => api<PlatformTenant[]>('GET', '/platform/tenants').then(setTenants, setError), []);
@@ -302,6 +311,19 @@ export function PlatformPage() {
       await load();
     } catch (err) {
       setError(err);
+    }
+  }
+
+  async function createDemo() {
+    setCreating(true);
+    setError(null);
+    try {
+      setDemo(await api<DemoTenant>('POST', '/platform/demo-tenants', {}));
+      await load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -323,6 +345,10 @@ export function PlatformPage() {
             <Icon name="power" />
             {t('platform.reactivate')}
           </button>
+          <button className="btn" disabled={creating} onClick={createDemo}>
+            <Icon name="add" />
+            {creating ? 'Démonstration en cours…' : 'Démonstration'}
+          </button>
           <span className="sep" />
           <button className="btn" onClick={load}>
             <Icon name="refresh" />
@@ -336,6 +362,44 @@ export function PlatformPage() {
         <div className="window-body" style={{ paddingBottom: 0 }}>
           <ErrorMessage error={error} />
         </div>
+      )}
+      {demo && (
+        <Dialog
+          wide
+          title={demo.organizationName}
+          onClose={() => setDemo(null)}
+          footer={
+            <button className="btn btn-primary" onClick={() => setDemo(null)}>
+              Fermer
+            </button>
+          }
+        >
+          <div className="dialog-body">
+            <div className="msg msg-warn">Identifiants affichés une seule fois.</div>
+            <div className="grid-wrap">
+              <table className="grid compact">
+                <thead>
+                  <tr>
+                    <th>Rôle</th>
+                    <th>Nom</th>
+                    <th>E-mail</th>
+                    <th>Mot de passe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[demo.owner, ...demo.staff].map((c) => (
+                    <tr key={c.email}>
+                      <td>{ROLE_LABELS.fr[c.role]}</td>
+                      <td>{c.displayName}</td>
+                      <td>{c.email}</td>
+                      <td className="num">{c.password}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Dialog>
       )}
       {editing && selected && (
         <SubscriptionDialog

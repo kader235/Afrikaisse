@@ -180,17 +180,21 @@ Installateur `AfriKaisse-Setup-0.1.0.exe` compilé (Inno Setup 6). L'installatio
 
 | Domaine | Vérifié |
 |---|---|
-| État de mise en route | Restaurant neuf : 0 table, 0 produit, 2 postes, 1 membre, pas prêt ; après démonstration : 2 zones, 10 tables, 5 catégories, 19 produits, 3 postes, prêt ; première commande comptée |
-| Démonstration | Serveur refusé ; installée une fois (seconde fois 409) ; grillades au Grill, boissons au Bar ; 10 QR et menu client aux 5 catégories ; vente immédiate d'un burger double à options + 2 brochettes = 14 500 ; journal `demo.loaded` |
+| État de mise en route | Restaurant neuf : 0 table, 0 produit, 2 postes, 1 membre, pas prêt ; après démonstration : 2 zones, 20 tables, 6 catégories, 25 produits, 3 postes, prêt ; première commande comptée |
+| Démonstration (organisation ordinaire) | Serveur refusé ; installée une fois (seconde fois 409) ; grillades au Grill, boissons au Bar ; 20 QR et menu client aux 6 catégories ; vente immédiate d'un burger double à options + 2 brochettes = 14 500 ; journal `demo.loaded` ; aucune équipe ni vente créée |
 | Protection | Établissement avec un produit : refus « vide » ; autre organisation : 404 |
 
-**Essai dans le navigateur** :
-- création du restaurant « Maquis Démo Centre » ;
-- ouverture directe sur « Bien démarrer » (0 étape sur 5, offre de démonstration) ;
-- installation de la démonstration ;
-- étapes « salle » et « carte » cochées ;
-- plan de salle avec Salle et Terrasse ;
-- menu aux 5 catégories.
+`onboarding.test.ts` et `demo.test.ts`, sur SQLite et PGlite :
+
+| Domaine | Vérifié |
+|---|---|
+| Avancement réel | Neuf : seule « Stations » faite, reprise sur « Restaurant », fin refusée (409) ; étape 1 validée → Restaurant et Devise faites ; logo + adresse ; catégorie passée puis faite (n'est plus « passée ») ; tables, membre → 10 étapes faites, reprise sur « Imprimantes » ; Imprimantes et Test passées → fin acceptée, `completedAt` ; journal `setup.completed`, `setup.step_skipped` |
+| Droits | Gérant : lecture oui, passer / terminer 403 ; étape inconnue ou identifiant invalide 400 ; autre organisation 404 |
+| Logo | Fiche, liste des QR, menu public, image servie, reçu d'un paiement ; image d'une autre organisation 404 ; retrait |
+| Tables en série | 10 en salle + 4 en terrasse : T1-T10, TE1-TE4, plusieurs rangées, aucun chevauchement ni débordement, 14 QR ; « salle » existante : T11-T12 rectangulaires aux places libres ; 60 tables de 8 dans une zone ; 0 table ou aucune zone 400 ; serveur 403 ; autre organisation 404 |
+| Commande de test | Sans produit 409 ; groupe obligatoire rempli ; commande confirmée, article « à préparer » au poste Cuisine, présente dans les commandes en cours ; route refusée pour une commande ordinaire (404) et pour un gérant (403) ; annulation avec le motif, étape Test faite, journal `order.cancelled` avec motif et un seul `setup.test_completed` ; deuxième appel sans effet |
+| Organisation de démonstration | Créée par le back-office : 2 zones, 20 tables, Cuisine/Bar/Grill, 25 produits dont ≥ 20 avec photo, 7 comptes (gérant, caissier, 2 serveurs, cuisine, bar, magasinier) ; connexion réelle du propriétaire (`isDemo`, sans échéance) et du caissier ; rapport sur 15 jours : chiffre d'affaires et encaissé > 0, > 100 commandes, annulations, 14 jours avec ventes, espèces et mobile money, origines QR / caisse / serveur ; service du jour dans les 5 états, appel « addition », caisse ouverte, 14 caisses clôturées ; second chargement 409 ; voisine : 404 et équipe inchangée |
+| Durée | Démonstration complète : ~8 s sur SQLite, ~19 s sur PGlite |
 
 ## Phase 13 — stock (158 tests au total)
 

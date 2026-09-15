@@ -265,6 +265,27 @@ la création d'établissement, l'ajout de membre et le code d'appairage (`detail
 `limit`, `used`). Rien d'autre n'est jamais bloqué. `me.tenant.planExpiresAt` sert au rappel
 d'échéance. Le serveur local ne contrôle aucune limite.
 
+## Routes des §70-71 — assistant de mise en route et démonstration
+
+| Méthode | Route | Accès | Rôle |
+|---|---|---|---|
+| GET | `/api/locations/{id}/setup` | `location.read` | Avancement calculé depuis les données : compteurs (zones, tables, catégories, produits, postes, membres, imprimantes, caisses, commandes), `hasLogo`, `hasAddress`, `testDone`, `isDemo`, `started`, `completedAt`, `steps[]` (`id`, `label`, `done`, `skipped`) et `nextStep` (où reprendre ; null quand tout est fait ou passé) |
+| POST | `/api/locations/{id}/setup/steps/{step}` | `location.manage` | `{skipped}` : passer une étape (`true`) ou la reprendre (`false`). Valider `restaurant` démarre l'assistant. Étapes : `restaurant, logo, address, currency, categories, products, tables, qr, stations, users, printers, test` |
+| POST | `/api/locations/{id}/setup/finish` | `location.manage` | Termine l'assistant ; 409 tant qu'une étape n'est ni faite ni passée |
+| POST | `/api/locations/{id}/setup/tables` | `tables.manage` | `{zones: [{name, count 1-60, capacity, shape?, prefix?}]}` (1 à 6 zones) → 201 plan de salle. Zone nouvelle : plan en rangées avec allées ; zone existante (même nom) : places libres. Libellés T1…, TE1… sans doublon ; chaque table reçoit son QR |
+| POST | `/api/locations/{id}/setup/test-order` | `location.manage` | 201 `{order, stations}` : vraie commande (à emporter) du premier produit disponible, options obligatoires remplies ; `stations` = postes qui l'ont reçue. 409 sans produit |
+| POST | `/api/locations/{id}/setup/test-order/{orderId}/finish` | `location.manage` | Annule la commande de test (motif « Commande de test de la mise en route », journal `order.cancelled`) et valide l'étape. 404 pour toute commande qui n'a pas été créée par le test |
+| POST | `/api/locations/{id}/demo` | `menu.manage` + `tables.manage` | Établissement vide, une fois par organisation (sinon 409). 201 = avancement + `staff[]`. Organisation ordinaire : 20 tables, postes, carte avec photos, `staff` vide. Organisation `is_demo` (propriétaire ou administrateur) : en plus l'équipe (mots de passe générés, rendus une seule fois), 14 jours d'historique et le service du jour |
+| POST | `/api/platform/demo-tenants` | back-office (Cloud) | `{email?}` → 201 `{tenantId, locationId, organizationName, owner, staff, status}` : nouvelle organisation « AfriKaisse Demo Restaurant » marquée `is_demo`, sans échéance |
+
+`PATCH /api/locations/{id}` accepte `logoMediaId` (image téléversée par `POST /api/locations/{id}/media`,
+de la même organisation, sinon 404 ; `null` retire le logo). `logoUrl` est ajouté à la fiche de
+l'établissement, au reçu (`location.logoUrl`), à la liste des QR (`logoUrl`) et au menu public
+(`restaurant.logoUrl`).
+
+Commande d'exploitation : `node dist/cli.cjs create-demo [e-mail]` crée la même organisation de
+démonstration et affiche les identifiants une seule fois.
+
 ## Phase 18 — limites par adresse IP
 
 Routes `POST` ouvertes sans connexion : 429 `TOO_MANY_ATTEMPTS` et en-tête `Retry-After` au-delà de

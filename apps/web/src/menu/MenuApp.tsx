@@ -217,9 +217,12 @@ export function MenuApp() {
   return (
     <div className="m-app">
       <header className="m-head">
-        <div>
-          <h1>{restaurant.name}</h1>
-          {restaurant.organization !== restaurant.name && <p>{restaurant.organization}</p>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+          {restaurant.logoUrl && <img src={restaurant.logoUrl} alt="" width={52} height={52} style={{ flex: 'none', objectFit: 'contain', borderRadius: 8, background: '#ffffff' }} />}
+          <div>
+            <h1>{restaurant.name}</h1>
+            {restaurant.organization !== restaurant.name && <p>{restaurant.organization}</p>}
+          </div>
         </div>
         <span className="m-table">Table {table.label}</span>
       </header>

@@ -44,7 +44,7 @@ export async function listQrCodes(ctx: AppContext, scope: TenantScope, locationI
   const location = await ctx.db
     .selectFrom('locations as l')
     .innerJoin('tenants as t', 't.id', 'l.tenant_id')
-    .select(['l.id', 'l.name', 't.name as tenant_name'])
+    .select(['l.id', 'l.name', 'l.logo_media_id', 't.name as tenant_name'])
     .where('l.id', '=', locationId)
     .where('l.tenant_id', '=', scope.tenantId)
     .executeTakeFirst();
@@ -76,6 +76,7 @@ export async function listQrCodes(ctx: AppContext, scope: TenantScope, locationI
   return {
     locationName: location.name,
     organizationName: location.tenant_name,
+    logoUrl: location.logo_media_id ? `/api/media/${location.logo_media_id}` : null,
     menuBaseUrl: `${base}/m/`,
     reachableFromInternet: !isLocalNetworkHost(new URL(base).hostname),
     codes: rows

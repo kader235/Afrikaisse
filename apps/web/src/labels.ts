@@ -117,6 +117,13 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'order.rejected': 'Commande QR refusée',
   'order.cancelled': 'Commande annulée',
   'table.freed': 'Table libérée',
+  'setup.step_skipped': 'Mise en route : étape passée',
+  'setup.tables_generated': 'Tables créées en série',
+  'setup.test_order': 'Commande de test envoyée',
+  'setup.test_completed': 'Test de mise en route réussi',
+  'setup.completed': 'Mise en route terminée',
+  'demo.loaded': 'Démonstration installée',
+  'demo.tenant_created': 'Organisation de démonstration créée',
 };
 
 export const OPERATING_MODE_LABELS: Record<OperatingMode, string> = {

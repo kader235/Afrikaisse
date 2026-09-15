@@ -2,7 +2,8 @@ import { setSubscriptionSchema, subscriptionSchema } from '@afrikaisse/core';
 import { setSubscription } from '../services/subscription.ts';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { auditEntrySchema, platformTenantSchema, tenantDetailsSchema, updateTenantSchema } from '@afrikaisse/core';
+import { auditEntrySchema, demoTenantSchema, emailSchema, platformTenantSchema, tenantDetailsSchema, updateTenantSchema } from '@afrikaisse/core';
+import { createDemoTenant } from '../services/demo.ts';
 import type { AppContext } from '../context.ts';
 import { requestMeta, requireAuth, requireTenant } from '../lib/access.ts';
 import { getTenant, listAudit, listTenants, renameTenant, requirePlatformAdmin, setTenantStatus } from '../services/tenant.ts';
@@ -62,6 +63,25 @@ export function platformRoutes(ctx: AppContext): FastifyPluginAsyncZod {
         schema: { tags: ['platform'], summary: "Changer l'offre ou prolonger l'abonnement d'une organisation", security, params, body: setSubscriptionSchema, response: { 200: subscriptionSchema } },
       },
       async (request) => setSubscription(ctx, requirePlatformAdmin(request.auth), request.params.tenantId, request.body, requestMeta(request)),
+    );
+
+    app.post(
+      '/demo-tenants',
+      {
+        schema: {
+          tags: ['platform'],
+          summary: 'Créer une organisation « AfriKaisse Demo Restaurant » pour un prospect (identifiants rendus une seule fois)',
+          security,
+          body: z.object({ email: emailSchema.optional() }).default({}),
+          response: { 201: demoTenantSchema },
+        },
+      },
+      async (request, reply) => {
+        requirePlatformAdmin(request.auth);
+        const demo = await createDemoTenant(ctx, requestMeta(request), { email: request.body.email });
+        reply.code(201).header('cache-control', 'no-store');
+        return demo;
+      },
     );
 
     for (const [action, status] of [['suspend', 'SUSPENDED'], ['reactivate', 'ACTIVE']] as const) {
