@@ -337,6 +337,24 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         </button>
       </nav>
 
+      <footer className="status-strip" aria-label="Barre d'état">
+        <span>
+          <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
+          {online ? t('status.connected') : t('status.offline')}
+        </span>
+        {health && <span>{health.profile === 'cloud' ? t('status.cloud') : t('status.local')}</span>}
+        <span className="status-grow">
+          {place}
+          {me.tenant && place !== me.tenant.name ? ` · ${me.tenant.name}` : ''}
+        </span>
+        <span>
+          {me.user.displayName}
+          {roleLabel ? ` · ${roleLabel}` : ''}
+        </span>
+        <StatusClock locale={lang === 'ar' ? 'ar-TD' : lang === 'en' ? 'en-GB' : 'fr-FR'} />
+        <span>AfriKaisse {health?.version ?? APP_VERSION}</span>
+      </footer>
+
       {panel && (
         <SidePanel
           mode={panel}
@@ -477,6 +495,21 @@ function SidePanel({
         </button>
       </aside>
     </div>
+  );
+}
+
+/** Date et heure de la barre d'état, remises à jour chaque minute. */
+function StatusClock({ locale }: { locale: string }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 20_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <span className="num">
+      {now.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}{' '}
+      {now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+    </span>
   );
 }
 

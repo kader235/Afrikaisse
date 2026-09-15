@@ -626,7 +626,7 @@ export function SaleTab({
             {canCollect && drawerOpen && (
               <button className="btn pos-collect" disabled={busy || lines.length === 0} onClick={() => send(true)}>
                 <Icon name="cash" />
-                Envoyer et encaisser
+                Encaisser
               </button>
             )}
             <button className="btn btn-icon" title="Remarque pour la cuisine" aria-label="Remarque pour la cuisine" aria-pressed={noteOpen || !!note} onClick={() => setNoteOpen((open) => !open)}>
