@@ -18,6 +18,8 @@ import { KitchenPage } from './pages/Kitchen.tsx';
 import { DashboardPage } from './pages/Dashboard.tsx';
 import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
+import { TakeOrderPage } from './pages/TakeOrder.tsx';
+import { isTablet } from './touch.ts';
 import { OnboardingWizard } from './pages/Onboarding.tsx';
 import { RecoveryPrompt } from './pages/Recovery.tsx';
 import { useActivityFeed } from './activity.ts';
@@ -35,7 +37,7 @@ type State =
   | { kind: 'anonymous'; screen: 'login' | 'register' }
   | { kind: 'session'; me: Me };
 
-type Section = 'dashboard' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform' | 'monitoring';
+type Section = 'dashboard' | 'orders' | 'pos' | 'kitchen' | 'reports' | 'stock' | 'organization' | 'locations' | 'floor' | 'menu' | 'team' | 'audit' | 'account' | 'platform' | 'monitoring' | 'take';
 
 /** Adresse d'entrée directe (console Windows) : `#supervision` → Supervision. */
 const sectionFromHash = (): Section | null => (window.location.hash === '#supervision' ? 'monitoring' : null);
@@ -169,7 +171,19 @@ const TAB_PRIORITY: Record<Role, Section[]> = {
   ADMIN: ['dashboard', 'orders', 'pos', 'menu'],
   MANAGER: ['dashboard', 'orders', 'pos', 'floor'],
   CASHIER: ['pos', 'orders'],
-  WAITER: ['floor', 'orders'],
+  WAITER: ['take', 'orders'],
+  KITCHEN: ['kitchen'],
+  BAR: ['kitchen'],
+  STOCK_MANAGER: ['stock', 'menu'],
+};
+
+/** Onglets du bandeau sur la tablette : l'outil du métier d'abord, tout le reste sous « Plus ». */
+const TABLET_NAV: Record<Role, Section[]> = {
+  OWNER: ['take', 'orders', 'pos', 'dashboard'],
+  ADMIN: ['take', 'orders', 'pos', 'dashboard'],
+  MANAGER: ['take', 'orders', 'pos', 'dashboard'],
+  CASHIER: ['pos', 'take', 'orders'],
+  WAITER: ['take', 'orders'],
   KITCHEN: ['kitchen'],
   BAR: ['kitchen'],
   STOCK_MANAGER: ['stock', 'menu'],
@@ -202,6 +216,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
 
   const sections: NavItem[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard', visible: can('reports.read'), group: 'home' },
+    { id: 'take', label: 'Prendre une commande', icon: 'cutlery', visible: can('orders.create') && can('tables.read'), group: 'sale' },
     { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect'), group: 'sale' },
     { id: 'orders', label: t('nav.orders'), icon: 'ticket', visible: can('orders.read'), badge: waiting, group: 'sale' },
     { id: 'floor', label: t('nav.floor'), icon: 'table', visible: can('tables.read'), group: 'sale' },
@@ -222,8 +237,11 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     .filter((s): s is NavItem => !!s)
     .slice(0, 4);
   if (quick.length === 0 && visible[0]) quick.push(visible[0]);
+  const tablet = isTablet();
+  const tabletNav = TABLET_NAV[me.role ?? 'OWNER'].map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s);
+  if (tabletNav.length === 0 && visible[0]) tabletNav.push(visible[0]);
   const [panel, setPanel] = useState<'account' | 'nav' | 'notifications' | null>(null);
-  const [section, setSection] = useState<Section>(() => sectionFromHash() ?? quick[0]?.id ?? 'account');
+  const [section, setSection] = useState<Section>(() => sectionFromHash() ?? (tablet ? tabletNav[0]?.id : quick[0]?.id) ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
   const roleLabel = me.role ? ROLE_LABELS[lang][me.role] : '';
   const place = me.locations.length === 1 ? me.locations[0]!.name : (me.tenant?.name ?? 'AfriKaisse');
@@ -325,6 +343,21 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
             Afri<span>Kaisse</span>
           </span>
         </div>
+        {tablet && (
+          <nav className="topnav" aria-label="Navigation principale">
+            {tabletNav.map((s) => (
+              <button key={s.id} className="topnav-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
+                <Icon name={s.icon} />
+                <span>{s.label}</span>
+                {!!s.badge && <span className="topnav-count">{s.badge}</span>}
+              </button>
+            ))}
+            <button className="topnav-item" aria-haspopup="dialog" aria-current={tabletNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
+              <Icon name="more" />
+              <span>Plus</span>
+            </button>
+          </nav>
+        )}
         <div className="topbar-context">
           <span className="topbar-place">{place}</span>
           {me.tenant && place !== me.tenant.name && <span className="topbar-org">{me.tenant.name}</span>}
@@ -346,6 +379,9 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
             </button>
           )}
           <button className="topbar-user" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
+            <span className="topbar-avatar" aria-hidden="true">
+              <Icon name="user" />
+            </span>
             <span className="topbar-initials" aria-hidden="true">
               {initials(me.user.displayName)}
             </span>
@@ -372,12 +408,13 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         </button>
       </nav>
 
-      <main className="workspace">
+      <main className={current === 'take' ? 'workspace workspace-bleed' : 'workspace'}>
         {can('tenant.read') && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
         {!!error && <ErrorMessage error={error} />}
         {current === 'dashboard' && <DashboardPage me={me} feed={can('orders.read') ? feed : undefined} onNavigate={open} />}
         {current === 'orders' && <OrdersPage me={me} feed={feed} />}
         {current === 'pos' && <PosPage me={me} />}
+        {current === 'take' && <TakeOrderPage me={me} feed={feed} />}
         {current === 'kitchen' && <KitchenPage me={me} feed={feed} />}
         {current === 'reports' && <ReportsPage me={me} />}
         {current === 'stock' && <StockPage me={me} />}
@@ -420,7 +457,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
         <span>AfriKaisse {health?.version ?? APP_VERSION}</span>
       </footer>
 
-      {!me.user.hasRecovery && !!me.user.email && !recoveryLater && !setupOpen && (
+      {me.user.hasRecovery === false && !!me.user.email && !recoveryLater && !setupOpen && (
         <RecoveryPrompt
           onLater={postponeRecovery}
           onSaved={() => {

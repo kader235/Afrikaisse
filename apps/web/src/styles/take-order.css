@@ -1,0 +1,433 @@
+/* === Prendre une commande (tablette) =======================================
+ * Trois colonnes : tables sur fond blanc, menu, commande en bleu nuit.
+ * Textes sur fond blanc en couleurs différentes ; la colonne bleue garde des textes blancs lisibles.
+ * WebView Chrome 83 : pas de gap sur flexbox (marges), grid-gap accepté.
+ */
+.take {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr) 370px;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg);
+}
+
+.take-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.take-none {
+  padding: 32px 20px;
+  color: var(--text-soft);
+  font-size: 16px;
+  text-align: center;
+}
+
+/* Tables */
+.take-tables {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #ffffff;
+  border-inline-end: 1px solid var(--border);
+}
+
+.take-head {
+  padding: 16px 18px 10px;
+}
+
+.take-head h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.take-head p {
+  margin: 2px 0 0;
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.take-zone {
+  margin: 10px 18px 6px;
+  color: var(--text-soft);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.take-table-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-gap: 10px;
+  padding: 4px 18px 16px;
+}
+
+.take-table {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 84px;
+  padding: 4px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.take-table b {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.take-table span {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Table occupée ou qui attend : bordure foncée, le texte reste noir. */
+.take-table.busy,
+.take-table.ready,
+.take-table.call {
+  border-color: #0f1f40;
+}
+
+.take-table[aria-pressed='true'] {
+  border: 2.5px solid #1d4ed8;
+}
+
+/* Menu */
+.take-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.take-cats {
+  display: flex;
+  flex: none;
+  padding: 0 12px;
+  overflow-x: auto;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+}
+
+.take-cats::-webkit-scrollbar {
+  display: none;
+}
+
+.take-cats button {
+  flex: none;
+  height: 58px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.take-cats button[aria-pressed='true'] {
+  border-bottom-color: #1d4ed8;
+  color: var(--text);
+}
+
+.take-products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-gap: 12px;
+  padding: 16px 18px;
+}
+
+.take-product {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 104px;
+  padding: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.take-product:active {
+  border-color: #1d4ed8;
+}
+
+.take-product:disabled {
+  cursor: default;
+}
+
+.take-product-name {
+  padding-inline-end: 36px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.take-product-price,
+.take-product-out {
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.take-product-price,
+.take-product-out {
+  color: var(--text);
+}
+
+.take-product-qty {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 14px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* Commande : colonne bleu nuit */
+.take-ticket {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #0f2044;
+  color: #ffffff;
+}
+
+.take-ticket-head {
+  padding: 16px 20px 12px;
+  background: #162d5c;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.take-ticket-head h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.take-ticket-head p {
+  margin: 2px 0 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 15px;
+}
+
+.take-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.take-ticket .take-none {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.take-line {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.take-line-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.take-line-top span {
+  margin-inline-start: 10px;
+  white-space: nowrap;
+}
+
+.take-line small {
+  display: block;
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+}
+
+.take-qty {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.take-qty button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 46px;
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 10px;
+  background: none;
+  color: #ffffff;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.take-qty b {
+  min-width: 48px;
+  font-size: 20px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.take-foot {
+  flex: none;
+  padding: 14px 20px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.take-foot .msg {
+  margin-bottom: 10px;
+}
+
+.take-sent {
+  display: flex;
+  align-items: center;
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.take-sent .ico {
+  margin-inline-end: 8px;
+}
+
+.take-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.take-total span {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.take-total strong {
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.take-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 68px;
+  border: 0;
+  border-radius: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.take-send .ico {
+  width: 28px;
+  height: 28px;
+  margin-inline-end: 12px;
+}
+
+.take-send:disabled {
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: default;
+}
+
+/* Portrait : tables en bande défilante au-dessus du menu, commande à droite. */
+@media (max-width: 1000px) {
+  .take {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .take-tables {
+    grid-column: 1;
+    grid-row: 1;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .take-head,
+  .take-zone {
+    display: none;
+  }
+
+  .take-tables .take-scroll {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .take-zone-block,
+  .take-table-grid {
+    display: flex;
+    flex: none;
+  }
+
+  .take-table-grid {
+    padding: 10px 0 10px 12px;
+  }
+
+  .take-table {
+    flex: none;
+    width: 96px;
+    height: 76px;
+    margin-inline-end: 8px;
+  }
+
+  .take-menu {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .take-ticket {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .take-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

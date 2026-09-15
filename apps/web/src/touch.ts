@@ -1,6 +1,22 @@
 import { isNativeApp } from './platform.ts';
 
 /**
+ * Version tablette (styles/tablette.css) : l'application Android, tout écran tactile, ou
+ * `localStorage['afk.tablette'] = '1'` pour la vérifier depuis un PC.
+ */
+export function markTablet(): void {
+  let forced = false;
+  try {
+    forced = localStorage.getItem('afk.tablette') === '1';
+  } catch {
+    /* stockage indisponible */
+  }
+  if (isNativeApp() || forced || window.matchMedia('(pointer: coarse)').matches) document.documentElement.classList.add('tablette');
+}
+
+export const isTablet = (): boolean => document.documentElement.classList.contains('tablette');
+
+/**
  * Tailles tactiles imposées dans l'application tablette.
  *
  * Les règles tactiles de styles.css sont écrites dans `@media (pointer: coarse)`.

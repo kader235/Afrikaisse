@@ -45,7 +45,9 @@ import {
   mdiPackageVariantClosed,
   mdiPencil,
   mdiPercent,
+  mdiMinus,
   mdiPlus,
+  mdiSend,
   mdiPower,
   mdiPrinter,
   mdiQrcode,
@@ -93,6 +95,8 @@ export function Brand() {
  */
 const ICONS = {
   add: mdiPlus,
+  minus: mdiMinus,
+  send: mdiSend,
   edit: mdiPencil,
   key: mdiKey,
   power: mdiPower,

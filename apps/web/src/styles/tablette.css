@@ -1,0 +1,500 @@
+/*
+ * Version tablette « Savane bleu » (validée par Kader le 15/09/2026, maquette maquette-savane.html).
+ * Bandeau bleu nuit à onglets, police Plus Jakarta Sans, textes grands et lisibles.
+ * Règle : pas de texte sur une pastille colorée — le texte change de couleur, le fond reste blanc.
+ * Exceptions voulues : la barre du haut, les boutons d'action pleins et la colonne de droite bleu nuit.
+ * Tout est rangé sous `.tablette` (posée par touch.ts) : la version PC n'est pas touchée.
+ */
+
+.topnav,
+.topbar-avatar {
+  display: none;
+}
+
+/* === Jetons ============================================================= */
+:root.tablette {
+  --font: 'Plus Jakarta Sans', Roboto, 'Segoe UI', Arial, 'Noto Sans Arabic', Tahoma, sans-serif;
+  --radius: 10px;
+  --radius-panel: 12px;
+  --radius-small: 8px;
+  --topbar-h: 64px;
+}
+
+:root.tablette[data-theme='light'] {
+  --bg: #f4f6fa;
+  --band: #f8fafc;
+  --zebra: #f8fafc;
+  --hover: #eef2f8;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --line: #e2e8f0;
+  --text: #0f1f40;
+  --text-soft: #475569;
+  --muted: #64748b;
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-strong: #1e3a8a;
+  --primary-soft: #eff4ff;
+  --primary-line: #93c5fd;
+  --input-border: #cbd5e1;
+  --topbar: #0f2044;
+  --topbar-brand: #0f2044;
+  --topbar-soft: rgba(255, 255, 255, 0.8);
+  --ok: #047857;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --attention: #b91c1c;
+  --shadow-card: none;
+}
+
+.tablette body {
+  font-family: var(--font);
+  font-size: 15px;
+}
+
+.tablette .btn {
+  border-radius: var(--radius);
+  font-weight: 700;
+}
+
+/* === Coque : bandeau à onglets, sans rail ni barre d'état =============== */
+.tablette .app {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+}
+
+.tablette .sidebar,
+.tablette .bottombar,
+.tablette .status-strip,
+.tablette .topbar-menu {
+  display: none !important;
+}
+
+.tablette .topbar {
+  padding-inline-end: 12px;
+  border-bottom: 0;
+}
+
+.tablette .topbar-brand {
+  justify-content: flex-start;
+  width: auto;
+  padding: 0 18px;
+  background: transparent;
+}
+
+.tablette .topbar-brand svg {
+  width: 38px;
+  height: 38px;
+  margin-inline-end: 10px;
+}
+
+/* Le logo suffit : la place va aux onglets. Le nom du restaurant est dans « Plus ». */
+.tablette .topbar-product,
+.tablette .topbar-context {
+  display: none;
+}
+
+.tablette .topnav {
+  display: flex;
+  order: 1;
+  align-self: stretch;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.tablette .topnav::-webkit-scrollbar {
+  display: none;
+}
+
+.tablette .topnav-item {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: rgba(255, 255, 255, 0.8);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tablette .topnav-item .ico {
+  width: 22px;
+  height: 22px;
+  margin-inline-end: 9px;
+}
+
+.tablette .topnav-item[aria-current='page'] {
+  border-bottom-color: #60a5fa;
+  color: #ffffff;
+}
+
+.tablette .topnav-count {
+  margin-inline-start: 8px;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.tablette .topbar-side {
+  order: 2;
+  margin-inline-start: auto;
+}
+
+.tablette .topbar-status {
+  display: none;
+}
+
+.tablette .topbar-status.off {
+  display: inline-flex;
+  background: none;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tablette .topbar-bell .badge-count {
+  top: 0;
+  right: -2px;
+  box-shadow: none;
+  color: #ffffff;
+}
+
+.tablette .topbar-initials,
+.tablette .topbar-name span {
+  display: none;
+}
+
+.tablette .topbar-avatar {
+  display: inline-flex;
+  margin-inline-end: 8px;
+}
+
+.tablette .topbar-avatar .ico {
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  color: #ffffff;
+}
+
+.tablette .topbar-name strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.tablette .workspace {
+  padding: 18px 20px;
+}
+
+.tablette .workspace-bleed {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tablette .workspace-bleed > .msg {
+  margin: 12px 16px;
+}
+
+.tablette .workspace-bleed > .take {
+  flex: 1 1 auto;
+  height: auto;
+}
+
+/* Rappel d'essai : pas sur la tablette ; un abonnement échu reste signalé. */
+.tablette .subscription-banner.msg-warn {
+  display: none;
+}
+
+.tablette .subscription-banner.msg-warn + * {
+  margin-top: 0;
+}
+
+/* Portrait : onglets icône au-dessus du nom, le lieu et le nom passent dans « Plus ». */
+@media (max-width: 1000px) {
+  .tablette .topbar-name {
+    display: none;
+  }
+
+  .tablette .topbar-brand {
+    padding: 0 12px;
+  }
+
+  .tablette .topbar-brand svg {
+    margin: 0;
+  }
+
+  .tablette .topnav-item {
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+
+  .tablette .topnav-item .ico {
+    margin: 0 0 3px;
+  }
+
+  .tablette .topbar-side {
+    margin-inline-start: auto;
+  }
+}
+
+/* === Pastilles et états : texte en couleur, jamais sur un fond coloré === */
+.tablette .badge-count {
+  min-width: 0;
+  padding: 0 2px;
+  background: none;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.tablette .count-pill,
+.tablette .segmented .btn[aria-pressed='true'] .count-pill,
+.tablette .subtabs button[aria-current='page'] .count-pill {
+  background: none;
+  color: inherit;
+  font-weight: 800;
+}
+
+.tablette .tag {
+  padding: 0;
+  background: none;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tablette .msg {
+  border-inline-start-width: 4px;
+}
+
+.tablette .chip[aria-pressed='true'] {
+  border: 2px solid var(--primary);
+  background: #ffffff;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tablette .segmented .btn[aria-pressed='true'] {
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: inset 0 -3px 0 var(--primary);
+}
+
+.tablette .panel-nav .nav-item[aria-current='page'],
+.tablette .panel-section .nav-item[aria-current='page'] {
+  background: none;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.tablette .panel-nav .nav-item[aria-current='page'] .ico,
+.tablette .panel-section .nav-item[aria-current='page'] .ico {
+  color: var(--primary);
+}
+
+.tablette .panel-nav .nav-item .badge-count {
+  background: none;
+}
+
+/* === Tableau de bord ==================================================== */
+.tablette .kpi-strip {
+  grid-gap: 12px;
+  background: none;
+  border: 0;
+}
+
+.tablette .kpi,
+.tablette .kpi + .kpi {
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.tablette .kpi-label {
+  font-size: 16px;
+}
+
+.tablette .kpi-value {
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.tablette .kpi-context {
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.tablette .panel {
+  border-color: var(--border);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.tablette .panel-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.tablette .panel-count {
+  background: none;
+  color: var(--text);
+  font-weight: 800;
+}
+
+.tablette .now-count,
+.tablette .now-count.alert,
+.tablette .now-count.ready {
+  min-width: 40px;
+  background: none;
+  border: 0;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.tablette .now-label {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.tablette .hbar {
+  max-width: 22px;
+  border-radius: 4px 4px 0 0;
+}
+
+.tablette .hchart-axis,
+.tablette .hchart-x span,
+.tablette .chart-legend {
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+/* Tableau de bord tablette : bandeau bleu des chiffres clés, puis ventes et service ; tient dans l'écran. */
+.tablette .workspace > .dash-tablette {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dash-hero {
+  display: grid;
+  flex: none;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin-bottom: 16px;
+  padding: 22px 28px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0f2044 0%, #1d4ed8 100%);
+  color: #ffffff;
+}
+
+.hero-fig {
+  min-width: 0;
+}
+
+.hero-fig + .hero-fig {
+  padding-inline-start: 24px;
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero-fig strong {
+  display: block;
+  overflow: hidden;
+  font-size: 34px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hero-fig span {
+  display: block;
+  margin-top: 6px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dash-tab-grid {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-rows: minmax(0, 1fr);
+  grid-gap: 16px;
+  min-height: 0;
+}
+
+.dash-tab-grid .panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0;
+}
+
+.dash-tab-grid .dash-activity {
+  grid-column: 1;
+}
+
+.dash-tab-grid .dash-now {
+  grid-column: 2;
+}
+
+.dash-tab-grid .dash-activity .panel-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dash-tab-grid .hchart {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 160px;
+}
+
+.dash-tab-grid .now-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.tablette .hchart-axis,
+.tablette .hchart-x span,
+.tablette .now-label,
+.tablette .now-row .ico {
+  color: var(--text);
+}
+
+@media (max-width: 1000px) {
+  .dash-hero {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-gap: 18px 24px;
+  }
+
+  .hero-fig + .hero-fig {
+    padding-inline-start: 0;
+    border-inline-start: 0;
+  }
+
+  .dash-tab-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .dash-tab-grid .dash-activity,
+  .dash-tab-grid .dash-now {
+    grid-column: 1;
+  }
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ORDER_STATUS_LABELS, businessDate, formatDuration, formatMoney, moneyToInput, shiftDate, type KitchenReport, type LocationDetails, type Me, type Order, type SalesReport } from '@afrikaisse/core';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
+import { isTablet } from '../touch.ts';
 import { ErrorMessage, Icon } from '../ui.tsx';
 import '../styles/reports.css';
 
@@ -103,6 +104,41 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const y = sameTime ? { revenue: yRevenue, orders: yOrders, averageTicket: yOrders > 0 ? Math.round(yRevenue / yOrders) : 0 } : null;
   const latest = [...orders].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
   const dateLabel = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Tablette : tout tient dans l'écran, seulement les chiffres utiles, sans comparaison ni détail.
+  if (isTablet()) {
+    return (
+      <section className="dash dash-tablette">
+        <ErrorMessage error={error} />
+        <div className="dash-hero" aria-label="Aujourd'hui">
+          <HeroFigure label="Chiffre d'affaires" value={t ? money(t.revenue) : '—'} />
+          <HeroFigure label="Commandes" value={t ? String(t.orders) : '—'} />
+          <HeroFigure label="Panier moyen" value={t ? money(t.averageTicket) : '—'} />
+          {tablesTotal !== null && <HeroFigure label="Tables occupées" value={`${occupied} / ${tablesTotal}`} />}
+        </div>
+        <div className="dash-tab-grid">
+          <section className="panel dash-activity">
+            <header className="panel-header">
+              <h2 className="panel-title">Ventes par heure</h2>
+            </header>
+            <div className="panel-body">{today ? <HourChart today={today} yesterday={null} cutoffHour={cutoffHour} /> : <p className="muted">Chargement…</p>}</div>
+          </section>
+          <section className="panel dash-now">
+            <header className="panel-header">
+              <h2 className="panel-title">Service en cours</h2>
+            </header>
+            <ul className="now-list">
+              {feed && <NowRow n={count('PENDING')} label="Commandes à confirmer" onOpen={() => onNavigate('orders')} />}
+              {feed && <NowRow n={feed.requests.length} label="Demandes des tables" onOpen={() => onNavigate('orders')} />}
+              {feed && <NowRow n={count('READY')} label="Prêtes à servir" onOpen={() => onNavigate('orders')} />}
+              {feed && <NowRow n={count('CONFIRMED', 'PREPARING')} label="En préparation" onOpen={() => onNavigate(can('kitchen.use') || can('bar.use') ? 'kitchen' : 'orders')} />}
+              {lowStock !== null && <NowRow n={lowStock.length} label="Stock faible" onOpen={() => onNavigate('stock')} />}
+            </ul>
+          </section>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="dash">
@@ -255,6 +291,15 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         </section>
       </div>
     </section>
+  );
+}
+
+function HeroFigure({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="hero-fig">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
   );
 }
 

@@ -54,7 +54,7 @@ import { GuestShares, guestShares } from './TableGuests.tsx';
 
 type Tab = 'sale' | 'checkout' | 'drawer';
 
-interface TicketLine {
+export interface TicketLine {
   key: string;
   productId: string;
   name: string;
@@ -69,9 +69,9 @@ interface TicketLine {
 const hhmm = (ms: number) => new Date(ms).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 const dateTime = (ms: number) => new Date(ms).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 let keySeq = 0;
-const nextKey = () => `l${++keySeq}`;
+export const nextKey = () => `l${++keySeq}`;
 
-function toPricing(menu: AdminMenu, p: Product): PricingProduct {
+export function toPricing(menu: AdminMenu, p: Product): PricingProduct {
   return {
     id: p.id,
     name: p.name,
@@ -93,7 +93,7 @@ function toPricing(menu: AdminMenu, p: Product): PricingProduct {
 }
 
 /** Même calcul que le serveur : promotions automatiques, code saisi, taxes de l'établissement. */
-function ticketPricing(menu: AdminMenu, pricing: PricingConfig, lines: TicketLine[], code: PromotionRule | null, now: number): OrderPricing {
+export function ticketPricing(menu: AdminMenu, pricing: PricingConfig, lines: TicketLine[], code: PromotionRule | null, now: number): OrderPricing {
   const rates = new Map(pricing.taxRates.map((r) => [r.id, { id: r.id, name: r.name, rateBp: r.rateBp }]));
   const categoryRate = new Map(pricing.categories.map((c) => [c.id, c.taxRateId]));
   const productRate = new Map(pricing.products.map((p) => [p.id, p.taxRateId]));
@@ -879,7 +879,7 @@ function TablePicker({ floor, checks, currency, value, onPick, onClose }: { floo
   );
 }
 
-function OptionsDialog({ product, currency, onAdd, onClose }: { product: PricingProduct; currency: CurrencyCode; onAdd: (line: Omit<TicketLine, 'key'>) => void; onClose: () => void }) {
+export function OptionsDialog({ product, currency, onAdd, onClose }: { product: PricingProduct; currency: CurrencyCode; onAdd: (line: Omit<TicketLine, 'key'>) => void; onClose: () => void }) {
   // Au comptoir, la première version disponible est proposée d'office : un toucher de moins.
   const [variantId, setVariantId] = useState<string | null>(product.variants.find((v) => v.isAvailable)?.id ?? null);
   const [modifierIds, setModifierIds] = useState<string[]>([]);
