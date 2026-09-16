@@ -333,16 +333,17 @@
   }
 }
 
+/* Barre d'état d'Android : la page commence sous l'heure (le rail gère déjà sa propre marge). */
 .tablette .workspace {
-  padding: 18px 22px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 22px 18px;
 }
 
 .souris .workspace {
-  padding: 22px 28px;
+  padding: calc(22px + env(safe-area-inset-top, 0px)) 28px 22px;
 }
 
 .tablette .workspace.workspace-bleed {
-  padding: 0;
+  padding: env(safe-area-inset-top, 0px) 0 0;
 }
 
 /* Alertes flottantes : plus de bandeau, elles se posent en haut à droite de la page. */
