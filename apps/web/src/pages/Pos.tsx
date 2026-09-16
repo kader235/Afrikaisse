@@ -487,6 +487,10 @@ export function SaleTab({
   // Plat sans photo : photo d'exemple du catalogue (une vraie photo n'est jamais remplacée).
   const samplePhoto = useDishPhoto();
   const photoOf = (p: Product) => (p.photoUrl ? mediaSrc(p.photoUrl) : samplePhoto(p.name));
+  const linePhoto = (l: TicketLine) => {
+    const p = menu?.products.find((x) => x.id === l.productId);
+    return p ? photoOf(p) : samplePhoto(l.name);
+  };
   // Sans aucune photo dans la liste, des tuiles de texte : pas de cadres vides.
   const withPhotos = products.some((p) => photoOf(p));
   const inTicket = useMemo(() => {
@@ -643,6 +647,13 @@ export function SaleTab({
             ))}
           {lines.map((l, index) => (
             <li key={l.key} className="pos-line">
+              {linePhoto(l) ? (
+                <img className="pos-line-photo" src={linePhoto(l)!} alt="" />
+              ) : (
+                <span className="pos-line-photo thumb-blank" aria-hidden="true">
+                  <Icon name="kitchen" />
+                </span>
+              )}
               <strong className="pos-line-name">{l.name}</strong>
               <span className="pos-line-total num">{formatMoney(l.unitPrice * l.quantity, currency)}</span>
               <div className="pos-line-detail">

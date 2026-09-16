@@ -3,10 +3,12 @@ import {
   formatMoney,
   uuidv7,
   type AdminMenu,
+  type Announcement,
   type Check,
   type CurrencyCode,
   type DiningTable,
   type Floor,
+  type LocationDetails,
   type Me,
   type Order,
   type PricingConfig,
@@ -18,6 +20,7 @@ import { api } from '../api.ts';
 import { dropQueuedOrder, isOffline, queueOrder, readCache, saveCache, useQueuedOrders } from '../offline.ts';
 import { useDishPhoto } from '../dishPhotos.ts';
 import { mediaSrc } from '../platform.ts';
+import { ServiceHeader } from '../serviceHeader.tsx';
 import { ErrorMessage, Icon } from '../ui.tsx';
 import { zoneVars } from '../zoneColors.ts';
 import { OptionsDialog, nextKey, ticketPricing, toPricing, type TicketLine } from './Pos.tsx';
@@ -50,6 +53,10 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [sent, setSent] = useState<string | null>(null);
+  // Bandeau « plat du jour » : la première annonce diffusée en ce moment sur le menu client (design v3).
+  const [announcements, setAnnouncements] = useState<Announcement[]>(() => (locationId ? (readCache<Announcement[]>(`announcements.${locationId}`) ?? []) : []));
+  const [details, setDetails] = useState<LocationDetails | null>(() => (locationId ? readCache<LocationDetails>(`location.${locationId}`) : null));
+  const [query, setQuery] = useState('');
   const queued = useQueuedOrders().filter((o) => o.locationId === locationId);
   const waiting = queued.filter((o) => !o.error);
   // File vidée au retour du réseau : le message de coupure laisse la place à la confirmation.
@@ -96,6 +103,21 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
       },
     );
     void loadMenu();
+    api<Announcement[]>('GET', `/locations/${locationId}/announcements`).then(
+      (list) => {
+        setAnnouncements(list);
+        saveCache(`announcements.${locationId}`, list);
+      },
+      () => undefined,
+    );
+    api<LocationDetails[]>('GET', '/locations').then(
+      (list) => {
+        const found = list.find((l) => l.id === locationId) ?? null;
+        setDetails(found);
+        if (found) saveCache(`location.${locationId}`, found);
+      },
+      () => undefined,
+    );
   }, [locationId, loadMenu]);
 
   // Occupation relue toutes les 5 s : autres serveurs, commandes QR, caisse.
@@ -135,7 +157,11 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
 
   const categories = useMemo(() => (menu ? [...menu.categories].sort((a, b) => a.sort - b.sort) : []), [menu]);
   const activeCategory = categoryId ?? categories[0]?.id ?? null;
-  const products = useMemo(() => (menu ? menu.products.filter((p) => p.categoryId === activeCategory).sort((a, b) => a.sort - b.sort) : []), [menu, activeCategory]);
+  const search = query.trim().toLocaleLowerCase('fr');
+  const products = useMemo(
+    () => (menu ? menu.products.filter((p) => (search ? p.name.toLocaleLowerCase('fr').includes(search) : p.categoryId === activeCategory)).sort((a, b) => a.sort - b.sort) : []),
+    [menu, activeCategory, search],
+  );
   // Plat sans photo : photo d'exemple du catalogue (une vraie photo n'est jamais remplacée).
   const samplePhoto = useDishPhoto();
   const photoOf = (p: Product) => (p.photoUrl ? mediaSrc(p.photoUrl) : samplePhoto(p.name));
@@ -146,6 +172,31 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
     for (const l of lines) counts.set(l.productId, (counts.get(l.productId) ?? 0) + l.quantity);
     return counts;
   }, [lines]);
+
+  // Photo d'une catégorie : celle de son premier plat en photo.
+  const categoryPhoto = (categoryId: string) => {
+    for (const p of menu?.products ?? []) {
+      if (p.categoryId !== categoryId) continue;
+      const photo = photoOf(p);
+      if (photo) return photo;
+    }
+    return null;
+  };
+  const firstPhoto = menu?.products.map(photoOf).find((x) => x) ?? null;
+  const productById = (id: string | null) => (id ? (menu?.products.find((p) => p.id === id) ?? null) : null);
+  const hero = announcements.find((a) => a.live) ?? null;
+  const heroProduct = hero?.targetKind === 'PRODUCT' ? productById(hero.targetId) : null;
+  const heroPhoto = hero
+    ? hero.photoUrl
+      ? mediaSrc(hero.photoUrl)
+      : heroProduct
+        ? photoOf(heroProduct)
+        : hero.targetKind === 'CATEGORY' && hero.targetId
+          ? categoryPhoto(hero.targetId)
+          : firstPhoto
+    : null;
+  const zoneOf = (t: DiningTable | null) => (t ? (floor?.zones.find((z) => z.id === t.zoneId) ?? null) : null);
+  const occupied = floor ? floor.tables.filter((t) => stateOf(t).state !== 'free').length : 0;
 
   // Même calcul que la caisse et le serveur : promotions automatiques et taxes comprises.
   const quote = menu && pricing && lines.length > 0 ? ticketPricing(menu, pricing, lines, null, Date.now()) : null;
@@ -168,6 +219,21 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
       add({ productId: p.id, name: p.name, variantId: null, modifierIds: [], detail: '', unitPrice: p.promoPrice ?? p.price, quantity: 1, note: null });
     } else {
       setOptions(priced);
+    }
+  }
+
+  /** Bouton du bandeau : un plat s'ajoute à la commande (ou se montre si aucune table n'est choisie), une catégorie s'ouvre. */
+  function heroAction() {
+    if (!hero) return;
+    setQuery('');
+    if (hero.targetKind === 'CATEGORY' && hero.targetId) {
+      setCategoryId(hero.targetId);
+      return;
+    }
+    if (heroProduct) {
+      setCategoryId(heroProduct.categoryId);
+      if (tableId && heroProduct.isAvailable) tap(heroProduct);
+      else window.setTimeout(() => document.getElementById(`take-p-${heroProduct.id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
     }
   }
 
@@ -210,31 +276,41 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
 
   if (!locationId) return <p className="take-none">Aucun établissement.</p>;
 
+  const zone = zoneOf(table);
+  const linePhoto = (l: TicketLine) => {
+    const p = menu?.products.find((x) => x.id === l.productId) ?? null;
+    return p ? photoOf(p) : samplePhoto(l.name);
+  };
+  const occupiedText = occupied > 0 ? `${occupied} table${occupied > 1 ? 's' : ''} occupée${occupied > 1 ? 's' : ''}` : null;
+
   return (
     <section className="take">
-      <aside className="take-tables" aria-label="Tables">
-        <header className="take-head">
-          <h2>Tables</h2>
-          <p>Touchez la table du client</p>
-        </header>
-        <div className="take-scroll">
+      <div className="take-main">
+        <ServiceHeader userName={me.user.displayName} restaurantName={location?.name ?? 'AfriKaisse'} logo={details?.logoUrl ? mediaSrc(details.logoUrl) : firstPhoto} detail={occupiedText}>
+          <label className="take-search">
+            <Icon name="search" />
+            <input type="search" placeholder="Rechercher un plat…" aria-label="Rechercher un plat" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+        </ServiceHeader>
+
+        <div className="take-tables" aria-label="Tables">
           {floor && zones.length === 0 && <p className="take-none">Aucune table. Ajoutez-les dans Plus → Tables.</p>}
-          {zones.map(({ zone, tables }) => (
-            <div key={zone.id} className="take-zone-block">
+          {zones.map(({ zone: z, tables }) => (
+            <div key={z.id} className="take-zone-block">
               {zones.length > 1 && (
                 <h3 className="take-zone">
-                  <i className="zone-dot" style={zoneVars(zone)} aria-hidden="true" />
-                  {zone.name}
+                  <i className="zone-dot" style={zoneVars(z)} aria-hidden="true" />
+                  {z.name}
                 </h3>
               )}
               <div className="take-table-grid">
                 {tables.map((t) => {
-                  const s = stateOf(t);
+                  const st = stateOf(t);
                   return (
                     <button
                       key={t.id}
-                      className={`take-table zone-stripe ${s.state}`}
-                      style={zoneVars(zone)}
+                      className={`take-table zone-stripe ${st.state}`}
+                      style={zoneVars(z)}
                       aria-pressed={t.id === tableId}
                       onClick={() => {
                         setTableId(t.id);
@@ -243,7 +319,7 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
                       }}
                     >
                       <b>{t.label}</b>
-                      <span>{s.label}</span>
+                      <span>{st.label}</span>
                     </button>
                   );
                 })}
@@ -251,26 +327,54 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
             </div>
           ))}
         </div>
-      </aside>
 
-      <div className="take-menu">
-        <nav className="take-cats" aria-label="Catégories">
-          {categories.map((c) => (
-            <button key={c.id} aria-pressed={activeCategory === c.id} onClick={() => setCategoryId(c.id)}>
-              {c.name}
-            </button>
-          ))}
-        </nav>
-        <div className="take-scroll">
+        <div className="take-scroll take-body">
+          {hero && (
+            <div className="take-hero">
+              {heroPhoto && <img src={heroPhoto} alt="" />}
+              <div className="take-hero-veil" />
+              <div className="take-hero-text">
+                <small>{hero.targetKind === 'PRODUCT' ? 'Plat du jour' : 'À la une'}</small>
+                <strong>{hero.title}</strong>
+                {hero.body && <span>{hero.body}</span>}
+                {(hero.targetKind || hero.buttonLabel) && (
+                  <button type="button" onClick={heroAction}>
+                    {hero.buttonLabel ?? (hero.targetKind === 'PRODUCT' ? 'Ajouter à la commande' : 'Voir')}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="take-section">
+            <h2>{search ? `Résultats pour « ${query.trim()} »` : 'Catégories'}</h2>
+            {search && (
+              <button type="button" className="link" onClick={() => setQuery('')}>
+                Effacer
+              </button>
+            )}
+          </div>
+          {!search && (
+            <nav className="take-cats" aria-label="Catégories">
+              {categories.map((c) => {
+                const photo = categoryPhoto(c.id);
+                return (
+                  <button key={c.id} aria-pressed={activeCategory === c.id} onClick={() => setCategoryId(c.id)}>
+                    {photo && <img src={photo} alt="" loading="lazy" />}
+                    {c.name}
+                  </button>
+                );
+              })}
+            </nav>
+          )}
           {!menu && <p className="take-none">Chargement du menu…</p>}
-          {menu && products.length === 0 && <p className="take-none">Aucun plat dans cette catégorie.</p>}
+          {menu && products.length === 0 && <p className="take-none">{search ? 'Aucun plat ne correspond.' : 'Aucun plat dans cette catégorie.'}</p>}
           <div className="take-products">
             {products.map((p) => {
               const qty = inTicket.get(p.id) ?? 0;
               const photo = photoOf(p);
               return (
-                <button key={p.id} className={`take-product${p.isAvailable ? '' : ' out'}${qty > 0 ? ' in-ticket' : ''}`} disabled={!p.isAvailable || !tableId} onClick={() => tap(p)}>
-                  {/* Photo et bouton rond : styles/take-order.css. */}
+                <button key={p.id} id={`take-p-${p.id}`} className={`take-product${p.isAvailable ? '' : ' out'}${qty > 0 ? ' in-ticket' : ''}${photo || withPhotos ? '' : ' no-photo'}`} disabled={!p.isAvailable || !tableId} onClick={() => tap(p)}>
+                  {/* Photo et bouton « + » : styles/take-order.css et styles/v3.css. */}
                   {photo ? (
                     <img className="take-product-photo" src={photo} alt="" loading="lazy" />
                   ) : (
@@ -299,30 +403,53 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
 
       <aside className="take-ticket" aria-label="Commande">
         <header className="take-ticket-head">
-          <h2>{table ? `Table ${table.label}` : 'Aucune table'}</h2>
-          <p>{table ? stateOf(table).label : 'Choisissez une table à gauche'}</p>
+          <div>
+            <h2>{table ? `Table ${table.label}` : 'Aucune table'}</h2>
+            <p>{table ? stateOf(table).label : 'Choisissez une table'}</p>
+          </div>
+          {zone && (
+            <span className="take-chip">
+              <i className="zone-dot" style={zoneVars(zone)} aria-hidden="true" />
+              {zone.name}
+            </span>
+          )}
         </header>
         <ul className="take-lines take-scroll">
           {lines.length === 0 && <li className="take-none">{table ? 'Touchez un plat pour l’ajouter.' : 'Puis touchez les plats.'}</li>}
-          {lines.map((l) => (
-            <li key={l.key} className="take-line">
-              <div className="take-line-top">
-                <strong>{l.name}</strong>
-                <span>{money(l.unitPrice * l.quantity)}</span>
-              </div>
-              {l.detail && <small>{l.detail}</small>}
-              {l.note && <small>« {l.note} »</small>}
-              <div className="take-qty">
-                <button aria-label={`Enlever un ${l.name}`} onClick={() => changeQty(l.key, -1)}>
-                  <Icon name="minus" />
-                </button>
-                <b>{l.quantity}</b>
-                <button aria-label={`Ajouter un ${l.name}`} onClick={() => changeQty(l.key, 1)}>
-                  <Icon name="add" />
-                </button>
-              </div>
-            </li>
-          ))}
+          {lines.map((l) => {
+            const photo = linePhoto(l);
+            return (
+              <li key={l.key} className="take-line">
+                {photo ? (
+                  <img className="take-line-photo" src={photo} alt="" />
+                ) : (
+                  <span className="take-line-photo take-line-blank" aria-hidden="true">
+                    <Icon name="kitchen" />
+                  </span>
+                )}
+                <div className="take-line-text">
+                  <strong>{l.name}</strong>
+                  {(l.detail || l.note) && (
+                    <small>
+                      {l.detail}
+                      {l.detail && l.note ? ' · ' : ''}
+                      {l.note ? `« ${l.note} »` : ''}
+                    </small>
+                  )}
+                  <b>{money(l.unitPrice * l.quantity)}</b>
+                </div>
+                <div className="take-qty">
+                  <button aria-label={`Enlever un ${l.name}`} onClick={() => changeQty(l.key, -1)}>
+                    <Icon name="minus" />
+                  </button>
+                  <b>{l.quantity}</b>
+                  <button aria-label={`Ajouter un ${l.name}`} onClick={() => changeQty(l.key, 1)}>
+                    <Icon name="add" />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
         <footer className="take-foot">
           <ErrorMessage error={error} />
@@ -348,6 +475,18 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
                 <button onClick={() => dropQueuedOrder(o.id)}>Retirer</button>
               </div>
             ))}
+          {quote && quote.promotionDiscount > 0 && (
+            <>
+              <div className="take-sub">
+                <span>Sous-total</span>
+                <span>{money(quote.subtotal)}</span>
+              </div>
+              <div className="take-sub take-sub-promo">
+                <span>Promotion</span>
+                <span>− {money(quote.promotionDiscount)}</span>
+              </div>
+            </>
+          )}
           <div className="take-total">
             <span>Total</span>
             <strong>{money(total)}</strong>

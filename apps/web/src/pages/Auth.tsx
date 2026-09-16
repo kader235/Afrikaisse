@@ -5,7 +5,7 @@ import { CURRENCY_CODES, LOCATION_TYPES, type SessionResponse } from '@afrikaiss
 import { ApiError, api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { COUNTRIES, LOCATION_TYPE_LABELS } from '../labels.ts';
-import { APP_VERSION, ErrorMessage, Preferences } from '../ui.tsx';
+import { APP_VERSION, ErrorMessage, Icon, Preferences } from '../ui.tsx';
 import { EMPTY_RECOVERY, RecoveryFields } from './Recovery.tsx';
 
 /** Écran d'accès : une fenêtre centrée, une barre d'état. */
@@ -35,26 +35,37 @@ export function AccessScreen({ title, wide, bare, children, footer, server }: { 
           <div className="access-foot">{footer}</div>
         </div>
       </div>
-      <footer className="statusbar">
-        <span>GLOBALTECH BUSINESS TD</span>
-        <span>
-          {t('status.version')} {APP_VERSION}
-        </span>
-        {server && (
-          <span>
-            {t('server.label')} : {server.label}{' '}
-            <button type="button" className="link" onClick={server.onChange}>
-              {t('server.change')}
-            </button>
-          </span>
-        )}
-        <span className="push">
-          <Preferences />
-        </span>
-      </footer>
+      <AccessStatusBar server={server} />
     </div>
   );
 }
+
+/** Barre d'état des écrans d'accès : éditeur, version, serveur de la tablette, langue et thème. */
+function AccessStatusBar({ server }: { server?: ServerSwitch }) {
+  const { t } = useI18n();
+  return (
+    <footer className="statusbar">
+      <span>GLOBALTECH BUSINESS TD</span>
+      <span>
+        {t('status.version')} {APP_VERSION}
+      </span>
+      {server && (
+        <span>
+          {t('server.label')} : {server.label}{' '}
+          <button type="button" className="link" onClick={server.onChange}>
+            {t('server.change')}
+          </button>
+        </span>
+      )}
+      <span className="push">
+        <Preferences />
+      </span>
+    </footer>
+  );
+}
+
+/** Photo de l'écran de connexion : une grillade du catalogue livré avec l'application (hors ligne, sans compte). */
+const LOGIN_PHOTO = '/catalogue/images/grillade-mixte.webp';
 
 function FieldIcon({ d }: { d: string }) {
   return (
@@ -112,72 +123,88 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
     );
   }
 
+  // Écran partagé (design v3) : la photo et le slogan à gauche, le formulaire « Bon retour » à droite.
   return (
-    <form onSubmit={submit}>
-      <AccessScreen
-        bare
-        server={server}
-        title={t('auth.login.title')}
-        footer={
-          <div className="access-actions">
-            <button className="btn btn-primary access-submit" disabled={busy}>
-              {busy ? t('common.loading') : t('auth.login.submit')}
+    <div className="login-screen login-split">
+      <div className="login-visual" aria-hidden="true">
+        <img src={LOGIN_PHOTO} alt="" />
+        <div className="login-veil" />
+        <div className="login-brand">
+          <LogoAfrikaisse />
+          <span>
+            Afri<em>Kaisse</em>
+          </span>
+        </div>
+        <div className="login-pitch">
+          <h2>
+            Servez. Encaissez.
+            <br />
+            Souriez.
+          </h2>
+          <p>La caisse, les commandes QR, la cuisine et le stock de votre restaurant, sur tablette et sur PC, même quand Internet tombe.</p>
+          <div className="login-points">
+            <span>
+              <Icon name="sync" />
+              Fonctionne hors ligne
+            </span>
+            <span>
+              <Icon name="qr" />
+              Menu QR
+            </span>
+            <span>
+              <Icon name="print" />
+              Tickets cuisine
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="login-side">
+        <form className="login-form" onSubmit={submit}>
+          <h1>Bon retour</h1>
+          <p className="login-lead">Connectez-vous à votre restaurant.</p>
+          <ErrorMessage error={error} />
+          {paired && (
+            <div className="msg msg-ok" role="status">
+              {paired}
+            </div>
+          )}
+          <div className="access-field">
+            <label htmlFor="login-email">{t('auth.email')}</label>
+            <div className="access-input">
+              <FieldIcon d="M2.5 4h11v8h-11zM2.5 4.5L8 9l5.5-4.5" />
+              <input id="login-email" type="email" autoComplete="username" required autoFocus placeholder={t('auth.email')} value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+          </div>
+          <div className="access-field">
+            <label htmlFor="login-password">{t('auth.password')}</label>
+            <div className="access-input">
+              <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
+              <input id="login-password" type="password" autoComplete="current-password" required placeholder={t('auth.password')} value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <button type="button" className="link access-forgot" onClick={() => setForgot(true)}>
+              {t('auth.forgot')}
             </button>
-            <div className="access-links">
+          </div>
+          <button className="btn btn-primary access-submit" disabled={busy}>
+            {busy ? t('common.loading') : t('auth.login.submit')}
+          </button>
+          <div className="login-help">
+            <span>
+              Pas encore de compte ?{' '}
               <button type="button" className="link" onClick={onRegister}>
                 {t('auth.createRestaurant')}
               </button>
-              {canPair && (
-                <button type="button" className="link" onClick={() => setPairing(true)}>
-                  Relier à AfriKaisse Cloud
-                </button>
-              )}
-            </div>
+            </span>
+            {canPair && (
+              <button type="button" className="link" onClick={() => setPairing(true)}>
+                Relier à AfriKaisse Cloud
+              </button>
+            )}
           </div>
-        }
-      >
-        <ErrorMessage error={error} />
-        {paired && (
-          <div className="msg msg-ok" role="status">
-            {paired}
-          </div>
-        )}
-        <div className="access-field">
-          <label htmlFor="login-email">{t('auth.email')}</label>
-          <div className="access-input">
-            <FieldIcon d="M2.5 4h11v8h-11zM2.5 4.5L8 9l5.5-4.5" />
-            <input
-              id="login-email"
-              type="email"
-              autoComplete="username"
-              required
-              autoFocus
-              placeholder={t('auth.email')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="access-field">
-          <label htmlFor="login-password">{t('auth.password')}</label>
-          <div className="access-input">
-            <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
-            <input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder={t('auth.password')}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          <button type="button" className="link access-forgot" onClick={() => setForgot(true)}>
-            {t('auth.forgot')}
-          </button>
-        </div>
-      </AccessScreen>
-    </form>
+        </form>
+        <AccessStatusBar server={server} />
+      </div>
+    </div>
   );
 }
 
