@@ -168,12 +168,25 @@ const FEATURE_ICONS: Record<string, IconName> = {
 };
 const featureIcon = (id: string): IconName => FEATURE_ICONS[id] ?? 'check';
 
-/** Capture réelle de l'application, en deux tailles. */
+/** Fichiers de chaque capture (public/captures/<id>-<largeur>.webp) et coque dessinée autour : PC nu, tablette ou téléphone. */
+const CAPTURES: Record<CaptureId, { widths: [number, number]; width: number; height: number; frame?: 'tablet' | 'phone' }> = {
+  caisse: { widths: [720, 1440], width: 1440, height: 900 },
+  'tableau-de-bord': { widths: [720, 1440], width: 1440, height: 900 },
+  tables: { widths: [720, 1440], width: 1440, height: 900 },
+  menu: { widths: [720, 1440], width: 1440, height: 900 },
+  commande: { widths: [640, 1280], width: 1280, height: 800, frame: 'tablet' },
+  'menu-client': { widths: [390, 780], width: 390, height: 844, frame: 'phone' },
+};
+
+/** Capture réelle de l'application, en deux tailles, dans sa coque (carte pour le PC, tablette ou téléphone). */
 function capture(ctx: Ctx, id: CaptureId, sizes: string, eager = false): string {
   const item = ctx.t.captures.items[id];
+  const file = CAPTURES[id];
   const loading = eager ? ' fetchpriority="high"' : ' loading="lazy"';
+  const [small, large] = file.widths;
+  const className = file.frame === 'tablet' ? 'shot shot-tablet' : file.frame === 'phone' ? 'shot shot-phone' : 'shot';
   return (
-    `<figure class="shot"><img src="/captures/${id}-1440.webp" srcset="/captures/${id}-720.webp 720w, /captures/${id}-1440.webp 1440w" sizes="${sizes}" width="1440" height="900" alt="${esc(item.alt)}"${loading} decoding="async">` +
+    `<figure class="${className}"><img src="/captures/${id}-${large}.webp" srcset="/captures/${id}-${small}.webp ${small}w, /captures/${id}-${large}.webp ${large}w" sizes="${sizes}" width="${file.width}" height="${file.height}" alt="${esc(item.alt)}"${loading} decoding="async">` +
     `<figcaption><strong>${esc(item.title)}</strong> · ${esc(ctx.t.captures.caption)}</figcaption></figure>`
   );
 }
@@ -190,7 +203,7 @@ function cta(ctx: Ctx): string {
   const { t } = ctx;
   return (
     `<section class="cta" aria-labelledby="cta-titre"><div class="wrap cta-inner"><div class="cta-copy"><h2 id="cta-titre">${esc(t.home.ctaTitle)}</h2><p>${esc(t.home.ctaText(ctx.facts))}</p></div>` +
-    `<div class="actions">${btn(ctx.links.register, t.actions.register, { variant: 'white', icon: 'plus', large: true })}${btn(href(ctx, '/contact/'), t.actions.contact, { variant: 'outline-white', icon: 'email', large: true })}</div></div></section>`
+    `<div class="actions">${btn(ctx.links.register, t.actions.register, { variant: 'primary', icon: 'plus', large: true })}${btn(href(ctx, '/contact/'), t.actions.contact, { variant: 'outline-white', icon: 'email', large: true })}</div></div></section>`
   );
 }
 
@@ -221,7 +234,7 @@ function home(ctx: Ctx): string {
     `<section class="hero"><div class="wrap hero-grid"><div class="hero-text"><h1>${esc(h.h1)}</h1><p class="lead">${esc(h.lead)}</p>` +
     `<div class="actions">${btn(ctx.links.register, t.actions.register, { variant: 'primary', icon: 'plus', large: true })}${btn(href(ctx, '/tarifs/'), t.actions.pricing, { large: true })}</div>` +
     `<p class="note">${icon('check')}<span>${esc(h.trial(facts))}</span></p></div>` +
-    capture(ctx, 'caisse', '(min-width: 1200px) 660px, (min-width: 1024px) 56vw, 100vw', true) +
+    capture(ctx, 'commande', '(min-width: 1200px) 660px, (min-width: 1024px) 56vw, 100vw', true) +
     `</div></section>`;
 
   const brief =
@@ -294,12 +307,13 @@ function featuresPage(ctx: Ctx): string {
     sections.map((s) => `<li><a href="#${s.id}">${icon(featureIcon(s.id))}<span>${esc(s.title)}</span></a></li>`).join('') +
     `</ul></nav><div class="doc-body">` +
     sections
-      .map(
-        (s) =>
-          `<section class="feature" id="${s.id}" aria-labelledby="${s.id}-titre"><h2 id="${s.id}-titre">${icon(featureIcon(s.id))}<span>${esc(s.title)}</span></h2>${points(s.points)}` +
-          (s.capture ? capture(ctx, s.capture, '(min-width: 1200px) 860px, (min-width: 1024px) 70vw, 100vw') : '') +
-          `</section>`,
-      )
+      .map((s) => {
+        // Le téléphone du client se pose à côté des points ; les écrans PC prennent toute la largeur en dessous.
+        const phone = s.capture && CAPTURES[s.capture].frame === 'phone';
+        const shot = s.capture ? capture(ctx, s.capture, phone ? '260px' : '(min-width: 1200px) 860px, (min-width: 1024px) 70vw, 100vw') : '';
+        const body = phone ? `<div class="feature-split">${points(s.points)}${shot}</div>` : points(s.points) + shot;
+        return `<section class="feature" id="${s.id}" aria-labelledby="${s.id}-titre"><h2 id="${s.id}-titre">${icon(featureIcon(s.id))}<span>${esc(s.title)}</span></h2>${body}</section>`;
+      })
       .join('') +
     `</div></div>` +
     cta(ctx)
@@ -321,7 +335,7 @@ function pricingPage(ctx: Ctx): string {
             ? btn(quoteUrl, t.actions.quote, { icon: 'email' })
             : btn(ctx.links.register, t.actions.register, { variant: plan.monthlyPrice === 0 ? 'primary' : 'default', icon: 'plus' });
         return (
-          `<article class="offer" data-plan="${plan.code}" aria-labelledby="offre-${plan.code}"><h2 class="fiche-title" id="offre-${plan.code}">${esc(p.planLabel(plan))}</h2>` +
+          `<article class="${plan.monthlyPrice === 0 ? 'offer offer-featured' : 'offer'}" data-plan="${plan.code}" aria-labelledby="offre-${plan.code}"><h2 class="fiche-title" id="offre-${plan.code}">${esc(p.planLabel(plan))}</h2>` +
           `<div class="offer-body"><p class="price">${esc(amount)}${unit ? ` <span class="price-unit">${esc(unit)}</span>` : ''}</p><p class="offer-summary">${esc(p.planSummary(plan))}</p>` +
           `<dl class="limits">${LIMITED_RESOURCES.map((r) => `<div><dt>${esc(p.resources[r])}</dt><dd>${esc(limitText(t, plan.limits[r]))}</dd></div>`).join('')}</dl></div>` +
           `<div class="offer-foot">${action}</div></article>`
@@ -367,10 +381,15 @@ function demoPage(ctx: Ctx): string {
       .join('') +
     `</ol></div></section>`;
 
-  const ids: CaptureId[] = ['tableau-de-bord', 'caisse', 'tables', 'menu'];
+  const ids: CaptureId[] = ['commande', 'tableau-de-bord', 'caisse', 'tables', 'menu', 'menu-client'];
   const gallery =
     `<section class="section band" aria-labelledby="captures"><div class="wrap"><h2 id="captures">${esc(d.galleryTitle)}</h2><p class="lead">${esc(d.galleryLead)}</p><div class="gallery">` +
-    ids.map((id) => capture(ctx, id, '(min-width: 1200px) 576px, (min-width: 768px) 48vw, 100vw')).join('') +
+    ids
+      .map((id) => {
+        const frame = CAPTURES[id].frame;
+        return capture(ctx, id, frame === 'phone' ? '300px' : frame === 'tablet' ? '(min-width: 1200px) 900px, 100vw' : '(min-width: 1200px) 576px, (min-width: 768px) 48vw, 100vw');
+      })
+      .join('') +
     `</div></div></section>`;
 
   const contact = linkFor(ctx, 'contact');
@@ -564,7 +583,7 @@ function header(page: PageDef, ctx: Ctx): string {
     `<header class="bandeau"><div class="wrap bandeau-inner">` +
     `<a class="brand" href="${href(ctx, '/')}" aria-label="${esc(t.nav.brandHome)}">${logoSvg('h')}<span class="brand-name" aria-hidden="true">Afri<span>Kaisse</span></span></a>` +
     `<nav class="nav-main" aria-label="${esc(t.nav.main)}"><ul>${links(false)}</ul></nav>` +
-    `<div class="bandeau-actions">${btn(ctx.links.login, t.actions.login, { variant: 'outline-white', icon: 'login', className: 'btn-login' })}${btn(ctx.links.register, t.actions.register, { variant: 'white', icon: 'plus' })}</div>` +
+    `<div class="bandeau-actions">${btn(ctx.links.login, t.actions.login, { variant: 'outline-white', icon: 'login', className: 'btn-login' })}${btn(ctx.links.register, t.actions.register, { variant: 'primary', icon: 'plus' })}</div>` +
     `<details class="nav-mobile"><summary>${icon('menu')}<span>${esc(t.nav.menu)}</span></summary><div class="nav-mobile-panel">` +
     `<nav aria-label="${esc(t.nav.mobile)}"><ul>${links(true)}</ul></nav>` +
     `<div class="nav-mobile-actions">${btn(ctx.links.register, t.actions.register, { variant: 'primary', icon: 'plus' })}${btn(ctx.links.login, t.actions.login, { icon: 'login' })}</div>` +
@@ -599,7 +618,7 @@ export function renderPage(page: PageDef, ctx: Ctx): string {
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 ${page.indexable ? `<link rel="canonical" href="${esc(url)}">` : '<meta name="robots" content="noindex">'}
-<meta name="theme-color" content="#0f2044">
+<meta name="theme-color" content="#0b1730">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="AfriKaisse">
