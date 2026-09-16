@@ -6,7 +6,9 @@
  * (téléphone en mode sombre). Règle : un thème sombre par nature (`nuit`) donne la même
  * palette aux deux modes, pour rester sombre quel que soit le réglage du téléphone.
  * Toutes les couleurs sont en hexadécimal #rrggbb ; les ombres et voiles sont calculés
- * à partir de `shadowColor` (et `accent`, `card`, `onAccent`) avec une opacité fixée par la feuille.
+ * à partir de `shadowColor` (et `accent`, `action`, `card`, `onAccent`) avec une opacité fixée par la feuille.
+ * Design « v3 » (09/2026) : page bleutée, cartes blanches, bleu pour les prix et la catégorie active,
+ * et une couleur d'action à part (`action`, or sur « bleu ») pour ce que le client doit toucher.
  */
 
 export const MENU_THEMES = ['bleu', 'savane', 'nuit', 'foret', 'maquis', 'ocean'] as const;
@@ -69,6 +71,14 @@ export interface MenuPalette {
   dangerSoft: string;
   /** Base des ombres et du voile derrière les fiches. */
   shadowColor: string;
+  /** Couleur de l'action principale (« + », bouton central du panier, « Commander », « Ajouter ») : or sur le thème par défaut. */
+  action: string;
+  /** Action appuyée. */
+  actionPress: string;
+  /** Texte et icône posés sur `action`. */
+  onAction: string;
+  /** Point « ouvert » de l'en-tête et signaux « en direct ». */
+  live: string;
 }
 
 export interface MenuTheme {
@@ -109,32 +119,36 @@ export const MENU_PALETTE_KEYS = [
   'danger',
   'dangerSoft',
   'shadowColor',
+  'action',
+  'actionPress',
+  'onAction',
+  'live',
 ] as const satisfies readonly Exclude<keyof MenuPalette, 'dark'>[];
 export type MenuColorKey = (typeof MENU_PALETTE_KEYS)[number];
 
 const bleu: MenuTheme = {
   id: 'bleu',
   label: 'Bleu AfriKaisse',
-  description: 'Clair et net, bleu de confiance. Convient à tous les établissements.',
+  description: 'Clair et net, bleu de confiance et boutons dorés. Convient à tous les établissements.',
   light: {
     dark: false,
-    bg: '#f5f7fb',
+    bg: '#eef2f8',
     card: '#ffffff',
     soft: '#eef3ff',
-    fill: '#eef1f6',
-    line: '#e4e9f2',
+    fill: '#f3f6fb',
+    line: '#e3e8f1',
     border: '#d5dce8',
     text: '#0f1f40',
     muted: '#5b6478',
     accent: '#1d4ed8',
     accentPress: '#1a43bd',
-    accentDark: '#1e3a8a',
+    accentDark: '#1d4ed8',
     accentText: '#1d4ed8',
     onAccent: '#ffffff',
-    deep: '#0f2044',
+    deep: '#0b1730',
     onDeep: '#ffffff',
     deepSoft: '#bfdbfe',
-    bannerStart: '#0f2044',
+    bannerStart: '#0b1730',
     bannerEnd: '#1d4ed8',
     bannerText: '#ffffff',
     bannerSoft: '#c9d8ff',
@@ -146,7 +160,11 @@ const bleu: MenuTheme = {
     dot: '#c7d2e6',
     danger: '#c62828',
     dangerSoft: '#fdecec',
-    shadowColor: '#0f2044',
+    shadowColor: '#0b1730',
+    action: '#f5b400',
+    actionPress: '#d99a00',
+    onAction: '#1a1300',
+    live: '#16a34a',
   },
   dark: {
     dark: true,
@@ -166,7 +184,7 @@ const bleu: MenuTheme = {
     deep: '#0a1630',
     onDeep: '#ffffff',
     deepSoft: '#bfdbfe',
-    bannerStart: '#0f2044',
+    bannerStart: '#0b1730',
     bannerEnd: '#1d4ed8',
     bannerText: '#ffffff',
     bannerSoft: '#c9d8ff',
@@ -179,6 +197,10 @@ const bleu: MenuTheme = {
     danger: '#f28b82',
     dangerSoft: '#3a1f24',
     shadowColor: '#000000',
+    action: '#f5b400',
+    actionPress: '#d99a00',
+    onAction: '#1a1300',
+    live: '#4ade80',
   },
 };
 
@@ -217,6 +239,10 @@ const savane: MenuTheme = {
     danger: '#b42318',
     dangerSoft: '#fdece9',
     shadowColor: '#4a2408',
+    action: '#c2410c',
+    actionPress: '#a8380a',
+    onAction: '#ffffff',
+    live: '#16a34a',
   },
   dark: {
     dark: true,
@@ -249,6 +275,10 @@ const savane: MenuTheme = {
     danger: '#f28b82',
     dangerSoft: '#3a1f1c',
     shadowColor: '#000000',
+    action: '#c2410c',
+    actionPress: '#a8380a',
+    onAction: '#ffffff',
+    live: '#4ade80',
   },
 };
 
@@ -283,6 +313,10 @@ const nuitPalette: MenuPalette = {
   danger: '#f28b82',
   dangerSoft: '#3a1f24',
   shadowColor: '#000000',
+  action: '#d4a64a',
+  actionPress: '#bf923a',
+  onAction: '#1a1206',
+  live: '#4ade80',
 };
 
 const nuit: MenuTheme = {
@@ -328,6 +362,10 @@ const foret: MenuTheme = {
     danger: '#c62828',
     dangerSoft: '#fdecec',
     shadowColor: '#0f2a1c',
+    action: '#15803d',
+    actionPress: '#116b33',
+    onAction: '#ffffff',
+    live: '#16a34a',
   },
   dark: {
     dark: true,
@@ -360,6 +398,10 @@ const foret: MenuTheme = {
     danger: '#f28b82',
     dangerSoft: '#3a1f24',
     shadowColor: '#000000',
+    action: '#15803d',
+    actionPress: '#116b33',
+    onAction: '#ffffff',
+    live: '#4ade80',
   },
 };
 
@@ -398,6 +440,10 @@ const maquis: MenuTheme = {
     danger: '#b3261e',
     dangerSoft: '#fdecea',
     shadowColor: '#4a1a10',
+    action: '#b33a24',
+    actionPress: '#9a311e',
+    onAction: '#ffffff',
+    live: '#16a34a',
   },
   dark: {
     dark: true,
@@ -430,6 +476,10 @@ const maquis: MenuTheme = {
     danger: '#f28b82',
     dangerSoft: '#3a1f24',
     shadowColor: '#000000',
+    action: '#b33a24',
+    actionPress: '#9a311e',
+    onAction: '#ffffff',
+    live: '#4ade80',
   },
 };
 
@@ -468,6 +518,10 @@ const ocean: MenuTheme = {
     danger: '#c62828',
     dangerSoft: '#fdecec',
     shadowColor: '#0b2b33',
+    action: '#0f766e',
+    actionPress: '#0c625b',
+    onAction: '#ffffff',
+    live: '#16a34a',
   },
   dark: {
     dark: true,
@@ -500,6 +554,10 @@ const ocean: MenuTheme = {
     danger: '#f28b82',
     dangerSoft: '#3a1f24',
     shadowColor: '#000000',
+    action: '#0f766e',
+    actionPress: '#0c625b',
+    onAction: '#ffffff',
+    live: '#4ade80',
   },
 };
 
@@ -528,6 +586,7 @@ export function menuPaletteVars(p: MenuPalette): Record<string, string> {
   for (const key of MENU_PALETTE_KEYS) vars[cssName(key)] = p[key];
   vars['--m-accent-rgb'] = hexToRgbTriplet(p.accent);
   vars['--m-on-accent-rgb'] = hexToRgbTriplet(p.onAccent);
+  vars['--m-action-rgb'] = hexToRgbTriplet(p.action);
   vars['--m-card-rgb'] = hexToRgbTriplet(p.card);
   vars['--m-shadow-rgb'] = hexToRgbTriplet(p.shadowColor);
   const s = vars['--m-shadow-rgb'];

@@ -6,7 +6,7 @@ import { formatMoney } from '@afrikaisse/core/money';
 import { priceLine, type PricedLine } from '@afrikaisse/core/pricing';
 import { bestProductPromotion, isScheduled, lineDiscount, localMoment, priceOrder, promoCodeMessage, promotionBadge, type OrderPricing, type PromotionRule } from '@afrikaisse/core/promotions';
 import { formatRate } from '@afrikaisse/core/taxes';
-import { mdiArrowLeft, mdiBellRing, mdiCash, mdiClockOutline, mdiHeart, mdiHeartOutline, mdiInformationOutline, mdiMagnify, mdiMinus, mdiPlus, mdiReceipt, mdiSilverwareForkKnife, mdiTableFurniture, mdiTrashCanOutline } from '@mdi/js';
+import { mdiArrowLeft, mdiBellRing, mdiChevronDown, mdiHeart, mdiHeartOutline, mdiHome, mdiInformationOutline, mdiMagnify, mdiMinus, mdiPlus, mdiReceiptText, mdiReceiptTextOutline, mdiShoppingOutline, mdiSilverwareForkKnife, mdiTrashCanOutline } from '@mdi/js';
 import { useDishPhoto } from '../dishPhotos.ts';
 import { Announcements } from './Announcements.tsx';
 import { errorText, isNetworkError, request } from './api.ts';
@@ -135,6 +135,7 @@ function Menu() {
   const [code, setCode] = useState<PromotionRule | null>(null);
   const now = useMinute();
   const pinsRef = useRef<HTMLElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   const loadMenu = useCallback(() => {
     request<PublicMenu>('GET', `/api/public/menu/${token}`)
@@ -335,6 +336,10 @@ function Menu() {
   })();
   const thumbOf = (list: PublicProduct[]) => list.find((p) => p.photoUrl)?.photoUrl ?? null;
   const popularPhotos = popular.some((p) => p.photoUrl);
+  // Vignette de l'en-tête : logo de l'établissement, sinon la première photo de plat, sinon son initiale.
+  const brandPhoto = restaurant.logoUrl ?? thumbOf(state.menu.categories.flatMap((c) => c.products));
+  const hasOptions = (p: PublicProduct) => p.variants.length > 0 || p.modifierGroups.length > 0;
+  const activeMine = mine.filter((o) => ACTIVE_STATUSES.has(o.status)).length;
 
   function addToCart(line: Omit<CartLine, 'key'>) {
     const same = cart.find((l) => l.productId === line.productId && l.variantId === line.variantId && l.note === line.note && l.modifierIds.slice().sort().join() === line.modifierIds.slice().sort().join());
@@ -358,6 +363,11 @@ function Menu() {
     setSheet({ kind });
   }
 
+  function focusSearch() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    searchRef.current?.focus();
+  }
+
   function goTo(id: string) {
     setActive(id);
     document.getElementById(`c-${id}`)?.scrollIntoView({ behavior: 'smooth' });
@@ -378,18 +388,23 @@ function Menu() {
     <div className="m-app">
       <header className="m-top">
         <div className="m-brand">
-          {restaurant.logoUrl && <img className="m-logo" src={restaurant.logoUrl} alt="" width={44} height={44} />}
+          {brandPhoto ? (
+            <img className={restaurant.logoUrl ? 'm-logo' : 'm-logo m-logo-photo'} src={brandPhoto} alt="" width={52} height={52} />
+          ) : (
+            <span className="m-logo m-logo-letter" aria-hidden="true">
+              {restaurant.name.trim().charAt(0).toUpperCase() || 'A'}
+            </span>
+          )}
           <div className="m-brand-text">
-            <small>{t('welcome')}</small>
             <strong>{restaurant.name}</strong>
+            <button className="m-brand-line" onClick={() => open('table')} aria-label={t('table', { label: table.label })}>
+              <i className="m-live" aria-hidden="true" />
+              <span>{t('headerLine', { label: table.label })}</span>
+            </button>
           </div>
         </div>
         <div className="m-top-side">
           <LanguageSwitch />
-          <button className="m-table-chip" onClick={() => open('table')}>
-            <Icon path={mdiTableFurniture} size={18} />
-            <span>{t('table', { label: table.label })}</span>
-          </button>
         </div>
       </header>
 
@@ -408,7 +423,7 @@ function Menu() {
 
       <label className="m-search">
         <Icon path={mdiMagnify} size={22} />
-        <input type="search" placeholder={t('search')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('search')} />
+        <input ref={searchRef} type="search" placeholder={t('search')} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={t('search')} />
       </label>
 
       <OfflineBanner blocked={blocked} />
@@ -426,7 +441,7 @@ function Menu() {
                 {favs.length > 0 && (
                   <button className={active === 'favorites' ? 'm-cat on' : 'm-cat'} onClick={() => goTo('favorites')}>
                     <span className="m-cat-thumb m-cat-icon">
-                      <Icon path={mdiHeart} size={24} />
+                      <Icon path={mdiHeart} size={20} />
                     </span>
                     <span className="m-cat-name">{t('favorites')}</span>
                   </button>
@@ -436,10 +451,10 @@ function Menu() {
                   return (
                     <button key={c.id} className={active === c.id ? 'm-cat on' : 'm-cat'} onClick={() => goTo(c.id)}>
                       {thumb ? (
-                        <img className="m-cat-thumb" src={thumb} alt="" loading="lazy" decoding="async" width={56} height={56} />
+                        <img className="m-cat-thumb" src={thumb} alt="" loading="lazy" decoding="async" width={36} height={36} />
                       ) : (
                         <span className="m-cat-thumb m-cat-icon">
-                          <Icon path={mdiSilverwareForkKnife} size={24} />
+                          <Icon path={mdiSilverwareForkKnife} size={20} />
                         </span>
                       )}
                       <span className="m-cat-name">{c.name}</span>
@@ -508,23 +523,31 @@ function Menu() {
             <div className="m-list">
               {c.products.map((p) => (
                 <button key={p.id} className={`m-item${p.isAvailable ? '' : ' off'}${p.photoUrl ? ' has-photo' : ''}`} onClick={() => openProduct(p)}>
-                  {p.photoUrl && <img className="m-item-photo" src={p.photoUrl} alt="" loading="lazy" decoding="async" width={84} height={84} />}
+                  {p.photoUrl && <img className="m-item-photo" src={p.photoUrl} alt="" loading="lazy" decoding="async" width={104} height={104} />}
                   <span className="m-text">
                     <strong className="m-name">
                       {favorites.has(p.id) && <Icon path={mdiHeart} size={15} className="m-fav-mark" />}
                       {p.name}
                     </strong>
                     {p.description && <span className="m-desc">{p.description}</span>}
-                    <span className="m-price">
-                      <PriceContent product={p} promo={showcase(p)} ht={ht(p)} money={money} />
-                      {!p.isAvailable && <em>{t('soldOut')}</em>}
+                    {p.isAvailable && hasOptions(p) && (
+                      <span className="m-opt">
+                        <span>{t('chooseOptions')}</span>
+                        <Icon path={mdiChevronDown} size={18} />
+                      </span>
+                    )}
+                    <span className="m-item-foot">
+                      <span className="m-price">
+                        <PriceContent product={p} promo={showcase(p)} ht={ht(p)} money={money} />
+                        {!p.isAvailable && <em>{t('soldOut')}</em>}
+                      </span>
+                      {p.isAvailable && (
+                        <span className="m-plus" aria-hidden="true">
+                          <Icon path={mdiPlus} size={22} />
+                        </span>
+                      )}
                     </span>
                   </span>
-                  {p.isAvailable && (
-                    <span className="m-plus" aria-hidden="true">
-                      <Icon path={mdiPlus} size={22} />
-                    </span>
-                  )}
                 </button>
               ))}
             </div>
@@ -536,41 +559,46 @@ function Menu() {
       <footer className="m-foot">{t('footer')}</footer>
 
       <div className="m-dock">
-        {cartCount > 0 ? (
-          <button className="m-bar" onClick={() => open('cart')} aria-label={`${cartCount > 1 ? t('cartMany', { n: cartCount }) : t('cartOne')} · ${money(cartTotal)}`}>
-            <span className="m-bar-label">
-              <i>{cartCount}</i>
-              {t('viewCart')}
-            </span>
-            <strong className="m-num">{money(cartTotal)}</strong>
+        {latest && (
+          // Suivi de la commande en cours : pastille discrète au-dessus de la barre, ouvre « Ma table ».
+          <button className="m-track" onClick={() => open('table')}>
+            <i aria-hidden="true" />
+            <span>{`${t('orderNo', { n: latest.number })} · ${t(`status.${latest.status}`)}`}</span>
           </button>
-        ) : (
-          mine.length > 0 && (
-            <button className="m-bar m-bar-soft" onClick={() => open('table')}>
-              <span className="m-bar-label">
-                <Icon path={mdiClockOutline} size={20} />
-                <span className="m-bar-status">{latest ? `${t('orderNo', { n: latest.number })} · ${t(`status.${latest.status}`)}` : t('myOrders')}</span>
-              </span>
-              <strong>{t('track')}</strong>
-            </button>
-          )
         )}
         <nav className="m-tabs">
-          <button className={sheet?.kind !== 'table' && sheet?.kind !== 'game' && sheet?.kind !== 'pay' ? 'on' : undefined} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <Icon path={mdiSilverwareForkKnife} size={24} />
+          <button className={!sheet ? 'on' : undefined} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <Icon path={mdiHome} size={24} />
             <span>{t('navMenu')}</span>
           </button>
-          <button className={sheet?.kind === 'table' || sheet?.kind === 'game' ? 'on' : undefined} onClick={() => open('table')}>
-            <Icon path={mdiReceipt} size={24} />
+          <button onClick={focusSearch}>
+            <Icon path={mdiMagnify} size={24} />
+            <span>{t('navSearch')}</span>
+          </button>
+          <span className="m-tabs-center">
+            {cartCount > 0 || mine.length === 0 ? (
+              <button className={sheet?.kind === 'cart' ? 'm-fab on' : 'm-fab'} onClick={() => open('cart')} aria-label={`${cartCount > 1 ? t('cartMany', { n: cartCount }) : cartCount === 1 ? t('cartOne') : t('navCart')}${cartCount > 0 ? ` · ${money(cartTotal)}` : ''}`}>
+                <Icon path={mdiShoppingOutline} size={30} />
+                {cartCount > 0 && <i className="m-num">{cartCount}</i>}
+              </button>
+            ) : (
+              // Panier vide mais des commandes passées : le bouton central mène au suivi de la table.
+              <button className={sheet?.kind === 'table' ? 'm-fab on' : 'm-fab'} onClick={() => open('table')} aria-label={t('myOrders')}>
+                <Icon path={mdiReceiptTextOutline} size={30} />
+                {activeMine > 0 && <i className="m-num">{activeMine}</i>}
+              </button>
+            )}
+          </span>
+          <button className={sheet?.kind === 'table' || sheet?.kind === 'game' || sheet?.kind === 'pay' ? 'on' : undefined} onClick={() => open('table')} aria-label={activeMine > 0 ? `${t('myTable')} · ${t('activeOrders', { n: activeMine })}` : t('myTable')}>
+            <span className="m-tab-ico">
+              <Icon path={mdiReceiptText} size={24} />
+              {activeMine > 0 && <b className="m-num">{activeMine}</b>}
+            </span>
             <span>{t('myTable')}</span>
           </button>
           <button onClick={callWaiter} disabled={offline} aria-label={t('callWaiter')}>
             <Icon path={mdiBellRing} size={24} />
             <span>{t('navWaiter')}</span>
-          </button>
-          <button className={sheet?.kind === 'pay' ? 'on' : undefined} onClick={() => open('pay')} aria-label={t('pay')}>
-            <Icon path={mdiCash} size={24} />
-            <span>{t('navBill')}</span>
           </button>
         </nav>
       </div>
@@ -621,7 +649,7 @@ function Menu() {
           }}
         />
       )}
-      {sheet?.kind === 'table' && <TableSheet session={session} token={token} me={me} money={money} blocked={blocked} onSession={setSession} onPlay={() => setSheet({ kind: 'game' })} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'table' && <TableSheet session={session} token={token} me={me} money={money} blocked={blocked} onSession={setSession} onPlay={() => setSheet({ kind: 'game' })} onPay={() => open('pay')} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'game' && (
         <MemoryGameSheet
           photos={gamePhotos}

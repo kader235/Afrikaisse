@@ -6,8 +6,9 @@ import { Icon } from './Icon.tsx';
 import { useLang } from './i18n.tsx';
 
 /**
- * Bandeau d'annonces du menu client : une annonce à la fois, suivante après sa durée d'affichage,
- * points de pagination et glissement du doigt. Le bouton (ou le bandeau) mène à la cible.
+ * Bandeau d'annonces du menu client (design v3) : une annonce à la fois, en photo pleine largeur voilée
+ * d'un dégradé bleu nuit côté texte, pastille « À la une », titre et bouton blanc. Suivante après sa
+ * durée d'affichage, points de pagination et glissement du doigt. Le bouton (ou le bandeau) mène à la cible.
  */
 export function Announcements({ items, onOpen }: { items: PublicAnnouncement[]; onOpen: (a: PublicAnnouncement) => void }) {
   const { t, lang } = useLang();
@@ -56,7 +57,10 @@ export function Announcements({ items, onOpen }: { items: PublicAnnouncement[]; 
             const hidden = i !== current;
             const content = (
               <>
+                {a.photoUrl && <img className="m-banner-photo" src={a.photoUrl} alt="" decoding="async" />}
+                <span className="m-banner-veil" aria-hidden="true" />
                 <span className="m-banner-text">
+                  <small className="m-banner-eyebrow">{t('featured')}</small>
                   <strong>{a.title}</strong>
                   {a.body && <span className="m-banner-body">{a.body}</span>}
                   {a.target && a.buttonLabel && (
@@ -66,7 +70,6 @@ export function Announcements({ items, onOpen }: { items: PublicAnnouncement[]; 
                     </span>
                   )}
                 </span>
-                {a.photoUrl && <img src={a.photoUrl} alt="" decoding="async" />}
               </>
             );
             const className = a.photoUrl ? 'm-banner has-photo' : 'm-banner';

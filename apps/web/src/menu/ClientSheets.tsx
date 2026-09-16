@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 // Types seulement, et valeurs du sous-module sans Zod : le bundle du menu reste léger.
 import type { ClientSession, PublicOrder } from '@afrikaisse/core';
 import { CLIENT_PAYMENT_METHODS, NICKNAME_MAX, isTableCode, type ClientPaymentMethod } from '@afrikaisse/core/guests';
-import { mdiCardsOutline, mdiClose, mdiTranslate, mdiWifiOff, mdiInformationOutline } from '@mdi/js';
+import { mdiCardsOutline, mdiCash, mdiClose, mdiTranslate, mdiWifiOff, mdiInformationOutline } from '@mdi/js';
 import { errorText, request } from './api.ts';
 import { Icon } from './Icon.tsx';
 import { LANGS, LANG_NAMES, useLang, type Lang } from './i18n.tsx';
@@ -185,6 +185,7 @@ export function TableSheet({
   blocked,
   onSession,
   onPlay,
+  onPay,
   onClose,
 }: {
   session: ClientSession | null;
@@ -195,6 +196,8 @@ export function TableSheet({
   onSession: (s: ClientSession) => void;
   /** Ouvre le jeu du mémo (proposé tant qu'une commande de la table est en cours de préparation). */
   onPlay?: () => void;
+  /** Ouvre la demande d'addition (la barre du bas n'a plus d'onglet « Addition »). */
+  onPay?: () => void;
   onClose: () => void;
 }) {
   const { t } = useLang();
@@ -239,8 +242,20 @@ export function TableSheet({
   }
 
   const perCustomer = session.billMode === 'PER_CUSTOMER';
+  const remaining = perCustomer ? session.mine.remaining : Math.max(session.table.remaining, session.mine.remaining);
   return (
-    <Sheet title={t('myTable')} onClose={onClose}>
+    <Sheet
+      title={t('myTable')}
+      onClose={onClose}
+      footer={
+        onPay && remaining > 0 ? (
+          <button className="m-button m-wide m-button-secondary" onClick={onPay}>
+            <Icon path={mdiCash} size={22} />
+            <span>{session.bill ? t('updateBill') : t('requestBill')}</span>
+          </button>
+        ) : undefined
+      }
+    >
       <div className="m-sheet-body">
         <h3>{t('myTable')}</h3>
         {onPlay && session.orders.some((o) => WAITING_STATUSES.has(o.status)) && (
