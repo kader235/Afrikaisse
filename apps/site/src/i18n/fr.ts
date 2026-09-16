@@ -35,10 +35,12 @@ export const fr: SiteText = {
   captures: {
     caption: "capture de l'application, restaurant de démonstration",
     items: {
-      caisse: { title: 'Caisse', alt: "Écran Caisse d'AfriKaisse : recherche et catégories, tuiles des produits avec leur prix, ticket de la vente à droite avec Sur place ou À emporter" },
-      'tableau-de-bord': { title: 'Tableau de bord', alt: "Tableau de bord d'AfriKaisse : chiffre d'affaires, commandes, panier moyen et tables occupées, activité heure par heure, état du service" },
-      tables: { title: 'Plan de salle', alt: "Plan de salle d'AfriKaisse en service : six tables, dont une occupée depuis 142 minutes, et le décompte libres, occupées, à traiter" },
-      menu: { title: 'Menu', alt: "Écran Menu d'AfriKaisse : catégories à gauche, produits avec prix et disponibilité, onglets Options, Postes, Imprimantes et QR codes" },
+      caisse: { title: 'Caisse', alt: "Écran Caisse d'AfriKaisse sur PC : rubriques dans le rail bleu nuit, catégories, tuiles des plats avec photo et prix, ticket de la vente à droite avec Sur place ou À emporter et le bouton Envoyer la commande" },
+      'tableau-de-bord': { title: 'Tableau de bord', alt: "Tableau de bord d'AfriKaisse : chiffre d'affaires du jour, commandes, tables occupées, temps de cuisine, ventes par heure, service en cours, commandes en direct et plats les plus vendus" },
+      tables: { title: 'Plan de salle', alt: "Plan de salle d'AfriKaisse en service : six tables de la zone Salle, libres, occupées avec leur durée, commande prête ou réglée, et le décompte libres, occupées, à traiter" },
+      menu: { title: 'Menu', alt: "Écran Menu d'AfriKaisse : catégories à gauche, plats de la catégorie avec photo, prix, versions, options et disponibilité, onglets Options, Postes, Imprimantes, QR codes, Taxes et promotions, Annonces, Thème du menu" },
+      commande: { title: 'Prise de commande sur tablette', alt: "Prise de commande d'AfriKaisse sur tablette : tables de la salle et de la terrasse, annonce à la une, catégories et plats avec photo, commande de la table T4 à droite avec ses quatre lignes, le total et le bouton Envoyer en cuisine" },
+      'menu-client': { title: 'Menu QR du client', alt: "Menu QR d'AfriKaisse sur le téléphone du client : nom du restaurant et table, recherche, annonce à la une, catégories avec photo, plats les plus commandés et la barre Menu, Chercher, panier, Ma table, Serveur" },
     },
   },
   footer: {
@@ -156,6 +158,7 @@ export const fr: SiteText = {
       {
         id: 'menu-qr',
         title: 'Menu QR pour les clients',
+        capture: 'menu-client',
         points: [
           'Un QR par table, imprimé en chevalet ou sur une planche A4.',
           'Le client ouvre la carte avec l’appareil photo de son téléphone, sans application ni compte : recherche, photos, versions, options et allergènes.',
@@ -319,7 +322,7 @@ export const fr: SiteText = {
       { title: 'Suivre', text: "Tableau de bord : chiffre d'affaires, commandes et meilleures ventes de la journée." },
     ],
     galleryTitle: "Captures de l'application",
-    galleryLead: "Captures réelles d'un restaurant de démonstration, prises le 15 septembre 2026 sur la version actuelle.",
+    galleryLead: "Captures réelles d'un restaurant de démonstration, prises le 16 septembre 2026 sur la version actuelle : PC, tablette et téléphone du client.",
     moreTitle: 'Tablette Android et serveur local',
     moreText:
       "L'application tablette et l'installateur Windows du serveur local ne sont pas encore en téléchargement libre. Écrivez-nous pour les essayer dans votre restaurant.",

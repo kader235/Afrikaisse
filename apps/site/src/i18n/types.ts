@@ -1,7 +1,11 @@
 import type { LimitedResource, PlanDefinition } from '@afrikaisse/core';
 
-/** Captures réelles de l'application (public/captures/<id>-720.webp et -1440.webp). */
-export type CaptureId = 'caisse' | 'tableau-de-bord' | 'tables' | 'menu';
+/**
+ * Captures réelles de l'application (public/captures/<id>-<largeur>.webp, deux largeurs par capture).
+ * PC : caisse, tableau-de-bord, tables, menu (1440 × 900) ; tablette : commande (1280 × 800) ;
+ * téléphone du client : menu-client (390 × 844).
+ */
+export type CaptureId = 'caisse' | 'tableau-de-bord' | 'tables' | 'menu' | 'commande' | 'menu-client';
 
 /** Destinations d'un bouton : les adresses réelles sont calculées au build. */
 export type LinkTarget = 'register' | 'login' | 'pricing' | 'contact' | 'demo' | 'features';

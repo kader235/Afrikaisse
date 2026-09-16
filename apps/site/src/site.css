@@ -1,40 +1,47 @@
 /*
- * AfriKaisse — site public. Même langage visuel que l'application (tablette, téléphone et PC,
- * « Savane bleu » validé par Kader le 15/09/2026) : bandeau bleu nuit, bleu #1D4ED8, Plus Jakarta Sans,
- * cartes blanches arrondies à ombre douce, boutons en minuscules, textes foncés et lisibles.
- * Pas de texte sur une pastille colorée (sauf bouton principal), pas d'animation, pas de JavaScript.
+ * AfriKaisse — site public. Même langage visuel que l'application (design « v3 » validé par Kader le
+ * 16/09/2026) : page bleutée #EEF2F8, cartes blanches arrondies (16 à 22 px) à ombre douce, bandeau bleu nuit
+ * (#0B1730 → #122448), bleu #1D4ED8 pour les liens et les accents, OR #F5B400 réservé à l'action principale
+ * (« Créer mon restaurant »), police Outfit, boutons en minuscules, pas d'émoji, pas d'animation, pas de JavaScript.
  * Propriétés logiques pour l'arabe à venir. Vieux navigateurs Android : pas de gap sur flexbox (marges), pas de inset.
  */
-@import '@fontsource/plus-jakarta-sans/latin-400.css';
-@import '@fontsource/plus-jakarta-sans/latin-600.css';
-@import '@fontsource/plus-jakarta-sans/latin-700.css';
-@import '@fontsource/plus-jakarta-sans/latin-800.css';
+@import '@fontsource/outfit/latin-400.css';
+@import '@fontsource/outfit/latin-500.css';
+@import '@fontsource/outfit/latin-600.css';
+@import '@fontsource/outfit/latin-700.css';
+@import '@fontsource/outfit/latin-800.css';
 
 :root {
-  --bg: #f5f7fb;
+  --bg: #eef2f8;
   --surface: #ffffff;
-  --hover: #f1f4fa;
-  --fill: #eef1f6;
-  --line: #e9edf4;
-  --border: #e4e9f2;
-  --border-strong: #d5dce8;
+  --hover: #f4f7fb;
+  --fill: #eef2f8;
+  --line: #e3e8f1;
+  --border: #e3e8f1;
+  --border-strong: #cfd7e6;
   --text: #0f1f40;
   --text-soft: #5b6478;
   --primary: #1d4ed8;
   --primary-hover: #1a43bd;
   --primary-strong: #1e3a8a;
   --primary-soft: #eef3ff;
-  --navy: #0f2044;
-  --ok: #047857;
-  --shadow-card: 0 2px 10px rgba(15, 32, 68, 0.05);
-  --shadow-lift: 0 4px 14px rgba(15, 32, 68, 0.07);
-  --shadow-pop: 0 10px 30px rgba(15, 32, 68, 0.18);
-  --shadow-primary: 0 6px 16px rgba(29, 78, 216, 0.22);
-  --hero: linear-gradient(135deg, #0f2044 0%, #1d4ed8 100%);
+  --nuit: #0b1730;
+  --nuit2: #122448;
+  --or: #f5b400;
+  --or-hover: #ffc21a;
+  --or-active: #d99a00;
+  --or-text: #1a1300;
+  --or-shadow: 0 8px 20px rgba(245, 180, 0, 0.32);
+  --ok: #15803d;
+  --shadow-card: 0 4px 16px rgba(15, 32, 68, 0.06);
+  --shadow-lift: 0 10px 30px rgba(15, 32, 68, 0.12);
+  --shadow-pop: 0 14px 40px rgba(15, 32, 68, 0.2);
+  --navy: linear-gradient(180deg, #0b1730 0%, #122448 100%);
+  --navy-flat: linear-gradient(90deg, #0b1730 0%, #122448 100%);
   --radius: 14px;
   --radius-card: 20px;
-  --font: 'Plus Jakarta Sans', Roboto, 'Segoe UI', Arial, 'Noto Sans Arabic', Tahoma, sans-serif;
-  --bar-h: 68px;
+  --font: 'Outfit', 'Segoe UI', Roboto, Arial, 'Noto Sans Arabic', Tahoma, sans-serif;
+  --bar-h: 70px;
 }
 
 *,
@@ -50,7 +57,7 @@ html {
 
 body {
   margin: 0;
-  background: var(--surface);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font);
   font-size: 16px;
@@ -171,7 +178,7 @@ strong {
   fill: currentColor;
 }
 
-/* === Boutons : blancs à ombre douce, principal en bleu plein, jamais en capitales ======= */
+/* === Boutons : blancs à ombre douce ; l'action principale, et elle seule, est en or ============ */
 
 .btn {
   display: inline-flex;
@@ -217,10 +224,10 @@ strong {
 }
 
 .btn-primary {
-  border-color: var(--primary);
-  background: var(--primary);
-  box-shadow: var(--shadow-primary);
-  color: #ffffff;
+  border-color: var(--or);
+  background: var(--or);
+  box-shadow: var(--or-shadow);
+  color: var(--or-text);
 }
 
 .btn-primary .ico {
@@ -228,27 +235,27 @@ strong {
 }
 
 .btn-primary:hover {
-  border-color: var(--primary-hover);
-  background: var(--primary-hover);
-  color: #ffffff;
+  border-color: var(--or-hover);
+  background: var(--or-hover);
+  color: var(--or-text);
 }
 
 .btn-primary:active {
-  border-color: var(--primary-strong);
-  background: var(--primary-strong);
+  border-color: var(--or-active);
+  background: var(--or-active);
 }
 
 .btn-white {
   border-color: #ffffff;
   background: #ffffff;
   box-shadow: none;
-  color: var(--navy);
+  color: var(--nuit);
 }
 
 .btn-white:hover {
   border-color: #ffffff;
   background: var(--primary-soft);
-  color: var(--navy);
+  color: var(--nuit);
 }
 
 .btn-outline-white {
@@ -284,20 +291,22 @@ strong {
   margin-bottom: 12px;
 }
 
-/* === Bandeau bleu nuit ================================================== */
+/* === Bandeau bleu nuit (le rail de l'application, à l'horizontale) ====================== */
 
 .bandeau {
   position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 30;
-  background: var(--navy);
+  background: var(--nuit);
+  background: var(--navy-flat);
   color: #ffffff;
 }
 
 .bandeau :focus-visible,
 .cta :focus-visible,
-.page-head :focus-visible {
+.page-head :focus-visible,
+.pied :focus-visible {
   outline-color: #ffffff;
 }
 
@@ -333,11 +342,11 @@ strong {
 }
 
 .brand-name span {
-  color: #93c5fd;
+  color: #f5c542;
 }
 
 .nav-main {
-  margin-inline-start: 24px;
+  margin-inline-start: 20px;
 }
 
 .nav-main ul {
@@ -353,7 +362,7 @@ strong {
   margin: 0 2px;
   padding: 0 14px;
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
@@ -442,12 +451,13 @@ strong {
 }
 
 .nav-mobile-panel a:not(.btn):hover {
-  background: var(--hover);
+  background: var(--surface);
 }
 
 .nav-mobile-panel a[aria-current='page'] {
   background: var(--surface);
   box-shadow: var(--shadow-card);
+  color: var(--primary);
   font-weight: 800;
 }
 
@@ -490,7 +500,7 @@ strong {
 }
 
 .band {
-  background: var(--bg);
+  background: var(--surface);
 }
 
 .section-head {
@@ -514,10 +524,11 @@ strong {
   margin-bottom: 8px;
 }
 
-/* En-tête de page : la carte bleue du tableau de bord de l'application. */
+/* En-tête de page : bleu nuit, dans la continuité du bandeau. */
 .page-head {
   padding-block: 48px 44px;
-  background: var(--hero);
+  background: var(--nuit2);
+  background: var(--navy);
   color: #ffffff;
 }
 
@@ -527,14 +538,13 @@ strong {
 
 .page-head .lead {
   margin: 0;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.82);
 }
 
 /* Accueil */
 
 .hero {
-  padding-block: 64px 72px;
-  background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 100%);
+  padding-block: 56px 72px;
 }
 
 .hero-grid {
@@ -571,7 +581,7 @@ strong {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   background: var(--surface);
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--shadow-card);
 }
 
 .shot img {
@@ -587,6 +597,45 @@ strong {
 
 .shot figcaption strong {
   color: var(--text);
+}
+
+/* Tablette : coque bleu nuit autour de l'écran, légende sous la coque */
+.shot-tablet {
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.shot-tablet img {
+  padding: 10px;
+  border-radius: 26px;
+  background: var(--nuit);
+  box-shadow: var(--shadow-lift);
+}
+
+.shot-tablet figcaption,
+.shot-phone figcaption {
+  padding: 14px 4px 0;
+  border-top: 0;
+  text-align: center;
+}
+
+/* Téléphone : le menu QR du client */
+.shot-phone {
+  max-width: 300px;
+  margin-inline: auto;
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.shot-phone img {
+  padding: 8px;
+  border-radius: 38px;
+  background: var(--nuit);
+  box-shadow: var(--shadow-lift);
 }
 
 /* Fiche : carte blanche, titre en minuscules */
@@ -610,10 +659,13 @@ strong {
 
 .toc h2,
 .pied h2 {
-  color: var(--text-soft);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0;
+}
+
+.toc h2 {
+  color: var(--text-soft);
 }
 
 .fiche-body {
@@ -832,7 +884,7 @@ strong {
   margin-bottom: 28px;
 }
 
-/* Catalogue de plats */
+/* Catalogue de plats : la nourriture est la star */
 .split {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
@@ -866,10 +918,11 @@ strong {
   line-height: 1.35;
 }
 
-/* Bande d'appel : la carte bleue */
+/* Bande d'appel : bleu nuit, bouton or */
 .cta {
   padding-block: 56px;
-  background: var(--hero);
+  background: var(--nuit2);
+  background: var(--navy);
   color: #ffffff;
 }
 
@@ -891,7 +944,7 @@ strong {
 .cta p {
   max-width: 60ch;
   margin: 0;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.82);
 }
 
 /* === Fonctionnalités ==================================================== */
@@ -947,13 +1000,21 @@ strong {
   color: var(--text);
 }
 
+.doc-body {
+  padding: 8px 28px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
 .feature {
-  padding-block: 36px;
+  padding-block: 32px;
   border-top: 1px solid var(--line);
 }
 
 .feature:first-child {
-  padding-top: 0;
+  padding-top: 24px;
   border-top: 0;
 }
 
@@ -993,6 +1054,19 @@ strong {
   margin-top: 24px;
 }
 
+/* Menu QR : les points à gauche, le téléphone du client à droite */
+.feature-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  column-gap: 40px;
+  align-items: center;
+}
+
+.feature-split .shot-phone {
+  max-width: 260px;
+  margin-top: 0;
+}
+
 /* === Tarifs ============================================================= */
 
 .offers {
@@ -1009,6 +1083,15 @@ strong {
   border-radius: var(--radius-card);
   background: var(--surface);
   box-shadow: var(--shadow-card);
+}
+
+.offer-featured {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft), var(--shadow-card);
+}
+
+.offer-featured .fiche-title {
+  color: var(--primary);
 }
 
 .offer-body {
@@ -1119,6 +1202,17 @@ strong {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
+  align-items: start;
+}
+
+.gallery .shot-tablet {
+  grid-column: 1 / -1;
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.gallery .shot-phone {
+  grid-column: 1 / -1;
 }
 
 /* === FAQ ================================================================ */
@@ -1216,11 +1310,12 @@ strong {
   margin-bottom: 8px;
 }
 
-/* === Pied de page ======================================================= */
+/* === Pied de page : bleu nuit, comme le bandeau ========================= */
 
 .pied {
-  border-top: 1px solid var(--line);
-  background: var(--bg);
+  background: var(--nuit);
+  background: var(--navy);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .pied-grid {
@@ -1233,26 +1328,17 @@ strong {
 
 .pied .brand {
   margin-bottom: 12px;
-  color: var(--text);
-}
-
-.pied .brand:hover {
-  color: var(--text);
-}
-
-.pied .brand-name span {
-  color: var(--primary);
 }
 
 .pied p {
   max-width: 44ch;
   margin: 0;
-  color: var(--text-soft);
   font-size: 15px;
 }
 
 .pied h2 {
   margin: 0 0 12px;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .pied li {
@@ -1260,20 +1346,20 @@ strong {
 }
 
 .pied a:not(.brand) {
-  color: var(--text);
+  color: #ffffff;
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
 }
 
 .pied a:not(.brand):hover {
-  color: var(--primary);
+  color: #f5c542;
   text-decoration: underline;
 }
 
 .statusbar {
-  border-top: 1px solid var(--line);
-  color: var(--text-soft);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
 }
 
@@ -1391,6 +1477,20 @@ strong {
   .cta-copy {
     margin-bottom: 24px;
   }
+
+  .doc-body {
+    padding: 4px 18px 18px;
+  }
+
+  .feature-split {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 28px;
+  }
+
+  .shot-tablet img {
+    padding: 6px;
+    border-radius: 18px;
+  }
 }
 
 @media (max-width: 599px) {
@@ -1411,5 +1511,9 @@ strong {
   .actions > .btn {
     width: 100%;
     margin-inline-end: 0;
+  }
+
+  .shot-phone {
+    max-width: 260px;
   }
 }
