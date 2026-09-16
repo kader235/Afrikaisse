@@ -4,6 +4,7 @@ import { KITCHEN_PROBLEM_REASONS, ticketDelay, ticketState, type AdminMenu, type
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { orderPlace } from '../labels.ts';
+import { useProductPhotos } from '../productPhotos.ts';
 import { Dialog, ErrorMessage, FloatMessage, Icon } from '../ui.tsx';
 import { useScreenHeartbeat } from '../heartbeat.ts';
 
@@ -44,6 +45,8 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const [prepTimes, setPrepTimes] = useState<Map<string, number | null>>(new Map());
   const [problem, setProblem] = useState<Order | null>(null);
   const [, setTick] = useState(0);
+  // Vignettes des plats sur les tickets (design v3) : le cuisinier reconnaît le plat d'un coup d'œil.
+  const photo = useProductPhotos(locationId, me.permissions.includes('menu.read'));
 
   const canUse = (s: Station) => me.permissions.includes(s.kind === 'BAR' ? 'bar.use' : 'kitchen.use');
   const allowed = (stations ?? []).filter(canUse);
@@ -170,6 +173,11 @@ export function KitchenPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
                       {items.map((i) => (
                         <li key={i.id} className={i.kdsStatus === 'READY' ? 'kds-item kds-item-ready' : 'kds-item'}>
                           <span className="kds-qty">{i.quantity}</span>
+                          {photo(i.productId, i.name) ? (
+                            <img className="kds-thumb" src={photo(i.productId, i.name)!} alt="" loading="lazy" />
+                          ) : (
+                            <span className="kds-thumb kds-thumb-blank" aria-hidden="true" />
+                          )}
                           <div>
                             <strong>{i.name}</strong>
                             {i.variantName && <span> · {i.variantName}</span>}

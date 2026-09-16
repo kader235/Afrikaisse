@@ -172,7 +172,7 @@ function useHealth() {
 }
 
 type NavGroup = 'home' | 'sale' | 'restaurant' | 'manage' | 'admin';
-type NavItem = { id: Section; label: string; icon: IconName; visible: boolean; badge?: number; group: NavGroup };
+type NavItem = { id: Section; label: string; short?: string; icon: IconName; visible: boolean; badge?: number; group: NavGroup };
 
 /** Rubriques de la navigation, dans l'ordre d'une journée de service. */
 const NAV_GROUPS: [NavGroup, string][] = [
@@ -183,38 +183,28 @@ const NAV_GROUPS: [NavGroup, string][] = [
   ['admin', 'Administration'],
 ];
 
-/** Onglets du bandeau sur PC : plus de place qu'à la tablette, la gestion d'abord ; le reste sous « Plus ». */
-const PC_NAV: Record<Role, Section[]> = {
-  OWNER: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu', 'reports'],
-  ADMIN: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu', 'reports'],
-  MANAGER: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu'],
+/** Rail de gauche sur PC (design v3) : tout le service, groupé ; le reste (établissements, journal, supervision…) sous « Plus ». */
+const PC_RAIL: Section[] = ['dashboard', 'take', 'orders', 'pos', 'floor', 'kitchen', 'menu', 'stock', 'reports', 'team', 'organization'];
+
+/** Intitulés des groupes du rail PC ; la gestion et l'administration sont réunies. */
+const RAIL_GROUPS: [NavGroup[], string][] = [
+  [['home'], ''],
+  [['sale'], 'Vente'],
+  [['restaurant'], 'Restaurant'],
+  [['manage', 'admin'], 'Gestion'],
+];
+
+/** Rail de la tablette et du téléphone : l'outil du métier d'abord, tout le reste sous « Plus ». */
+const TABLET_NAV: Record<Role, Section[]> = {
+  OWNER: ['take', 'orders', 'pos', 'floor', 'dashboard'],
+  ADMIN: ['take', 'orders', 'pos', 'floor', 'dashboard'],
+  MANAGER: ['take', 'orders', 'pos', 'floor', 'dashboard'],
   CASHIER: ['pos', 'take', 'orders', 'floor'],
   WAITER: ['take', 'orders', 'floor'],
   KITCHEN: ['kitchen'],
   BAR: ['kitchen'],
-  STOCK_MANAGER: ['stock', 'menu', 'reports'],
-};
-
-/** Onglets du bandeau sur la tablette et le téléphone : l'outil du métier d'abord, tout le reste sous « Plus ». */
-const TABLET_NAV: Record<Role, Section[]> = {
-  OWNER: ['take', 'orders', 'pos', 'dashboard'],
-  ADMIN: ['take', 'orders', 'pos', 'dashboard'],
-  MANAGER: ['take', 'orders', 'pos', 'dashboard'],
-  CASHIER: ['pos', 'take', 'orders'],
-  WAITER: ['take', 'orders'],
-  KITCHEN: ['kitchen'],
-  BAR: ['kitchen'],
   STOCK_MANAGER: ['stock', 'menu'],
 };
-
-/** Initiales affichées dans la barre supérieure : « Achta Démo » → « AD ». */
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w.charAt(0).toUpperCase())
-    .join('');
 
 function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => void; onSession: (s: SessionResponse) => void; onLogout: () => void }) {
   const { t, lang } = useI18n();
@@ -232,7 +222,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
 
   const sections: NavItem[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard', visible: can('reports.read'), group: 'home' },
-    { id: 'take', label: 'Prendre une commande', icon: 'cutlery', visible: can('orders.create') && can('tables.read'), group: 'sale' },
+    { id: 'take', label: 'Prendre une commande', short: 'Commander', icon: 'cutlery', visible: can('orders.create') && can('tables.read'), group: 'sale' },
     { id: 'pos', label: t('nav.pos'), icon: 'cash', visible: can('pos.use') || can('payments.collect'), group: 'sale' },
     { id: 'orders', label: t('nav.orders'), icon: 'ticket', visible: can('orders.read'), badge: waiting, group: 'sale' },
     { id: 'floor', label: t('nav.floor'), icon: 'table', visible: can('tables.read'), group: 'sale' },
@@ -248,10 +238,14 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin && !isTouchDevice(), group: 'admin' },
   ];
   const visible = sections.filter((s) => s.visible);
-  // Même bandeau à onglets partout ; l'appareil ne décide que du nombre d'onglets et de ce qui reste au PC.
+  // Même rail à gauche partout (design v3) ; l'appareil ne décide que de son contenu et de sa largeur.
   const touch = isTouchDevice();
-  const topNav = (touch ? TABLET_NAV : PC_NAV)[me.role ?? 'OWNER'].map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s);
+  const railIds = touch ? TABLET_NAV[me.role ?? 'OWNER'] : PC_RAIL;
+  const topNav = railIds.map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s);
   if (topNav.length === 0 && visible[0]) topNav.push(visible[0]);
+  const railGroups: [string, NavItem[]][] = touch
+    ? [['', topNav]]
+    : RAIL_GROUPS.map(([groups, title]) => [title, topNav.filter((s) => groups.includes(s.group))] as [string, NavItem[]]).filter(([, list]) => list.length > 0);
   const [panel, setPanel] = useState<'account' | 'nav' | 'notifications' | null>(null);
   const [section, setSection] = useState<Section>(() => sectionFromHash() ?? topNav[0]?.id ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
@@ -347,62 +341,59 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="topbar-brand">
+      <nav className="rail" aria-label="Navigation principale">
+        <div className="rail-brand">
           <LogoAfrikaisse />
-          <span className="topbar-product">
+          <span className="rail-product">
             Afri<span>Kaisse</span>
           </span>
         </div>
-        <nav className="topnav" aria-label="Navigation principale">
-          {topNav.map((s, i) => (
-            // Au-delà du cinquième, l'onglet se replie sous « Plus » sur un petit écran de PC (styles/pc.css).
-            <button key={s.id} className={i >= 5 ? 'topnav-item topnav-extra' : 'topnav-item'} aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
-              <Icon name={s.icon} />
-              <span>{s.label}</span>
-              {!!s.badge && <span className="topnav-count">{s.badge}</span>}
-            </button>
+        <div className="rail-items">
+          {railGroups.map(([title, list]) => (
+            <div key={title || 'home'} className="rail-group">
+              {title && <span className="rail-group-title">{title}</span>}
+              {list.map((s) => (
+                <button key={s.id} className="rail-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
+                  <Icon name={s.icon} />
+                  <span className="rail-label">{s.short ?? s.label}</span>
+                  {!!s.badge && <span className="rail-badge">{s.badge > 99 ? '99+' : s.badge}</span>}
+                </button>
+              ))}
+            </div>
           ))}
-          <button className="topnav-item" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
-            <Icon name="more" />
-            <span>Plus</span>
-          </button>
-        </nav>
-        <div className="topbar-context">
-          <span className="topbar-place">{place}</span>
-          {me.tenant && place !== me.tenant.name && <span className="topbar-org">{me.tenant.name}</span>}
         </div>
-        <div className="topbar-side">
-          <span className={online ? 'topbar-status' : 'topbar-status off'}>
-            <span className={online ? 'dot dot-ok' : 'dot dot-off'} aria-hidden="true" />
-            {online ? 'En ligne' : 'Hors ligne'}
-          </span>
+        <div className="rail-bottom">
+          {!online && (
+            <span className="rail-offline" role="status">
+              <span className="dot dot-off" aria-hidden="true" />
+              Hors ligne
+            </span>
+          )}
           {notifyEnabled && (
             <button
-              className="topbar-bell"
+              className="rail-item rail-bell"
               aria-haspopup="dialog"
               aria-label={notifications.unread > 0 ? `Notifications : ${notifications.unread} non lues` : 'Notifications'}
               onClick={() => setPanel('notifications')}
             >
               <Icon name="bell" />
-              {notifications.unread > 0 && <span className="badge-count">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
+              <span className="rail-label">Alertes</span>
+              {notifications.unread > 0 && <span className="rail-badge">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
             </button>
           )}
-          <button className="topbar-user" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
-            <span className="topbar-avatar" aria-hidden="true">
-              <Icon name="user" />
+          <button className="rail-item rail-more" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
+            <Icon name="more" />
+            <span className="rail-label">Plus</span>
+          </button>
+          <button className="rail-card" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
+            <strong>{place}</strong>
+            <span>
+              {me.user.displayName}
+              {roleLabel ? ` · ${roleLabel}` : ''}
             </span>
-            <span className="topbar-initials" aria-hidden="true">
-              {initials(me.user.displayName)}
-            </span>
-            <span className="topbar-name">
-              <strong>{me.user.displayName}</strong>
-              <span>{roleLabel}</span>
-            </span>
-            <Icon name="chevron" />
           </button>
         </div>
-      </header>
+      </nav>
 
       <main className={current === 'take' ? 'workspace workspace-bleed' : 'workspace'}>
         {can('tenant.read') && !touch && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}

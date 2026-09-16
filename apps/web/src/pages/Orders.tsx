@@ -14,6 +14,7 @@ import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { ORDER_SOURCE_LABELS, orderPlace, sinceText } from '../labels.ts';
+import { useProductPhotos } from '../productPhotos.ts';
 import { Dialog, FloatMessage, Icon } from '../ui.tsx';
 
 /**
@@ -45,6 +46,8 @@ const STATUS_CLASS: Record<OrderStatus, string> = {
 export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
   const { t } = useI18n();
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
+  // Vignettes des plats sur les cartes (design v3).
+  const photo = useProductPhotos(me.locations[0]?.id ?? null, can('menu.read'));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [cancel, setCancel] = useState<Order | null>(null);
   const [tab, setTab] = useState<ColumnId | null>(null);
@@ -200,12 +203,24 @@ export function OrdersPage({ me, feed }: { me: Me; feed: ActivityFeed }) {
                           {ORDER_SOURCE_LABELS[o.source]} · {formatMoney(o.total, o.currency)}
                         </span>
                         <span className="order-card-items">
-                          {o.items.slice(0, 4).map((i) => (
-                            <span key={i.id}>
-                              {i.quantity} × {i.name}
-                              {i.variantName && ` (${i.variantName})`}
-                            </span>
-                          ))}
+                          {o.items.slice(0, 4).map((i) => {
+                            const src = photo(i.productId, i.name);
+                            return (
+                              <span key={i.id} className="order-card-item">
+                                {src ? (
+                                  <img className="thumb-xs" src={src} alt="" loading="lazy" />
+                                ) : (
+                                  <span className="thumb-xs thumb-blank" aria-hidden="true">
+                                    <Icon name="kitchen" />
+                                  </span>
+                                )}
+                                <span>
+                                  {i.quantity} × {i.name}
+                                  {i.variantName && ` (${i.variantName})`}
+                                </span>
+                              </span>
+                            );
+                          })}
                           {o.items.length > 4 && <span className="muted">+ {o.items.length - 4} autre(s)</span>}
                         </span>
                       </button>

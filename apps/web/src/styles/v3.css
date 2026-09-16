@@ -1,0 +1,2001 @@
+/*
+ * Design « v3 » du personnel (validé par Kader le 16/09/2026, maquette maquette-v3.cjs) :
+ * page bleutée #EEF2F8, cartes blanches arrondies (16 à 22 px) à ombre douce, rail bleu nuit À GAUCHE
+ * (tablette : 92 px, icônes et libellés ; PC : 240 px, rubriques groupées et carte du restaurant en bas),
+ * bleu #1D4ED8 pour les prix, liens et catégorie ouverte, OR #F5B400 réservé à l'action principale et à la
+ * rubrique active, police Outfit partout, boutons en minuscules, pas d'émoji.
+ * La nourriture est la star : photo sur chaque plat, chaque catégorie, chaque ligne de commande, et un bandeau
+ * « plat du jour » nourri par les annonces du menu client.
+ * Chargée en dernier ; tout est sous `.tablette` (le design commun, posé sur tous les appareils par touch.ts),
+ * les largeurs du PC sous `.souris`. Les barres d'Android (env(safe-area-inset-*)) restent prises en compte.
+ * WebView Chrome 83 : pas de gap sur flexbox (marges), grid-gap accepté, pas de :has(), pas de inset.
+ */
+
+/* === Jetons ============================================================= */
+:root.tablette {
+  --font: 'Outfit', 'Segoe UI', Arial, 'Noto Sans Arabic', Tahoma, sans-serif;
+  --rail-w: 92px;
+  --nuit: #0b1730;
+  --nuit2: #122448;
+  --or: #f5b400;
+  --or2: #d99a00;
+  --or-text: #1a1300;
+  --or-shadow: 0 8px 20px rgba(245, 180, 0, 0.32);
+  --vert: #15803d;
+  --vert-soft: #e9f9ee;
+  --ambre: #b45309;
+  --ambre-soft: #fff4d6;
+}
+
+:root.souris {
+  --rail-w: 240px;
+}
+
+:root.tablette[data-theme='light'] {
+  --bg: #eef2f8;
+  --band: #eef2f8;
+  --readonly: #eef2f8;
+  --fill: #eef2f8;
+  --hover: #f4f7fb;
+  --column: rgba(15, 32, 68, 0.04);
+  --border: #e3e8f1;
+  --line: #e3e8f1;
+  --primary-soft: #eef3ff;
+  --shadow-card: 0 4px 16px rgba(15, 32, 68, 0.06);
+  --shadow-lift: 0 10px 30px rgba(15, 32, 68, 0.12);
+  --chart-prev: #dfe5ef;
+}
+
+.tablette body {
+  font-family: var(--font);
+}
+
+/* === Coque : rail à gauche, plus de bandeau ============================= */
+.tablette .app {
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+}
+
+.tablette .topbar {
+  display: none;
+}
+
+.tablette .rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 0 14px;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--nuit) 0%, var(--nuit2) 100%);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.tablette .rail-brand {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.tablette .rail-brand svg {
+  width: 44px;
+  height: 44px;
+}
+
+.tablette .rail-product,
+.tablette .rail-group-title,
+.tablette .rail-card {
+  display: none;
+}
+
+.tablette .rail-items {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.tablette .rail-items::-webkit-scrollbar {
+  display: none;
+}
+
+.tablette .rail-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.tablette .rail-item {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  min-height: 66px;
+  margin: 0 0 6px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tablette .rail-item .ico {
+  width: 24px;
+  height: 24px;
+  margin: 0 0 5px;
+}
+
+.tablette .rail-item:hover {
+  color: #ffffff;
+}
+
+.tablette .rail-item[aria-current='page'],
+.tablette .rail-item[aria-current='page']:hover {
+  background: var(--or);
+  box-shadow: var(--or-shadow);
+  color: var(--or-text);
+}
+
+.tablette .rail-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
+.tablette .rail-bottom {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+.tablette .rail-bottom .rail-item {
+  margin-bottom: 4px;
+}
+
+.tablette .rail-offline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tablette .rail-offline .dot {
+  margin-inline-end: 5px;
+}
+
+/* PC : rail large, rubriques nommées, carte du restaurant en bas. */
+.souris .rail {
+  align-items: stretch;
+  padding: calc(22px + env(safe-area-inset-top, 0px)) 16px 16px;
+}
+
+.souris .rail-brand {
+  justify-content: flex-start;
+  margin: 0 8px 22px;
+}
+
+.souris .rail-brand svg {
+  width: 40px;
+  height: 40px;
+  margin-inline-end: 12px;
+}
+
+.souris .rail-product {
+  display: block;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.souris .rail-product span {
+  color: #f5d27a;
+}
+
+.souris .rail-items,
+.souris .rail-group,
+.souris .rail-bottom {
+  align-items: stretch;
+}
+
+.souris .rail-group-title {
+  display: block;
+  margin: 12px 14px 6px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.souris .rail-item {
+  flex-direction: row;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 4px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: start;
+}
+
+.souris .rail-item .ico {
+  width: 22px;
+  height: 22px;
+  margin: 0 12px 0 0;
+}
+
+.souris[dir='rtl'] .rail-item .ico {
+  margin: 0 0 0 12px;
+}
+
+.souris .rail-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.souris .rail-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.souris .rail-badge {
+  position: static;
+  margin-inline-start: auto;
+}
+
+.souris .rail-offline {
+  justify-content: center;
+}
+
+.souris .rail-card {
+  display: block;
+  margin-top: 10px;
+  padding: 14px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1d4ed8, #0b1730);
+  color: #ffffff;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.souris .rail-card strong,
+.souris .rail-card span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.souris .rail-card strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.souris .rail-card span {
+  margin-top: 2px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+}
+
+.souris .rail-card:hover {
+  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.35);
+}
+
+/* Écran de PC bas : le rail défile, la carte reste en bas. */
+@media (max-height: 760px) {
+  .souris .rail-item {
+    min-height: 40px;
+  }
+
+  .souris .rail-group-title {
+    margin-top: 6px;
+  }
+}
+
+.tablette .workspace {
+  padding: 18px 22px;
+}
+
+.souris .workspace {
+  padding: 22px 28px;
+}
+
+.tablette .workspace.workspace-bleed {
+  padding: 0;
+}
+
+/* Alertes flottantes : plus de bandeau, elles se posent en haut à droite de la page. */
+.staff-alerts {
+  top: calc(12px + env(safe-area-inset-top, 0px));
+}
+
+.staff-alerts .staff-alert-card {
+  border: 0;
+  border-left: 4px solid var(--primary);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lift);
+}
+
+.staff-alerts .staff-alert-ready {
+  border-left-color: var(--vert);
+}
+
+.staff-alerts .staff-alert-call {
+  border-left-color: var(--or2);
+}
+
+/* === Boutons : l'action principale en or ================================ */
+.tablette .btn {
+  border-radius: 14px;
+  font-weight: 700;
+}
+
+.tablette .btn-primary,
+.tablette .btn-primary:hover:not(:disabled) {
+  border-color: var(--or);
+  background: var(--or);
+  box-shadow: var(--or-shadow);
+  color: var(--or-text);
+}
+
+.tablette .btn-primary .ico,
+:root.tablette[data-theme='dark'] .btn-primary,
+:root.tablette[data-theme='dark'] .btn-primary:hover:not(:disabled) {
+  color: var(--or-text);
+}
+
+.tablette .btn-primary:active:not(:disabled) {
+  border-color: var(--or2);
+  background: var(--or2);
+}
+
+.tablette .btn-primary:disabled {
+  border-color: var(--disabled);
+  background: var(--disabled);
+  box-shadow: none;
+  color: #ffffff;
+}
+
+.tablette .order-card .order-card-action,
+.tablette .order-card .order-card-action:hover:not(:disabled) {
+  background: var(--or);
+  color: var(--or-text);
+}
+
+.tablette .link {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* === En-têtes de page =================================================== */
+.tablette .page-head {
+  margin-bottom: 16px;
+}
+
+.tablette .page-head h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.tablette .page-meta,
+.tablette .page-head > div:first-child > p {
+  font-weight: 600;
+}
+
+.tablette .page-actions .btn {
+  height: 44px;
+}
+
+/* En-tête de service : photo du restaurant, pastille verte, bonjour et date. */
+.svc-head {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.svc-who {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin-inline-end: 16px;
+}
+
+.svc-avatar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-inline-end: 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1d4ed8, #0b1730);
+  box-shadow: var(--shadow-card);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.svc-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.svc-open {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 14px;
+  height: 14px;
+  border: 2.5px solid var(--bg);
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.tablette[dir='rtl'] .svc-open {
+  right: auto;
+  left: -3px;
+}
+
+.svc-text {
+  min-width: 0;
+}
+
+.svc-text h1 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.svc-text p {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.svc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: -4px;
+}
+
+.svc-actions > * {
+  margin: 4px;
+}
+
+.tablette .svc-actions .btn {
+  height: 44px;
+}
+
+.tablette .svc-actions select {
+  width: auto;
+  height: 44px;
+}
+
+/* === Cartes et pastilles ================================================ */
+.tablette .page-card,
+.tablette .panel,
+.tablette fieldset.group {
+  border-radius: 18px;
+}
+
+.card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.card > h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.card > h3 .link {
+  font-size: 12.5px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+}
+
+.card-empty {
+  padding: 8px 0;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 10px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: var(--vert-soft);
+  color: var(--vert);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.live-pill i {
+  width: 8px;
+  height: 8px;
+  margin-inline-end: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: afk-pulse 1.6s ease-in-out infinite;
+}
+
+.live-pill.off {
+  background: var(--ambre-soft);
+  color: var(--ambre);
+}
+
+.live-pill.off i {
+  background: #f59e0b;
+  animation: none;
+}
+
+@keyframes afk-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+  }
+
+  60% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+}
+
+/* Vignettes des plats. */
+.thumb-sm,
+.thumb-xs,
+.pos-line-photo {
+  flex: none;
+  border-radius: 12px;
+  background: var(--fill);
+  object-fit: cover;
+}
+
+.thumb-sm {
+  width: 46px;
+  height: 46px;
+  margin-inline-end: 12px;
+}
+
+.thumb-xs {
+  width: 40px;
+  height: 40px;
+  margin-inline-end: 10px;
+  border-radius: 10px;
+}
+
+.thumb-blank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border-strong);
+}
+
+.thumb-blank .ico {
+  width: 20px;
+  height: 20px;
+}
+
+/* === Tableau de bord ==================================================== */
+.kpis {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  grid-gap: 14px;
+  margin-bottom: 16px;
+}
+
+.tablette .kpi,
+.tablette .kpi + .kpi {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 16px 18px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.kpi small {
+  display: flex;
+  align-items: center;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.kpi small .ico {
+  width: 18px;
+  height: 18px;
+  margin-inline-end: 8px;
+  color: var(--primary);
+}
+
+.kpi strong {
+  display: block;
+  margin: 8px 0 2px;
+  overflow: hidden;
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.kpi span {
+  display: block;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.kpi .kpi-up {
+  color: var(--vert);
+}
+
+.kpi .kpi-down {
+  color: var(--ambre);
+}
+
+.tablette .kpi-hero {
+  background: linear-gradient(135deg, #0b1730 0%, #1d4ed8 100%);
+  color: #ffffff;
+}
+
+.kpi-hero small,
+.kpi-hero small .ico {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.kpi-hero strong {
+  position: relative;
+  font-size: 34px;
+}
+
+.kpi-hero span {
+  position: relative;
+  color: #f5d27a;
+}
+
+.kpi-hero img {
+  position: absolute;
+  top: -20px;
+  right: -30px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0.35;
+}
+
+.dash-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-gap: 14px;
+  align-items: start;
+}
+
+.dash-col > .card + .card {
+  margin-top: 14px;
+}
+
+.live-list,
+.pop-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.live-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 9px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.live-list li:last-child .live-row {
+  border-bottom: 0;
+}
+
+.live-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.live-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.live-text small {
+  display: block;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.live-row .st {
+  flex: none;
+  margin: 0 10px;
+}
+
+.live-row b {
+  flex: none;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.service {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-gap: 10px;
+}
+
+.serv {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.serv b {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.serv span {
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.serv small {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.serv-alert {
+  background: var(--ambre-soft);
+}
+
+.serv-alert b {
+  color: var(--ambre);
+}
+
+.serv-ok {
+  background: var(--vert-soft);
+}
+
+.serv-ok b {
+  color: var(--vert);
+}
+
+.pop {
+  display: flex;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.pop:last-child {
+  border-bottom: 0;
+}
+
+.pop img,
+.pop-blank {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  margin-inline-end: 12px;
+  border-radius: 12px;
+  background: var(--fill);
+  object-fit: cover;
+}
+
+.pop-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border-strong);
+}
+
+.pop-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pop-text strong {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pop-text small {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.pop b {
+  flex: none;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.tablette .hchart {
+  height: 190px;
+}
+
+.tablette .hchart-plot {
+  border-bottom: 0;
+  background-image: none;
+}
+
+.tablette .hbar {
+  width: 60%;
+  max-width: 40px;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+}
+
+.tablette .hbar-prev {
+  background: var(--chart-prev);
+}
+
+.tablette .hbar-top {
+  background: linear-gradient(180deg, #f5b400, #d99a00);
+}
+
+@media (max-width: 1000px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dash-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* === Prendre une commande =============================================== */
+.tablette .take {
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.tablette .take-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 22px 0;
+}
+
+.tablette .take-main .svc-head {
+  margin-bottom: 12px;
+}
+
+.take-search {
+  display: flex;
+  align-items: center;
+  width: 280px;
+  max-width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  color: var(--text-soft);
+}
+
+.take-search .ico {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-inline-end: 8px;
+}
+
+.tablette .take-search input:not([type='checkbox']):not([type='radio']),
+.tablette .take-search input:focus {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+/* Tables : une bande qui défile, la table choisie cerclée de bleu ; l'état en texte de couleur. */
+.tablette .take-tables {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  margin: 0 -22px;
+  padding: 2px 22px 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: transparent;
+  border: 0;
+}
+
+.tablette .take-tables::-webkit-scrollbar {
+  display: none;
+}
+
+.tablette .take-tables .take-none {
+  padding: 12px 0;
+}
+
+.tablette .take-zone-block {
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin-inline-end: 6px;
+}
+
+.tablette .take-zone {
+  display: flex;
+  flex: none;
+  align-items: center;
+  max-width: 96px;
+  margin: 0 10px 0 0;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 12.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tablette[dir='rtl'] .take-zone {
+  margin: 0 0 0 10px;
+}
+
+.tablette .take-table-grid {
+  display: flex;
+  flex: none;
+  grid-gap: 0;
+  padding: 0;
+}
+
+.tablette .take-table {
+  flex: none;
+  width: 96px;
+  height: 70px;
+  margin-inline-end: 10px;
+  border-radius: 16px;
+}
+
+.tablette .take-table b {
+  font-size: 20px;
+}
+
+.tablette .take-table span {
+  margin-top: 2px;
+  font-size: 12.5px;
+}
+
+.tablette .take-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -22px;
+  padding: 2px 22px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Bandeau « plat du jour » : la première annonce diffusée, photo pleine largeur et voile bleu nuit. */
+.take-hero {
+  position: relative;
+  height: 176px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--nuit);
+  box-shadow: 0 10px 30px rgba(15, 32, 68, 0.18);
+}
+
+.take-hero img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.take-hero-veil {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, rgba(11, 23, 48, 0.92) 0%, rgba(11, 23, 48, 0.55) 48%, rgba(11, 23, 48, 0) 80%);
+}
+
+.tablette[dir='rtl'] .take-hero-veil {
+  background: linear-gradient(270deg, rgba(11, 23, 48, 0.92) 0%, rgba(11, 23, 48, 0.55) 48%, rgba(11, 23, 48, 0) 80%);
+}
+
+.take-hero-text {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  left: 24px;
+  color: #ffffff;
+}
+
+.take-hero-text small {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--or);
+  color: var(--or-text);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.take-hero-text strong {
+  display: block;
+  max-width: 62%;
+  margin: 8px 0 4px;
+  overflow: hidden;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.take-hero-text span {
+  display: block;
+  max-width: 62%;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.take-hero-text button {
+  margin-top: 10px;
+  height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.take-section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 2px 0 10px;
+}
+
+.take-section h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.take-section .link {
+  font-size: 13px;
+}
+
+/* Catégories : cartes blanches avec la photo d'un plat, la catégorie ouverte en bleu plein ; restent visibles au défilement. */
+.tablette .take-cats {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex: none;
+  margin: 0 -22px 14px;
+  padding: 2px 22px 8px;
+  background: var(--bg);
+  border: 0;
+}
+
+.tablette .take-cats button {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  margin-inline-end: 10px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 14px;
+}
+
+.tablette .take-cats button img {
+  width: 36px;
+  height: 36px;
+  margin-inline-start: -8px;
+  margin-inline-end: 8px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.tablette .take-cats button[aria-pressed='true'] {
+  background: var(--primary);
+  box-shadow: 0 8px 18px rgba(29, 78, 216, 0.3);
+  color: #ffffff;
+}
+
+.tablette .take-products {
+  grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+  grid-gap: 14px;
+  padding: 0;
+}
+
+.tablette .take-product {
+  min-height: 0;
+  border-radius: 18px;
+}
+
+.tablette .take-product-photo {
+  height: 106px;
+}
+
+.tablette .take-product-name {
+  min-height: 35px;
+  margin: 10px 12px 0;
+  font-size: 14.5px;
+  line-height: 1.2;
+}
+
+.tablette .take-product-foot {
+  padding: 4px 10px 12px 12px;
+}
+
+.tablette .take-product-price {
+  color: var(--primary);
+  font-size: 15px;
+}
+
+.tablette .take-product-add {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: var(--or);
+  color: var(--or-text);
+}
+
+.tablette .take-product-add .ico {
+  width: 20px;
+  height: 20px;
+}
+
+/* Quantité déjà commandée : pastille bleu nuit sur la photo. */
+.tablette .take-product-qty {
+  top: 10px;
+  bottom: auto;
+  padding: 3px 9px;
+  border-radius: 9px;
+  background: var(--nuit);
+  color: #ffffff;
+  font-size: 12px;
+  inset-inline-start: 10px;
+  inset-inline-end: auto;
+}
+
+.tablette .take-product.in-ticket .take-product-price {
+  padding-inline-end: 0;
+}
+
+/* Carte sans photo : la pastille se place en bas, à côté du bouton « + ». */
+.tablette .take-product.no-photo .take-product-qty {
+  top: auto;
+  bottom: 19px;
+  inset-inline-start: auto;
+  inset-inline-end: 56px;
+}
+
+.tablette .take-product.no-photo {
+  min-height: 96px;
+}
+
+/* Tablette : le tableau de bord tient presque dans l'écran, le graphique se fait plus bas. */
+.tactile .hchart {
+  height: 150px;
+}
+
+/* Commande : colonne blanche, lignes en vignettes, « Envoyer en cuisine » en or. */
+.tablette .take-ticket {
+  background: var(--surface);
+  box-shadow: -10px 0 30px rgba(15, 32, 68, 0.08);
+  color: var(--text);
+}
+
+.tablette .take-ticket-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+}
+
+.tablette .take-ticket-head h2 {
+  color: var(--text);
+  font-size: 20px;
+}
+
+.tablette .take-ticket-head p {
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.take-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  max-width: 140px;
+  margin-inline-start: 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.take-chip .zone-dot {
+  width: 10px;
+  height: 10px;
+  margin-inline-end: 6px;
+}
+
+.tablette .take-lines {
+  padding: 4px 20px 8px;
+}
+
+.tablette .take-ticket .take-none {
+  color: var(--text-soft);
+}
+
+.tablette .take-line {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.take-line-photo {
+  flex: none;
+  width: 54px;
+  height: 54px;
+  margin-inline-end: 12px;
+  border-radius: 12px;
+  background: var(--fill);
+  object-fit: cover;
+}
+
+.take-line-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border-strong);
+}
+
+.take-line-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.take-line-text strong {
+  display: block;
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.take-line-text small {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.take-line-text b {
+  display: block;
+  margin-top: 2px;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.tablette .take-qty {
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin: 0;
+  margin-inline-start: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.tablette .take-qty button {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  color: var(--text);
+}
+
+.tablette .take-qty button .ico {
+  width: 16px;
+  height: 16px;
+}
+
+.tactile .take-qty button {
+  width: 38px;
+  height: 38px;
+}
+
+.tablette .take-qty b {
+  min-width: 18px;
+  margin: 0 4px;
+  color: var(--text);
+  font-size: 15px;
+}
+
+.tablette .take-foot {
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--line);
+}
+
+.take-sub {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.take-sub-promo span:last-child {
+  color: var(--vert);
+}
+
+.tablette .take-total span {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.tablette .take-total strong {
+  color: var(--text);
+  font-size: 26px;
+}
+
+.tablette .take-send {
+  height: 56px;
+  border-radius: 16px;
+  background: var(--or);
+  box-shadow: 0 10px 24px rgba(245, 180, 0, 0.35);
+  color: var(--or-text);
+  font-size: 16px;
+}
+
+.tablette .take-send .ico {
+  width: 24px;
+  height: 24px;
+  margin-inline-end: 10px;
+}
+
+.tablette .take-send:disabled {
+  background: var(--fill);
+  box-shadow: none;
+  color: var(--muted);
+}
+
+.tablette .take-sent,
+.tablette .take-queue,
+.tablette .take-queue-error {
+  color: var(--text);
+}
+
+.tablette .take-sent .ico {
+  color: var(--vert);
+}
+
+.tablette .take-queue-error button {
+  background: var(--fill);
+  color: var(--text);
+}
+
+/* Portrait (tablette 800 px) : le rail garde ses 92 px, la commande se resserre, deux plats par ligne. */
+@media (max-width: 1000px) {
+  .tablette .take {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .tablette .take-main {
+    padding: 14px 16px 0;
+  }
+
+  .tablette .take-tables,
+  .tablette .take-body,
+  .tablette .take-cats {
+    margin-right: -16px;
+    margin-left: -16px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .tablette .take-tables {
+    display: flex;
+    padding-bottom: 10px;
+    border-bottom: 0;
+  }
+
+  /* La recherche passe sous le bonjour, sur toute la largeur. */
+  .tablette .take-main .svc-actions {
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .tablette .take-search {
+    width: 100%;
+    height: 40px;
+  }
+
+  .take-hero-text strong,
+  .take-hero-text span {
+    display: -webkit-box;
+    max-width: 85%;
+    white-space: normal;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .take-hero-text span {
+    -webkit-line-clamp: 1;
+  }
+
+  .tablette .take-hero {
+    height: 150px;
+  }
+
+  .take-hero-text strong {
+    font-size: 22px;
+  }
+
+  .tablette .take-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0;
+  }
+
+  .tablette .take-product-photo {
+    height: 104px;
+  }
+
+  .tablette .take-ticket-head {
+    padding: 14px 16px 12px;
+  }
+
+  .tablette .take-lines {
+    padding: 4px 16px 8px;
+  }
+
+  .tablette .take-foot {
+    padding: 12px 16px 16px;
+  }
+
+  .take-line-photo {
+    width: 46px;
+    height: 46px;
+    margin-inline-end: 10px;
+  }
+}
+
+/* === Commandes, cuisine, caisse : vignettes et accents ================== */
+.tablette .order-card-items {
+  grid-gap: 6px;
+}
+
+.order-card-item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.order-card-item > span {
+  min-width: 0;
+}
+
+.tablette .kds {
+  border-radius: 22px;
+  background: var(--nuit);
+}
+
+.tablette .kds-bar {
+  background: transparent;
+}
+
+.tablette .kds-col {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tablette .kds-card {
+  background: var(--nuit2);
+}
+
+.tablette .kds-num {
+  color: var(--or);
+}
+
+.tablette .kds-item {
+  grid-template-columns: 34px 44px minmax(0, 1fr);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.kds-thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  object-fit: cover;
+}
+
+.tablette .kds .btn,
+.tablette .kds .btn:disabled {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tablette .kds .btn:hover:not(:disabled),
+.tablette .kds .btn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tablette .kds .kds-stations .btn[aria-pressed='true'] {
+  background: var(--or);
+  color: var(--or-text);
+}
+
+.tablette .pos-line {
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  grid-gap: 4px 12px;
+}
+
+.pos-line-photo {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+  align-self: center;
+  width: 46px;
+  height: 46px;
+}
+
+.tablette .pos-tile-price,
+.tablette .check-row-amount {
+  color: var(--primary);
+}
+
+.tablette .pos-tile-qty {
+  background: var(--nuit);
+  color: #ffffff;
+}
+
+/* === Connexion : photo et slogan à gauche, formulaire à droite ============ */
+.login-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 520px;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.login-visual {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--nuit);
+}
+
+.login-visual img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-veil {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(160deg, rgba(11, 23, 48, 0.92) 0%, rgba(29, 78, 216, 0.75) 100%);
+}
+
+.login-brand {
+  position: absolute;
+  top: calc(48px + env(safe-area-inset-top, 0px));
+  left: 56px;
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.login-brand svg {
+  width: 48px;
+  height: 48px;
+  margin-inline-end: 12px;
+}
+
+.login-brand em {
+  color: #f5d27a;
+  font-style: normal;
+}
+
+.login-pitch {
+  position: absolute;
+  right: 56px;
+  bottom: 64px;
+  left: 56px;
+  color: #ffffff;
+}
+
+.login-pitch h2 {
+  margin-bottom: 14px;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.login-pitch p {
+  max-width: 520px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.login-points {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 26px -5px 0;
+}
+
+.login-points span {
+  display: flex;
+  align-items: center;
+  margin: 5px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.login-points .ico {
+  width: 16px;
+  height: 16px;
+  margin-inline-end: 6px;
+}
+
+.login-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface);
+}
+
+.login-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  max-width: 520px;
+  min-height: 0;
+  padding: 32px 64px;
+  overflow-y: auto;
+}
+
+.login-form h1 {
+  margin-bottom: 6px;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.login-lead {
+  margin-bottom: 28px;
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.login-split .access-field {
+  margin-bottom: 16px;
+}
+
+.login-split .access-field label {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.login-split .access-input {
+  align-items: center;
+  height: 52px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--band);
+}
+
+.login-split .access-input:focus-within {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.login-split .access-input svg {
+  width: 20px;
+  margin: 0 8px 0 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+}
+
+.tablette[dir='rtl'] .login-split .access-input svg {
+  margin: 0 14px 0 8px;
+}
+
+.login-split .access-input input:not([type='checkbox']):not([type='radio']),
+.login-split .access-input input:focus {
+  height: 100%;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 15px;
+}
+
+.login-split .access-forgot {
+  display: block;
+  margin-top: 8px;
+  margin-inline-start: auto;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tablette .login-split .access-submit,
+.tablette .login-split .access-submit:hover:not(:disabled) {
+  width: 100%;
+  height: 56px;
+  margin-top: 8px;
+  border-color: var(--primary);
+  border-radius: 16px;
+  background: var(--primary);
+  box-shadow: var(--shadow-primary);
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.login-help {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 22px;
+  color: var(--text-soft);
+  font-size: 13px;
+  text-align: center;
+}
+
+.login-help > * + * {
+  margin-top: 8px;
+}
+
+.login-help .link {
+  font-weight: 800;
+}
+
+.login-side .statusbar {
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-width: 1000px) {
+  .login-split {
+    grid-template-columns: minmax(0, 1fr) 400px;
+  }
+
+  .login-brand {
+    top: calc(28px + env(safe-area-inset-top, 0px));
+    left: 32px;
+  }
+
+  .login-pitch {
+    right: 32px;
+    bottom: 40px;
+    left: 32px;
+  }
+
+  .login-pitch h2 {
+    font-size: 34px;
+  }
+
+  .login-form {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 760px) {
+  .login-split {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 220px minmax(0, 1fr);
+  }
+
+  .login-pitch p,
+  .login-points {
+    display: none;
+  }
+
+  .login-pitch {
+    bottom: 24px;
+  }
+
+  .login-pitch h2 {
+    margin: 0;
+    font-size: 26px;
+  }
+}
+
+/* Inscription, mot de passe oublié : la carte centrée, dans le même langage. */
+.tablette .access-card {
+  border-radius: 22px;
+  box-shadow: var(--shadow-lift);
+}
+
+/* === Panneau « Plus », fenêtres ========================================= */
+.tablette .side-panel {
+  border-radius: 24px 0 0 24px;
+}
+
+.tablette .dialog {
+  border-radius: 22px;
+}
+
+.tablette .panel-nav .nav-item[aria-current='page'],
+.tablette .panel-section .nav-item[aria-current='page'] {
+  background: var(--or);
+  box-shadow: var(--or-shadow);
+  color: var(--or-text);
+}
+
+.tablette .panel-nav .nav-item[aria-current='page'] .ico,
+.tablette .panel-section .nav-item[aria-current='page'] .ico {
+  color: var(--or-text);
+}
