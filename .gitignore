@@ -49,3 +49,5 @@ infrastructure/o2switch/sortie/
 infrastructure/site/sortie/
 # Console Windows empaquetée (apps/desktop/scripts/empaqueter.mjs)
 apps/desktop/sortie/
+# Firebase config (sensible)
+apps/tablet/android/app/google-services.json
