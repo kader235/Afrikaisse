@@ -812,6 +812,11 @@
   margin: 4px 22px 22px;
 }
 
+.tablette .panel-exit {
+  width: calc(100% - 44px);
+  margin: -14px 22px 22px;
+}
+
 /* === Commandes : colonnes à peine teintées, cartes blanches ============= */
 .tablette .orders-card {
   overflow: visible;

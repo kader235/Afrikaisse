@@ -51,6 +51,9 @@ export const notificationDataSchema = z
   .partial();
 export type NotificationData = z.infer<typeof notificationDataSchema>;
 
+/** Jeton FCM opaque : seul l'appareil Android le fournit, le Cloud ne l'interprète jamais. */
+export const pushTokenSchema = z.object({ token: z.string().trim().min(20).max(4096) });
+
 function place(d: NotificationData): string {
   if (d.tableLabel) return `Table ${d.tableLabel}`;
   return d.serviceType === 'TAKEAWAY' ? 'À emporter' : d.serviceType === 'DELIVERY' ? 'Livraison' : 'Comptoir';

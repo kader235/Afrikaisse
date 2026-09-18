@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "606987812073",
+    "project_id": "afrikaisse",
+    "storage_bucket": "afrikaisse.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:606987812073:android:79c07071a0a8756a440478",
+        "android_client_info": {
+          "package_name": "com.afrikaisse.tablette"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBB5AESc-VA-4WKABc6jnPvKTMw45LRuJc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

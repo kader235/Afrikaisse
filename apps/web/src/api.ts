@@ -26,6 +26,8 @@ export class UserFacingError extends Error {}
 
 export const OFFLINE = 'OFFLINE';
 const TIMEOUT_MS = 15_000;
+const TRANSIENT_STATUSES = new Set([502, 503, 504]);
+const READ_RETRY_DELAYS_MS = [350, 1_000];
 
 let accessToken: string | null = null;
 let refreshing: Promise<SessionResponse | null> | null = null;
@@ -43,6 +45,39 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
     timer = setTimeout(() => reject(new Error('timeout')), ms);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+async function retryNetwork<T>(operation: () => Promise<T>, attempts = 2): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt + 1 < attempts) await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+  throw lastError;
+}
+
+/**
+ * Un redémarrage bref du Cloud ou du serveur local peut répondre 503 alors que
+ * la tablette est bien connectée. Seules les lectures sont rejouées : répéter
+ * une écriture risquerait de créer une seconde commande ou un second paiement.
+ */
+async function sendReadWithRetry(path: string): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= READ_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const response = await send('GET', path);
+      if (!TRANSIENT_STATUSES.has(response.status) || attempt === READ_RETRY_DELAYS_MS.length) return response;
+    } catch (error) {
+      lastError = error;
+      if (!(error instanceof ApiError) || error.code !== OFFLINE || attempt === READ_RETRY_DELAYS_MS.length) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, READ_RETRY_DELAYS_MS[attempt]!));
+  }
+  throw lastError;
 }
 
 async function send(method: string, path: string, body?: unknown): Promise<Response> {
@@ -73,6 +108,7 @@ async function toError(res: Response): Promise<ApiError> {
     return new ApiError(res.status, data.error.code, data.error.message, data.error.details);
   } catch {
     // Page d'erreur de l'hébergeur (pare-feu, application qui redémarre…) : le code HTTP aide à trouver la cause.
+    if (res.status === 503) return new ApiError(503, 'SERVICE_UNAVAILABLE', 'Le serveur est temporairement indisponible. Réessayez dans quelques secondes.');
     return new ApiError(res.status, 'INTERNAL', `Réponse inattendue du serveur (HTTP ${res.status}).`);
   }
 }
@@ -106,7 +142,7 @@ export function refreshSession(): Promise<SessionResponse | null> {
 const NO_RETRY = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/recovery/question', '/auth/recovery/reset'];
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
-  let res = await send(method, path, body);
+  let res = method === 'GET' ? await sendReadWithRetry(path) : await send(method, path, body);
   // Tablette démarrée pendant une coupure : pas encore de jeton d'accès, celui du Keystore en redonne un au retour du réseau.
   if (res.status === 401 && (accessToken || isNativeApp()) && !NO_RETRY.includes(path)) {
     const renewed = await refreshSession();
@@ -125,7 +161,11 @@ export interface ServerHealth {
 
 /** Vérifie qu'une adresse répond vraiment comme un serveur AfriKaisse avant de l'enregistrer. */
 export async function checkServer(url: string): Promise<ServerHealth> {
-  const res = await withTimeout(fetch(`${url}/api/health`, { credentials: 'omit' }), 8_000);
+  const res = await retryNetwork(async () => {
+    const response = await withTimeout(fetch(`${url}/api/health`, { credentials: 'omit' }), 8_000);
+    if (TRANSIENT_STATUSES.has(response.status)) throw new Error(`HTTP ${response.status}`);
+    return response;
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const health = (await res.json()) as ServerHealth;
   if (health?.status !== 'ok') throw new Error('Réponse inattendue');

@@ -1,9 +1,9 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { kitchenProblemSchema, notificationFeedSchema } from '@afrikaisse/core';
+import { kitchenProblemSchema, notificationFeedSchema, pushTokenSchema } from '@afrikaisse/core';
 import type { AppContext } from '../context.ts';
 import { requestMeta, requireAuth, requireTenant } from '../lib/access.ts';
-import { listNotifications, markAllNotificationsRead, markNotificationRead, reportKitchenProblem } from '../services/notifications.ts';
+import { listNotifications, markAllNotificationsRead, markNotificationRead, registerPushToken, reportKitchenProblem } from '../services/notifications.ts';
 
 const security = [{ bearer: [] }];
 const tags = ['notifications'];
@@ -29,6 +29,15 @@ export function notificationRoutes(ctx: AppContext): FastifyPluginAsyncZod {
       async (request, reply) => {
         reply.header('cache-control', 'no-store');
         return listNotifications(ctx, requireTenant(request.auth), request.params.locationId, request.query.since);
+      },
+    );
+
+    app.post(
+      '/locations/:locationId/push-tokens',
+      { schema: { tags, summary: 'Enregistrer le token FCM de cette tablette', security, params: location, body: pushTokenSchema } },
+      async (request, reply) => {
+        await registerPushToken(ctx, requireTenant(request.auth), request.params.locationId, request.body.token);
+        return reply.code(204).send();
       },
     );
 

@@ -856,10 +856,20 @@ export interface NotificationMarksTable {
   updated_at: number;
 }
 
+/** Token Firebase Cloud Messaging d'une tablette connectée. Propre au Cloud. */
+export interface PushTokensTable {
+  token: string;
+  tenant_id: string;
+  location_id: string;
+  user_id: string;
+  updated_at: number;
+}
+
 export interface Database {
   notifications: NotificationsTable;
   notification_reads: NotificationReadsTable;
   notification_marks: NotificationMarksTable;
+  push_tokens: PushTokensTable;
   pricing_settings: PricingSettingsTable;
   tax_rates: TaxRatesTable;
   promotions: PromotionsTable;

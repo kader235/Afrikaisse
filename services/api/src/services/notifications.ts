@@ -97,6 +97,16 @@ export async function listNotifications(ctx: AppContext, scope: TenantScope, loc
   return { cursor, full, unread: await countUnread(ctx, scope, locationId, readSeq), items };
 }
 
+/** Enregistre ou actualise le token FCM de la tablette connectée. */
+export async function registerPushToken(ctx: AppContext, scope: TenantScope, locationId: string, token: string): Promise<void> {
+  await assertLocation(ctx.db, scope, locationId);
+  await ctx.db
+    .insertInto('push_tokens')
+    .values({ token, tenant_id: scope.tenantId, location_id: locationId, user_id: scope.userId, updated_at: ctx.now() })
+    .onConflict((oc) => oc.column('token').doUpdateSet({ tenant_id: scope.tenantId, location_id: locationId, user_id: scope.userId, updated_at: ctx.now() }))
+    .execute();
+}
+
 export async function markNotificationRead(ctx: AppContext, scope: TenantScope, notificationId: string): Promise<void> {
   const row = await ctx.db.selectFrom('notifications').select(['id', 'location_id', 'audience']).where('id', '=', notificationId).where('tenant_id', '=', scope.tenantId).executeTakeFirst();
   if (!row || (scope.locationId && row.location_id !== scope.locationId) || !ROLE_PERMISSIONS[scope.role].includes(row.audience as Permission)) {

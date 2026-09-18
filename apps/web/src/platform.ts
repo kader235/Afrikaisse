@@ -1,5 +1,6 @@
 import { DEFAULT_CLOUD_URL } from '@afrikaisse/core';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { SecureStorage } from '@aparajita/capacitor-secure-storage';
 import { normalizeServerUrl } from '@afrikaisse/core';
 
@@ -13,6 +14,11 @@ import { normalizeServerUrl } from '@afrikaisse/core';
  */
 export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
+}
+
+/** Ferme uniquement l'enveloppe Android : la session du Keystore reste disponible au prochain lancement. */
+export function exitNativeApp(): void {
+  if (isNativeApp()) void CapacitorApp.exitApp();
 }
 
 export const CLOUD_URL: string = import.meta.env.VITE_AFK_CLOUD_URL ?? DEFAULT_CLOUD_URL;

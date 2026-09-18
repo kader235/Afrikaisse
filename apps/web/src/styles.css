@@ -1162,6 +1162,13 @@ input[type='radio']:focus {
   margin: 4px 18px 18px;
 }
 
+.panel-exit {
+  width: calc(100% - 36px);
+  margin: -10px 18px 18px;
+  border-color: var(--border-strong);
+  color: var(--text-soft);
+}
+
 /* === Pages ============================================================== */
 .page-head {
   display: flex;

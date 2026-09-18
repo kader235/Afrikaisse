@@ -29,7 +29,7 @@ import { AlertStack, useStaffAlerts } from './alerts.tsx';
 import { SoundSettings } from './pages/SoundSettings.tsx';
 import { NotificationPanel } from './pages/Notifications.tsx';
 import { ServerPage } from './pages/Server.tsx';
-import { isNativeApp, readServer, saveServer } from './platform.ts';
+import { exitNativeApp, isNativeApp, readServer, saveServer } from './platform.ts';
 import type { ServerSwitch } from './pages/Auth.tsx';
 import { APP_VERSION, ErrorMessage, Icon, Preferences, usePreferences, type IconName } from './ui.tsx';
 
@@ -184,7 +184,7 @@ const NAV_GROUPS: [NavGroup, string][] = [
 ];
 
 /** Rail de gauche sur PC (design v3) : tout le service, groupé ; le reste (établissements, journal, supervision…) sous « Plus ». */
-const PC_RAIL: Section[] = ['dashboard', 'take', 'orders', 'pos', 'floor', 'kitchen', 'menu', 'stock', 'reports', 'team', 'organization'];
+const PC_RAIL: Section[] = ['dashboard', 'take', 'orders', 'pos', 'floor', 'kitchen', 'menu', 'stock', 'team', 'organization'];
 
 /** Intitulés des groupes du rail PC ; la gestion et l'administration sont réunies. */
 const RAIL_GROUPS: [NavGroup[], string][] = [
@@ -230,7 +230,6 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'menu', label: t('nav.menu'), icon: 'menu', visible: can('menu.read'), group: 'restaurant' },
     { id: 'stock', label: t('nav.stock'), icon: 'box', visible: can('inventory.read'), group: 'manage' },
     { id: 'team', label: t('nav.team'), icon: 'team', visible: can('users.read'), group: 'admin' },
-    { id: 'reports', label: t('nav.reports'), icon: 'chart', visible: can('reports.read'), group: 'admin' },
     { id: 'locations', label: t('nav.locations'), icon: 'store', visible: can('location.read'), group: 'admin' },
     { id: 'organization', label: t('nav.organization'), icon: 'gear', visible: can('tenant.read'), group: 'admin' },
     { id: 'audit', label: t('nav.audit'), icon: 'journal', visible: can('audit.read'), group: 'admin' },
@@ -581,6 +580,12 @@ function SidePanel({
           <Icon name="logout" />
           {t('common.logout')}
         </button>
+        {isNativeApp() && (
+          <button className="btn panel-exit" onClick={exitNativeApp}>
+            <Icon name="power" />
+            Quitter l'application
+          </button>
+        )}
       </aside>
     </div>
   );

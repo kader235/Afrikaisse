@@ -10,6 +10,7 @@ export function ServiceHeader({
   restaurantName,
   logo,
   detail,
+  restaurantOnly = false,
   children,
 }: {
   userName: string;
@@ -18,6 +19,8 @@ export function ServiceHeader({
   logo: string | null;
   /** Complément après la date et le service (« 7 tables occupées »). */
   detail?: string | null;
+  /** Affiche uniquement l'identité de l'établissement, sans salutation ni ligne de service. */
+  restaurantOnly?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -28,11 +31,13 @@ export function ServiceHeader({
           <i className="svc-open" title="Ouvert" />
         </span>
         <div className="svc-text">
-          <h1>{greeting(userName)}</h1>
-          <p>
-            {serviceLine()}
-            {detail ? ` · ${detail}` : ''}
-          </p>
+          <h1>{restaurantOnly ? restaurantName : greeting(userName)}</h1>
+          {!restaurantOnly && (
+            <p>
+              {serviceLine()}
+              {detail ? ` · ${detail}` : ''}
+            </p>
+          )}
         </div>
       </div>
       {children && <div className="svc-actions">{children}</div>}

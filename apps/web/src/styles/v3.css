@@ -753,6 +753,13 @@
   margin-top: 14px;
 }
 
+.dash .card h3 .btn-dashboard {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
 .live-list,
 .pop-list {
   margin: 0;

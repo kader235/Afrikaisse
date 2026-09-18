@@ -111,11 +111,9 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const ordersChange = t && y ? change(t.orders, y.orders) : null;
   const kitchenOk = !!kitchen && kitchen.totals.measured > 0;
   const inKitchen = count('CONFIRMED', 'PREPARING');
-  const serviceDetail = orders.length > 0 ? `${orders.length} commande${orders.length > 1 ? 's' : ''} en cours` : 'service calme';
-
   return (
     <section className="dash">
-      <ServiceHeader userName={me.user.displayName} restaurantName={location?.name ?? me.tenant?.name ?? 'AfriKaisse'} logo={logo} detail={serviceDetail}>
+      <ServiceHeader userName={me.user.displayName} restaurantName={location?.name ?? me.tenant?.name ?? 'AfriKaisse'} logo={logo} restaurantOnly>
         {locations && locations.length > 1 && (
           <select aria-label="Établissement" value={locationId ?? ''} onChange={(e) => setLocationId(e.target.value)}>
             {locations.map((l) => (
@@ -196,7 +194,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <h3>
               Ventes par heure
               {can('reports.read') && (
-                <button type="button" className="link" onClick={() => onNavigate('reports')}>
+                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
                   Rapports
                 </button>
               )}
@@ -214,7 +212,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
                     {feed.online ? 'En direct' : 'Hors ligne'}
                   </span>
                 </span>
-                <button type="button" className="link" onClick={() => onNavigate('orders')}>
+                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('orders')}>
                   Toutes
                 </button>
               </h3>
@@ -262,7 +260,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <section className="card">
               <h3>
                 Service en cours
-                <button type="button" className="link" onClick={() => onNavigate('orders')}>
+                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('orders')}>
                   Commandes
                 </button>
               </h3>
@@ -280,7 +278,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <h3>
               Plats les plus vendus
               {can('reports.read') && (
-                <button type="button" className="link" onClick={() => onNavigate('reports')}>
+                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
                   Tout voir
                 </button>
               )}
