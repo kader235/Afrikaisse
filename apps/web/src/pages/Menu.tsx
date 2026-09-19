@@ -124,6 +124,7 @@ export function MenuPage({ me }: { me: Me }) {
         <div className="import-hero">
           <div>
             <h2>Votre menu est vide</h2>
+            <p className="muted">Importez un catalogue, ou créez une catégorie ci-dessous pour ajouter vos plats un par un.</p>
           </div>
           <button className="btn btn-primary" onClick={() => setImporting(true)}>
             <Icon name="add" />
@@ -228,7 +229,12 @@ function ProductsTab({ menu, canManage, canAvailability, save, act, onRefresh }:
       <div className="toolbar">
         {canManage && (
           <>
-            <button className="btn" disabled={!category} onClick={() => setDialog({ kind: 'product' })}>
+            <button
+              className="btn"
+              disabled={!category}
+              title={!category ? 'Créez d\'abord une catégorie' : undefined}
+              onClick={() => setDialog({ kind: 'product' })}
+            >
               <Icon name="add" />
               {t('menu.addProduct')}
             </button>
@@ -280,8 +286,9 @@ function ProductsTab({ menu, canManage, canAvailability, save, act, onRefresh }:
             <strong>{t('menu.categories')}</strong>
             {canManage && (
               <span>
-                <button className="btn" title={t('menu.addCategory')} aria-label={t('menu.addCategory')} onClick={() => setDialog({ kind: 'category' })}>
+                <button className="btn" onClick={() => setDialog({ kind: 'category' })}>
                   <Icon name="add" />
+                  {t('menu.addCategory')}
                 </button>
                 <button className="btn" title={t('menu.editCategory')} aria-label={t('menu.editCategory')} disabled={!category} onClick={() => category && setDialog({ kind: 'category', category })}>
                   <Icon name="edit" />

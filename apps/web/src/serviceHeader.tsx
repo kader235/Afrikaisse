@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { greeting, initialsOf, serviceLine } from './productPhotos.ts';
+import { LogoAfrikaisse } from './logo.tsx';
+import { greeting, serviceLine } from './productPhotos.ts';
 
 /**
  * En-tête de service (design v3) : la photo ou le logo du restaurant avec la pastille verte « ouvert »,
@@ -15,7 +16,7 @@ export function ServiceHeader({
 }: {
   userName: string;
   restaurantName: string;
-  /** Logo de l'établissement, sinon une photo de plat ; sans rien, les initiales du restaurant. */
+  /** Logo de l'établissement, sinon une photo de plat ; sans rien, le logo AfriKaisse. */
   logo: string | null;
   /** Complément après la date et le service (« 7 tables occupées »). */
   detail?: string | null;
@@ -27,7 +28,7 @@ export function ServiceHeader({
     <header className="svc-head">
       <div className="svc-who">
         <span className="svc-avatar" aria-hidden="true">
-          {logo ? <img src={logo} alt="" /> : <b>{initialsOf(restaurantName) || 'AK'}</b>}
+          {logo ? <img src={logo} alt="" /> : <LogoAfrikaisse />}
           <i className="svc-open" title="Ouvert" />
         </span>
         <div className="svc-text">
