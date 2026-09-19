@@ -154,84 +154,88 @@ button.etq {
 }
 
 /* === Nuages : fond de chaque widget ==========================================
-   Deux nuages doux, teintés selon l'état du widget (bleu = information, jaune = à traiter, rouge = urgent),
-   rognés par les bords de la carte, sous le contenu, plus une lueur dans le coin. Aucun élément de
-   contenu n'est touché : tout est en pseudo-éléments. */
-.nuage {
-  --nuage: 29, 78, 216;
-  --nuage-forme: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 140'%3E%3Cg fill='%23000'%3E%3Ccircle cx='72' cy='84' r='38'/%3E%3Ccircle cx='122' cy='60' r='50'/%3E%3Ccircle cx='178' cy='82' r='40'/%3E%3Crect x='34' y='84' width='184' height='40' rx='20'/%3E%3C/g%3E%3C/svg%3E");
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  background-image: radial-gradient(90% 70% at 100% 0%, rgba(var(--nuage), 0.1), transparent 62%);
+   Chaque widget a un fond clair teinté et de larges nuages de couleur floue, comme des lueurs
+   (dégradés radiaux superposés : rien à charger, rien sur le texte). La teinte suit l'état du widget :
+   bleu = information, jaune = à traiter, rouge = urgent. La position des nuages varie d'un widget à l'autre. */
+.dash .nuage {
+  --nuage: 59, 130, 246;
+  --nuage2: 125, 190, 252;
+  --nuage-base: #f6faff;
+  border: 1px solid rgba(var(--nuage), 0.16);
+  background-color: var(--nuage-base);
+  background-image:
+    radial-gradient(58% 80% at var(--nx, 30%) var(--ny, 60%), rgba(var(--nuage), 0.32) 0%, rgba(var(--nuage), 0.14) 48%, transparent 76%),
+    radial-gradient(40% 58% at 90% 10%, rgba(var(--nuage2), 0.32) 0%, transparent 72%),
+    radial-gradient(36% 48% at 6% 100%, rgba(var(--nuage2), 0.2) 0%, transparent 70%);
+  box-shadow: 0 8px 22px rgba(var(--nuage), 0.14);
 }
 
-.nuage-bleu {
-  --nuage: 29, 78, 216;
+.dash .nuage-bleu {
+  --nuage: 59, 130, 246;
+  --nuage2: 125, 190, 252;
+  --nuage-base: #f6faff;
 }
 
-.nuage-jaune {
-  --nuage: 232, 168, 0;
+.dash .nuage-jaune {
+  --nuage: 245, 176, 20;
+  --nuage2: 253, 216, 110;
+  --nuage-base: #fffcf2;
 }
 
-.nuage-rouge {
-  --nuage: 220, 38, 38;
+.dash .nuage-rouge {
+  --nuage: 239, 68, 68;
+  --nuage2: 252, 165, 165;
+  --nuage-base: #fff7f7;
 }
 
-.nuage::before,
-.nuage::after {
-  content: '';
-  position: absolute;
-  z-index: 0;
-  background: rgb(var(--nuage));
-  pointer-events: none;
-  -webkit-mask: var(--nuage-forme) center / contain no-repeat;
-  mask: var(--nuage-forme) center / contain no-repeat;
+/* Position variée des nuages */
+.dash .kpis .nuage:nth-child(2n) {
+  --nx: 66%;
+  --ny: 42%;
 }
 
-.nuage::before {
-  top: -14%;
-  right: -12%;
-  width: 72%;
-  aspect-ratio: 240 / 140;
-  opacity: 0.12;
+.dash .kpis .nuage:nth-child(3n) {
+  --nx: 44%;
+  --ny: 72%;
 }
 
-.nuage::after {
-  bottom: -12%;
-  left: -10%;
-  width: 46%;
-  aspect-ratio: 240 / 140;
-  opacity: 0.07;
-  transform: scaleX(-1);
+.dash .dash-col > .nuage:nth-child(2n) {
+  --nx: 62%;
+  --ny: 48%;
 }
 
-.nuage > :not(img) {
-  position: relative;
-  z-index: 1;
+/* Carte du chiffre d'affaires : fond bleu profond, lueurs blanches. */
+.tablette .dash .kpi-hero.nuage {
+  border-color: transparent;
+  background-image:
+    radial-gradient(60% 90% at 24% 62%, rgba(255, 255, 255, 0.26) 0%, transparent 70%),
+    radial-gradient(46% 70% at 92% 8%, rgba(255, 255, 255, 0.16) 0%, transparent 72%),
+    linear-gradient(135deg, #1a43bd 0%, #1d4ed8 55%, #2f63e8 100%);
+  box-shadow: 0 10px 26px rgba(29, 78, 216, 0.3);
 }
 
-/* Carte du chiffre d'affaires (fond bleu) : nuages blancs. */
-.kpi-hero.nuage {
-  --nuage: 255, 255, 255;
+/* Contenus posés sur les nuages : cartes légèrement voilées pour rester lisibles. */
+.dash .nuage .dm-item {
+  border: 1px solid rgba(var(--nuage), 0.16);
+  background: rgba(255, 255, 255, 0.72);
 }
 
-.kpi-hero.nuage::before {
-  opacity: 0.14;
+.dash .nuage .live-row {
+  border-bottom-color: rgba(var(--nuage), 0.16);
 }
 
-.kpi-hero.nuage::after {
-  opacity: 0.09;
+/* Thème sombre : fond de la carte conservé, lueurs plus présentes. */
+:root[data-theme='dark'] .dash .nuage {
+  --nuage-base: var(--surface);
+  border-color: rgba(var(--nuage), 0.28);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
 }
 
-:root[data-theme='dark'] .nuage::before {
-  opacity: 0.2;
-}
-
-:root[data-theme='dark'] .nuage::after {
-  opacity: 0.11;
-}
-
-:root[data-theme='dark'] .nuage-jaune {
+:root[data-theme='dark'] .dash .nuage-jaune {
   --nuage: 245, 180, 0;
+}
+
+:root[data-theme='dark'] .dash .nuage .dm-item {
+  border-color: rgba(var(--nuage), 0.24);
+  background: rgba(255, 255, 255, 0.06);
 }
