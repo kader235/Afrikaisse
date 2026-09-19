@@ -39,12 +39,15 @@ export function setSession(session: SessionResponse | null) {
   else if (session.refreshToken) void storeRefreshToken(session.refreshToken);
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error('timeout')), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+/** Annule aussi la requête expirée, au lieu de la laisser s'accumuler en arrière-plan. */
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, ms: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function retryNetwork<T>(operation: () => Promise<T>, attempts = 2): Promise<T> {
@@ -83,8 +86,9 @@ async function sendReadWithRetry(path: string): Promise<Response> {
 async function send(method: string, path: string, body?: unknown): Promise<Response> {
   const native = isNativeApp();
   try {
-    return await withTimeout(
-      fetch(`${apiBase()}/api${path}`, {
+    return await fetchWithTimeout(
+      `${apiBase()}/api${path}`,
+      {
         method,
         credentials: native ? 'omit' : 'same-origin',
         headers: {
@@ -94,7 +98,7 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
           ...(accessToken && { authorization: `Bearer ${accessToken}` }),
         },
         body: body === undefined ? undefined : JSON.stringify(body),
-      }),
+      },
       TIMEOUT_MS,
     );
   } catch {
@@ -139,6 +143,29 @@ export function refreshSession(): Promise<SessionResponse | null> {
   return refreshing;
 }
 
+/** Serveur injoignable ou qui redémarre (réseau pas encore prêt, 502/503/504) : pas une vraie erreur de compte. */
+export function isUnreachable(err: unknown): boolean {
+  return err instanceof ApiError && (err.code === OFFLINE || TRANSIENT_STATUSES.has(err.status));
+}
+
+const BOOT_RETRY_DELAYS_MS = [1_000, 2_000, 3_000];
+
+/**
+ * Renouvellement de session au démarrage de l'application. Au lancement, le Wi-Fi de la tablette
+ * n'a parfois pas fini de se rattacher : on réessaie quelques secondes avant de conclure à une
+ * panne. Une vraie réponse du serveur (401, etc.) n'est jamais rejouée.
+ */
+export async function refreshSessionAtStartup(): Promise<SessionResponse | null> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await refreshSession();
+    } catch (error) {
+      if (!isUnreachable(error) || attempt >= BOOT_RETRY_DELAYS_MS.length) throw error;
+      await new Promise((resolve) => setTimeout(resolve, BOOT_RETRY_DELAYS_MS[attempt]!));
+    }
+  }
+}
+
 const NO_RETRY = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/recovery/question', '/auth/recovery/reset'];
 
 export async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -162,7 +189,7 @@ export interface ServerHealth {
 /** Vérifie qu'une adresse répond vraiment comme un serveur AfriKaisse avant de l'enregistrer. */
 export async function checkServer(url: string): Promise<ServerHealth> {
   const res = await retryNetwork(async () => {
-    const response = await withTimeout(fetch(`${url}/api/health`, { credentials: 'omit' }), 8_000);
+    const response = await fetchWithTimeout(`${url}/api/health`, { credentials: 'omit' }, 8_000);
     if (TRANSIENT_STATUSES.has(response.status)) throw new Error(`HTTP ${response.status}`);
     return response;
   });

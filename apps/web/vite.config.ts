@@ -1,3 +1,4 @@
+import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig, type Connect, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -15,7 +16,16 @@ function menuRoute(): Plugin {
   };
 }
 
+/**
+ * Notifications push (tablette fermée) : actives seulement si l'APK aura sa configuration Firebase.
+ * C'est la condition exacte où Gradle applique le plugin google-services (apps/tablet/android/app/build.gradle).
+ * Sans elle, appeler le plugin Firebase fermerait l'application : mieux vaut ne jamais l'appeler.
+ */
+const pushConfig = resolve(import.meta.dirname, '../tablet/android/app/google-services.json');
+const pushAvailable = existsSync(pushConfig) && statSync(pushConfig).size > 0;
+
 export default defineConfig({
+  define: { __AFK_PUSH__: JSON.stringify(pushAvailable) },
   plugins: [react(), menuRoute()],
   build: {
     // Beaucoup de téléphones et tablettes de restaurant embarquent une WebView

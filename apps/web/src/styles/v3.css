@@ -753,11 +753,42 @@
   margin-top: 14px;
 }
 
+/* Boutons d'accès des cartes : de vrais boutons (fond bleu, icône, 40 px tactiles), pas des liens. */
 .dash .card h3 .btn-dashboard {
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 10px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 40px;
+  min-width: 44px;
+  margin-inline-start: auto;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.28);
+}
+
+.dash .card h3 .btn-dashboard .ico {
+  margin-inline-start: 0;
+  margin-inline-end: 6px;
+}
+
+.dash .card h3 .btn-dashboard .ico:last-child:not(:first-child) {
+  margin-inline-start: 4px;
+  margin-inline-end: -4px;
+}
+
+.dash .card h3 .btn-dashboard:hover:not(:disabled) {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.28);
+}
+
+.dash .card h3 .btn-dashboard:active:not(:disabled) {
+  background: var(--primary-strong);
+  transform: translateY(1px);
 }
 
 .live-list,

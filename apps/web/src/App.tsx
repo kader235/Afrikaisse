@@ -1,7 +1,7 @@
 import { LogoAfrikaisse } from './logo.tsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse, type SetupStatus } from '@afrikaisse/core';
-import { ApiError, OFFLINE, api, refreshSession, setSession } from './api.ts';
+import { api, isUnreachable, refreshSessionAtStartup, setSession } from './api.ts';
 import { useI18n } from './i18n.tsx';
 import { ROLE_LABELS } from './labels.ts';
 import { AccessScreen, LoginPage, RegisterPage } from './pages/Auth.tsx';
@@ -20,16 +20,18 @@ import { ReportsPage } from './pages/Reports.tsx';
 import { StockPage } from './pages/Stock.tsx';
 import { TakeOrderPage } from './pages/TakeOrder.tsx';
 import { isTouchDevice } from './touch.ts';
-import { clearCache, readCache, saveCache, useOutboxSender } from './offline.ts';
+import { clearCache, clearOutbox, readCache, saveCache, useOutboxSender } from './offline.ts';
 import { OnboardingWizard } from './pages/Onboarding.tsx';
 import { RecoveryPrompt } from './pages/Recovery.tsx';
 import { useActivityFeed } from './activity.ts';
 import { useNotifications } from './notifications.ts';
+import { disablePush, usePushRegistration } from './push.ts';
+import { useAlertSettings } from './alertSettings.ts';
 import { AlertStack, useStaffAlerts } from './alerts.tsx';
 import { SoundSettings } from './pages/SoundSettings.tsx';
 import { NotificationPanel } from './pages/Notifications.tsx';
 import { ServerPage } from './pages/Server.tsx';
-import { exitNativeApp, isNativeApp, readServer, saveServer } from './platform.ts';
+import { exitNativeApp, isNativeApp, readServer, saveServer, storeRefreshToken } from './platform.ts';
 import type { ServerSwitch } from './pages/Auth.tsx';
 import { APP_VERSION, ErrorMessage, Icon, Preferences, usePreferences, type IconName } from './ui.tsx';
 
@@ -48,6 +50,8 @@ const sectionFromHash = (): Section | null => (window.location.hash === '#superv
 export function App() {
   usePreferences();
   const [state, setState] = useState<State>({ kind: 'loading' });
+  // Un « Réessayer » pendant qu'un démarrage attend encore ne doit pas être écrasé par l'ancien.
+  const bootAttempt = useRef(0);
 
   const boot = () => {
     // Tablette sans serveur choisi : on ne peut rien appeler avant de savoir où.
@@ -58,13 +62,17 @@ export function App() {
     setState({ kind: 'loading' });
     // Le bouton « Créer mon restaurant » du site public arrive avec #inscription.
     const anonymous: State = { kind: 'anonymous', screen: window.location.hash === '#inscription' ? 'register' : 'login' };
-    refreshSession().then(
+    const attempt = ++bootAttempt.current;
+    refreshSessionAtStartup().then(
       (s) => {
+        if (attempt !== bootAttempt.current) return;
         if (s) saveCache('me', s.me);
         setState(s ? { kind: 'session', me: s.me } : anonymous);
       },
       (err) => {
-        const offline = err instanceof ApiError && err.code === OFFLINE;
+        if (attempt !== bootAttempt.current) return;
+        // Serveur injoignable ou qui redémarre (503…) : pas une session perdue, on ne renvoie pas à la connexion.
+        const offline = isUnreachable(err);
         // Tablette sans réseau (coupure de courant ou d'Internet) : le dernier compte connu, pour continuer à prendre les commandes.
         const cached = offline && isNativeApp() ? readCache<Me>('me') : null;
         setState(cached ? { kind: 'session', me: cached } : offline ? { kind: 'offline' } : anonymous);
@@ -80,6 +88,8 @@ export function App() {
   };
   const logout = async () => {
     try {
+      // La tablette ne doit plus recevoir les alertes de ce compte. Sans bloquer la déconnexion si le réseau est coupé.
+      await Promise.race([disablePush(), new Promise((resolve) => setTimeout(resolve, 2_500))]);
       await api('POST', '/auth/logout');
     } finally {
       setSession(null);
@@ -99,11 +109,18 @@ export function App() {
       return (
         <ServerPage
           current={readServer()}
-          onSaved={(choice) => {
+          onSaved={async (choice) => {
             const changed = readServer()?.url !== choice.url;
+            // Un jeton ou une commande destinés à un autre serveur ne doivent jamais y être rejoués.
+            // On attend le Keystore avant le démarrage : sinon une course peut présenter au nouveau
+            // serveur le jeton du serveur précédent.
+            if (changed) {
+              setSession(null);
+              await storeRefreshToken(null);
+              clearCache();
+              clearOutbox();
+            }
             saveServer(choice);
-            // Un jeton émis par un autre serveur n'y vaut rien : on repart de zéro.
-            if (changed) setSession(null);
             boot();
           }}
         />
@@ -128,6 +145,17 @@ export function App() {
 
 function Offline({ onRetry, server }: { onRetry: () => void; server?: ServerSwitch }) {
   const { t } = useI18n();
+  useEffect(() => {
+    // Android ne déclenche pas toujours l'événement `online` quand le Wi-Fi se rattache.
+    // Une sonde périodique remet donc l'écran en service sans toucher au bouton.
+    const retry = () => onRetry();
+    window.addEventListener('online', retry);
+    const timer = window.setInterval(retry, 10_000);
+    return () => {
+      window.removeEventListener('online', retry);
+      window.clearInterval(timer);
+    };
+  }, [onRetry]);
   return (
     <AccessScreen
       server={server}
@@ -156,10 +184,21 @@ function useHealth() {
   const [online, setOnline] = useState(true);
   useEffect(() => {
     let alive = true;
+    let failures = 0;
     const ping = () =>
       api<Health>('GET', '/health').then(
-        (h) => alive && (setHealth(h), setOnline(true)),
-        () => alive && setOnline(false),
+        (h) => {
+          if (!alive) return;
+          failures = 0;
+          setHealth(h);
+          setOnline(true);
+        },
+        () => {
+          if (!alive) return;
+          // Un redémarrage ou une micro-coupure ne doit pas faire basculer toute l'interface.
+          failures += 1;
+          if (failures >= 3) setOnline(false);
+        },
       );
     void ping();
     const id = window.setInterval(ping, 30_000);
@@ -219,6 +258,9 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   // Centre de notifications : la salle et la caisse (service), la gestion du stock (ruptures).
   const notifyEnabled = me.tenantAccess === 'OK' && (can('orders.create') || can('inventory.read'));
   const notifications = useNotifications(me.locations[0]?.id ?? null, notifyEnabled);
+  // Tablette : les mêmes alertes en notification push, application fermée (sauf si « notifications du système » est coupé).
+  const [alertSettings] = useAlertSettings();
+  usePushRegistration(me.locations[0]?.id ?? null, notifyEnabled && alertSettings.system);
 
   const sections: NavItem[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard', visible: can('reports.read'), group: 'home' },

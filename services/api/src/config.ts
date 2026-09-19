@@ -25,6 +25,8 @@ const envSchema = z.object({
   AFK_RELEASE_PUBLIC_KEY: z.string().min(40).optional(),
   AFK_UPDATE_URL: z.url().optional(),
   AFK_UPDATE_CHANNEL: z.enum(RELEASE_CHANNELS).default('stable'),
+  AFK_FCM_CREDENTIALS_FILE: z.string().min(1).optional(),
+  AFK_FCM_CREDENTIALS: z.string().min(1).optional(),
 });
 
 export type Profile = 'cloud' | 'local';
@@ -59,6 +61,10 @@ export interface AppConfig {
   /** Adresse interrogée pour les mises à jour ; par défaut le Cloud relié, sinon le Cloud AfriKaisse. */
   updateUrl: string | undefined;
   updateChannel: ReleaseChannel;
+  /** Notifications push Android (FCM) : chemin du fichier « compte de service » Firebase. Absent : pas de push. */
+  fcmCredentialsFile: string | undefined;
+  /** Idem, mais le JSON lui-même (hébergeur sans fichier). Prioritaire sur le fichier. */
+  fcmCredentials: string | undefined;
   accessTokenTtlSec: number;
   sessionTtlSec: number;
   loginMaxFailures: number;
@@ -89,6 +95,8 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     releasePublicKey: e.AFK_RELEASE_PUBLIC_KEY ?? EMBEDDED_RELEASE_PUBLIC_KEY,
     updateUrl: e.AFK_UPDATE_URL?.replace(/\/+$/, ''),
     updateChannel: e.AFK_UPDATE_CHANNEL,
+    fcmCredentialsFile: e.AFK_FCM_CREDENTIALS_FILE,
+    fcmCredentials: e.AFK_FCM_CREDENTIALS,
     accessTokenTtlSec: 15 * 60,
     sessionTtlSec: 30 * 24 * 3600,
     loginMaxFailures: 5,

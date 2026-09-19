@@ -3,8 +3,10 @@ import { connect } from 'node:net';
 import { createDatabase, databaseConfigFromUrl, migrateToLatest, type AppDatabase } from '@afrikaisse/database';
 import { buildApp } from './app.ts';
 import { backupNow, scheduleBackups } from './lib/backup.ts';
+import { createFcmSender, loadFcmCredentials } from './lib/fcm.ts';
 import { loggerOptions } from './lib/logger.ts';
 import { startPrintWorker } from './services/printing.ts';
+import { startPushDispatcher } from './services/push.ts';
 import { startUpdateChecks } from './services/releases.ts';
 import { startSyncLoop } from './services/sync/client.ts';
 import { loadConfig } from './config.ts';
@@ -43,6 +45,18 @@ async function main() {
     startSyncLoop(ctx, (err) => ctx.log.sync.warn({ err }, 'Synchronisation avec le Cloud'));
     // Annonce seulement : aucune installation automatique (§73).
     startUpdateChecks(ctx);
+  }
+
+  // Notifications push (tablette fermée) : seulement si les identifiants Firebase sont fournis.
+  try {
+    const fcm = loadFcmCredentials(config);
+    if (fcm) {
+      startPushDispatcher(ctx, createFcmSender(fcm), (err) => ctx.log.system.warn({ err }, 'Notifications push'));
+      ctx.log.system.info({ project: fcm.projectId }, 'Notifications push activées');
+    }
+  } catch (err) {
+    // Fichier illisible ou incomplet : l'application démarre quand même, sans push.
+    ctx.log.system.error({ err }, 'Notifications push désactivées : identifiants Firebase inutilisables');
   }
 
   const shutdown = async () => {

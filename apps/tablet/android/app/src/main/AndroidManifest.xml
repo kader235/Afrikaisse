@@ -30,6 +30,15 @@
 
         </activity>
 
+        <!-- Notifications push (Firebase) : canal et icône par défaut quand l'application est fermée.
+             Le canal « afk-service » (importance haute, son, vibration) est créé par l'application. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="afk-service" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_afrikaisse" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

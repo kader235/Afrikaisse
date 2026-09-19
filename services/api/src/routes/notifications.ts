@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { kitchenProblemSchema, notificationFeedSchema, pushTokenSchema } from '@afrikaisse/core';
 import type { AppContext } from '../context.ts';
 import { requestMeta, requireAuth, requireTenant } from '../lib/access.ts';
-import { listNotifications, markAllNotificationsRead, markNotificationRead, registerPushToken, reportKitchenProblem } from '../services/notifications.ts';
+import { listNotifications, markAllNotificationsRead, markNotificationRead, registerPushToken, reportKitchenProblem, unregisterPushToken } from '../services/notifications.ts';
 
 const security = [{ bearer: [] }];
 const tags = ['notifications'];
@@ -37,6 +37,15 @@ export function notificationRoutes(ctx: AppContext): FastifyPluginAsyncZod {
       { schema: { tags, summary: 'Enregistrer le token FCM de cette tablette', security, params: location, body: pushTokenSchema } },
       async (request, reply) => {
         await registerPushToken(ctx, requireTenant(request.auth), request.params.locationId, request.body.token);
+        return reply.code(204).send();
+      },
+    );
+
+    app.post(
+      '/push-tokens/remove',
+      { schema: { tags, summary: "Retirer le token FCM de cette tablette (déconnexion) : elle ne reçoit plus d'alertes", security, body: pushTokenSchema } },
+      async (request, reply) => {
+        await unregisterPushToken(ctx, requireTenant(request.auth), request.body.token);
         return reply.code(204).send();
       },
     );

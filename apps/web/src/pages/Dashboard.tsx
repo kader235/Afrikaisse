@@ -123,12 +123,6 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             ))}
           </select>
         )}
-        {can('reports.read') && (
-          <button className="btn" onClick={() => onNavigate('reports')}>
-            <Icon name="chart" />
-            Rapports
-          </button>
-        )}
         {(can('orders.create') || can('pos.use')) && (
           <button className="btn btn-primary" onClick={() => onNavigate(can('orders.create') && canTables ? 'take' : 'pos')}>
             <Icon name="add" />
@@ -195,6 +189,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
               Ventes par heure
               {can('reports.read') && (
                 <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
+                  <Icon name="chart" />
                   Rapports
                 </button>
               )}
@@ -214,6 +209,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
                 </span>
                 <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('orders')}>
                   Toutes
+                  <Icon name="chevronRight" />
                 </button>
               </h3>
               {latest.length === 0 ? (
@@ -262,6 +258,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
                 Service en cours
                 <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('orders')}>
                   Commandes
+                  <Icon name="chevronRight" />
                 </button>
               </h3>
               <div className="service">
@@ -280,6 +277,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
               {can('reports.read') && (
                 <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
                   Tout voir
+                  <Icon name="chevronRight" />
                 </button>
               )}
             </h3>

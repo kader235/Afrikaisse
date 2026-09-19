@@ -78,6 +78,11 @@ export function dropQueuedOrder(id: string): void {
   writeOutbox(readOutbox().filter((o) => o.id !== id));
 }
 
+/** Une commande destinée à un autre serveur ne doit jamais être rejouée ici. */
+export function clearOutbox(): void {
+  writeOutbox([]);
+}
+
 let flushing: Promise<number> | null = null;
 
 /** Envoie la file dans l'ordre de prise ; s'arrête à la première coupure. Renvoie le nombre de commandes parties. */

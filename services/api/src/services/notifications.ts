@@ -107,6 +107,11 @@ export async function registerPushToken(ctx: AppContext, scope: TenantScope, loc
     .execute();
 }
 
+/** Déconnexion de la tablette : elle ne reçoit plus les alertes de ce compte. Seul le jeton de l'utilisateur lui-même. */
+export async function unregisterPushToken(ctx: AppContext, scope: TenantScope, token: string): Promise<void> {
+  await ctx.db.deleteFrom('push_tokens').where('token', '=', token).where('user_id', '=', scope.userId).execute();
+}
+
 export async function markNotificationRead(ctx: AppContext, scope: TenantScope, notificationId: string): Promise<void> {
   const row = await ctx.db.selectFrom('notifications').select(['id', 'location_id', 'audience']).where('id', '=', notificationId).where('tenant_id', '=', scope.tenantId).executeTakeFirst();
   if (!row || (scope.locationId && row.location_id !== scope.locationId) || !ROLE_PERMISSIONS[scope.role].includes(row.audience as Permission)) {

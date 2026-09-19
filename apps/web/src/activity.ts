@@ -17,6 +17,9 @@ export interface ActivityFeed {
 const FAST_MS = 3000;
 const HIDDEN_MS = 15000;
 const OFFLINE_MS = 6000;
+const RECHECK_MS = 1500;
+/** Échecs de suite avant d'afficher « Hors ligne » : un raté isolé (micro-coupure, redémarrage bref) n'en est pas une. */
+const OFFLINE_AFTER = 3;
 
 /**
  * Flux d'activité d'un établissement, interrogé régulièrement (3 s à l'écran, 15 s en
@@ -59,6 +62,7 @@ export function useActivityFeed(locationId: string | null, enabled: boolean): Ac
     let stopped = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     cursor.current = 0;
+    let failures = 0;
     setLoaded(false);
 
     const tick = async () => {
@@ -69,12 +73,14 @@ export function useActivityFeed(locationId: string | null, enabled: boolean): Ac
         if (stopped) return;
         merge(activity);
         cursor.current = activity.cursor;
+        failures = 0;
         setOnline(true);
         setLoaded(true);
       } catch {
         if (stopped) return;
-        setOnline(false);
-        delay = OFFLINE_MS;
+        failures += 1;
+        if (failures >= OFFLINE_AFTER) setOnline(false);
+        delay = failures >= OFFLINE_AFTER ? OFFLINE_MS : RECHECK_MS;
       }
       if (!stopped) timer = setTimeout(tick, delay);
     };

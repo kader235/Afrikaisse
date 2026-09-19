@@ -16,12 +16,37 @@ export type SystemPermission = 'granted' | 'denied' | 'prompt' | 'unsupported';
 const CHANNEL = 'afk-service';
 const ASKED_KEY = 'afk.alerts.asked';
 
+/** Canal « Service » : le même pour les alertes locales et pour les push (push.ts, et côté serveur PUSH_CHANNEL). */
+export const SERVICE_CHANNEL = {
+  id: CHANNEL,
+  name: 'Service (commandes, appels)',
+  description: 'Nouvelles commandes, commandes prêtes, appels de table et additions',
+  importance: 5 as const,
+  visibility: 1 as const,
+  vibration: true,
+  lights: true,
+  lightColor: '#065FD4',
+};
+
 let prepared = false;
-let onTap: (target: string) => void = () => undefined;
+let onTap: ((target: string) => void) | null = null;
+/** Notification touchée pendant que l'application démarrait (aucun écran prêt à l'ouvrir). */
+let pendingTap: string | null = null;
 const webShown = new Map<number, Notification>();
 
 export function setSystemTapHandler(handler: (target: string) => void): void {
   onTap = handler;
+  if (pendingTap !== null) {
+    const target = pendingTap;
+    pendingTap = null;
+    handler(target);
+  }
+}
+
+/** Toucher d'une notification (locale ou push) : ouvre l'écran concerné, ou attend que l'application soit prête. */
+export function dispatchSystemTap(target: string): void {
+  if (onTap) onTap(target);
+  else pendingTap = target;
 }
 
 function alreadyAsked(): boolean {
@@ -46,19 +71,10 @@ export async function prepareSystemNotifications(enabled: boolean): Promise<void
   if (!prepared) {
     prepared = true;
     try {
-      await LocalNotifications.createChannel({
-        id: CHANNEL,
-        name: 'Service (commandes, appels)',
-        description: 'Nouvelles commandes, commandes prêtes, appels de table et additions',
-        importance: 5,
-        visibility: 1,
-        vibration: true,
-        lights: true,
-        lightColor: '#065FD4',
-      });
+      await LocalNotifications.createChannel(SERVICE_CHANNEL);
       await LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
         const target = (action.notification.extra as { target?: unknown } | undefined)?.target;
-        if (typeof target === 'string') onTap(target);
+        if (typeof target === 'string') dispatchSystemTap(target);
       });
     } catch {
       /* plugin absent (ancien APK) : le son de l'application reste */
@@ -126,7 +142,7 @@ export async function postSystemNotification(alert: SystemAlert): Promise<boolea
     const note = new Notification(alert.title, { body: alert.body ?? undefined, tag: `afk-${alert.id}` });
     note.onclick = () => {
       window.focus();
-      onTap(alert.target);
+      dispatchSystemTap(alert.target);
       note.close();
     };
     webShown.set(alert.id, note);
