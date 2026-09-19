@@ -1,0 +1,560 @@
+--- a/packages/core/src/index.ts
++++ b/packages/core/src/index.ts
+@@ -32,5 +32,6 @@
+ export * from './guests.ts';
+ export * from './client.ts';
+ export * from './announcements.ts';
++export * from './dailyMenu.ts';
+ export * from './dishPhotos.ts';
+ export * from './menuThemes.ts';
+--- a/packages/core/src/menuThemes.ts
++++ b/packages/core/src/menuThemes.ts
+@@ -8,7 +8,7 @@
+  * Toutes les couleurs sont en hexadécimal #rrggbb ; les ombres et voiles sont calculés
+  * à partir de `shadowColor` (et `accent`, `action`, `card`, `onAccent`) avec une opacité fixée par la feuille.
+  * Design « v3 » (09/2026) : page bleutée, cartes blanches, bleu pour les prix et la catégorie active,
+- * et une couleur d'action à part (`action`, or sur « bleu ») pour ce que le client doit toucher.
++ * et une couleur d'action à part (`action`, bleue) pour ce que le client doit toucher.
+  */
+ 
+ export const MENU_THEMES = ['bleu', 'savane', 'nuit', 'foret', 'maquis', 'ocean'] as const;
+@@ -71,7 +71,7 @@
+   dangerSoft: string;
+   /** Base des ombres et du voile derrière les fiches. */
+   shadowColor: string;
+-  /** Couleur de l'action principale (« + », bouton central du panier, « Commander », « Ajouter ») : or sur le thème par défaut. */
++  /** Couleur de l'action principale (« + », bouton central du panier, « Commander », « Ajouter ») : bleue (plus de bouton jaune). */
+   action: string;
+   /** Action appuyée. */
+   actionPress: string;
+@@ -129,7 +129,7 @@
+ const bleu: MenuTheme = {
+   id: 'bleu',
+   label: 'Bleu AfriKaisse',
+-  description: 'Clair et net, bleu de confiance et boutons dorés. Convient à tous les établissements.',
++  description: 'Clair et net, bleu de confiance, boutons bleus. Convient à tous les établissements.',
+   light: {
+     dark: false,
+     bg: '#eef2f8',
+@@ -161,9 +161,9 @@
+     danger: '#c62828',
+     dangerSoft: '#fdecec',
+     shadowColor: '#0b1730',
+-    action: '#f5b400',
+-    actionPress: '#d99a00',
+-    onAction: '#1a1300',
++    action: '#1d4ed8',
++    actionPress: '#1a43bd',
++    onAction: '#ffffff',
+     live: '#16a34a',
+   },
+   dark: {
+@@ -197,9 +197,9 @@
+     danger: '#f28b82',
+     dangerSoft: '#3a1f24',
+     shadowColor: '#000000',
+-    action: '#f5b400',
+-    actionPress: '#d99a00',
+-    onAction: '#1a1300',
++    action: '#2f63e8',
++    actionPress: '#2754cc',
++    onAction: '#ffffff',
+     live: '#4ade80',
+   },
+ };
+@@ -313,9 +313,9 @@
+   danger: '#f28b82',
+   dangerSoft: '#3a1f24',
+   shadowColor: '#000000',
+-  action: '#d4a64a',
+-  actionPress: '#bf923a',
+-  onAction: '#1a1206',
++  action: '#2f63e8',
++  actionPress: '#2754cc',
++  onAction: '#ffffff',
+   live: '#4ade80',
+ };
+ 
+--- a/packages/core/test/menuThemes.test.ts
++++ b/packages/core/test/menuThemes.test.ts
+@@ -68,12 +68,12 @@
+     }
+   });
+ 
+-  it('« bleu » clair : palette v3 (page bleutée, bleu pour les prix, or pour l’action, bandeau bleu nuit → bleu)', () => {
++  it('« bleu » clair : palette v3 (page bleutée, bleu pour les prix et pour l’action, bandeau bleu nuit → bleu)', () => {
+     const p = menuTheme('bleu').light;
+     expect(p).toMatchObject({ bg: '#eef2f8', card: '#ffffff', text: '#0f1f40', muted: '#5b6478', line: '#e3e8f1', accent: '#1d4ed8', accentDark: '#1d4ed8', bannerStart: '#0b1730', bannerEnd: '#1d4ed8' });
+-    expect(p).toMatchObject({ action: '#f5b400', onAction: '#1a1300' });
+-    // L'or du thème « nuit » reste sa couleur d'action ; les autres thèmes gardent leur accent.
+-    expect(menuTheme('nuit').light.action).toBe(menuTheme('nuit').light.accent);
++    expect(p).toMatchObject({ action: '#1d4ed8', onAction: '#ffffff' });
++    // Plus aucun bouton jaune : « nuit » garde son or pour les accents, mais son action est bleue.
++    expect(menuTheme('nuit').light.action).toBe('#2f63e8');
+     for (const id of ['savane', 'foret', 'maquis', 'ocean'] as const) expect(menuTheme(id).light.action, id).toBe(menuTheme(id).light.accent);
+     for (const [name, p] of palettes) expect(relativeLuminance(p.live), name).toBeGreaterThan(0.2);
+   });
+@@ -108,7 +108,7 @@
+     expect(css).toContain('--m-accent:#c2410c;');
+     expect(css).toContain('--m-accent-rgb:194, 65, 12;');
+     expect(css).toContain('--m-action:#c2410c;');
+-    expect(menuThemeCss('bleu')).toContain('--m-action-rgb:245, 180, 0;');
++    expect(menuThemeCss('bleu')).toContain('--m-action-rgb:29, 78, 216;');
+     expect(css).toContain('@media (prefers-color-scheme: dark)');
+     expect(css).toContain('color-scheme:light;');
+     expect(menuThemeCss('nuit')).not.toContain('color-scheme:light;');
+--- a/packages/database/src/migrate.ts
++++ b/packages/database/src/migrate.ts
+@@ -22,6 +22,7 @@
+ import { menuTheme } from './migrations/0019_menu_theme.ts';
+ import { locationSlogan } from './migrations/0020_location_slogan.ts';
+ import { pushTokens } from './migrations/0021_push_tokens.ts';
++import { dailyMenu } from './migrations/0022_daily_menu.ts';
+ 
+ /**
+  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
+@@ -52,6 +53,7 @@
+     '0019_menu_theme': menuTheme(c),
+     '0020_location_slogan': locationSlogan(c),
+     '0021_push_tokens': pushTokens(c),
++    '0022_daily_menu': dailyMenu(c),
+   };
+ }
+ 
+--- a/packages/database/src/types.ts
++++ b/packages/database/src/types.ts
+@@ -789,6 +789,21 @@
+   updated_hlc: string;
+ }
+ 
++export interface DailyMenusTable {
++  id: string;
++  tenant_id: string;
++  location_id: string;
++  /** Jours d'exploitation AAAA-MM-JJ, bornes incluses (identiques pour un menu d'un seul jour). */
++  start_date: string;
++  end_date: string;
++  /** Tableau JSON d'identifiants de plats. */
++  product_ids: string;
++  status: 'ACTIVE' | 'ARCHIVED';
++  created_at: number;
++  updated_at: number;
++  updated_hlc: string;
++}
++
+ export interface PromotionsTable {
+   id: string;
+   tenant_id: string;
+@@ -874,6 +889,7 @@
+   tax_rates: TaxRatesTable;
+   promotions: PromotionsTable;
+   announcements: AnnouncementsTable;
++  daily_menus: DailyMenusTable;
+   error_logs: ErrorLogsTable;
+   screen_heartbeats: ScreenHeartbeatsTable;
+   app_releases: AppReleasesTable;
+--- a/services/api/src/app.ts
++++ b/services/api/src/app.ts
+@@ -23,6 +23,7 @@
+ import { setSyncTransport, type SyncTransport } from './services/sync/client.ts';
+ import { syncRoutes } from './routes/sync.ts';
+ import { announcementRoutes } from './routes/announcements.ts';
++import { dailyMenuRoutes } from './routes/dailyMenu.ts';
+ import { authRoutes } from './routes/auth.ts';
+ import { floorRoutes } from './routes/floor.ts';
+ import { menuRoutes, publicRoutes } from './routes/menu.ts';
+@@ -182,6 +183,7 @@
+   await app.register(authRoutes(ctx), { prefix: '/api/auth' });
+   await app.register(teamRoutes(ctx), { prefix: '/api/team' });
+   await app.register(announcementRoutes(ctx), { prefix: '/api' });
++  await app.register(dailyMenuRoutes(ctx), { prefix: '/api' });
+   await app.register(tenantRoutes(ctx), { prefix: '/api' });
+   await app.register(floorRoutes(ctx), { prefix: '/api' });
+   await app.register(menuRoutes(ctx), { prefix: '/api' });
+--- a/services/api/src/services/orders.ts
++++ b/services/api/src/services/orders.ts
+@@ -28,6 +28,7 @@
+ import { requireTenant, type AuthState, type TenantScope } from '../lib/access.ts';
+ import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
+ import { notifyOrder, notifyRequest } from '../lib/notify.ts';
++import { resolveDailyMenuProductIds } from './dailyMenu.ts';
+ import { findGuest, loadGuests, onlineOrderingOpen, upsertGuest, verifyTableCode } from './guests.ts';
+ import { enqueueKitchenTickets } from './printing.ts';
+ import { consumeStock, restoreStock } from './stock.ts';
+@@ -99,7 +100,7 @@
+ // --- Prix depuis le menu du moment ------------------------------------------
+ 
+ /** `includeHidden` : la caisse vend aussi les catégories masquées au client (repas du personnel…). */
+-export async function loadPricingProducts(db: Db, locationId: string, productIds: string[], options: { includeHidden?: boolean } = {}): Promise<Map<string, PricingProduct>> {
++export async function loadPricingProducts(db: Db, locationId: string, productIds: string[], options: { includeHidden?: boolean; dailyMenu?: Set<string> | null } = {}): Promise<Map<string, PricingProduct>> {
+   const ids = [...new Set(productIds)];
+   const result = new Map<string, PricingProduct>();
+   if (ids.length === 0) return result;
+@@ -112,7 +113,9 @@
+     .where('p.status', '=', 'ACTIVE')
+     .where('c.status', '=', 'ACTIVE');
+   if (!options.includeHidden) query = query.where('c.is_visible', '=', 1);
+-  const products = await query.execute();
++  const found = await query.execute();
++  // `dailyMenu` : menu du jour en vigueur (chemins du client QR seulement) ; un plat hors menu est traité comme absent de la carte.
++  const products = options.dailyMenu ? found.filter((p) => options.dailyMenu!.has(p.id)) : found;
+   if (products.length === 0) return result;
+   const pids = products.map((p) => p.id);
+   const [variants, links] = await Promise.all([
+@@ -344,7 +347,8 @@
+     throw new AppError('TOO_MANY_ATTEMPTS', 'Plusieurs commandes de cette table attendent déjà la confirmation du personnel.');
+   }
+ 
+-  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId)), input.lines);
++  const dailyMenu = await resolveDailyMenuProductIds(ctx.db, qr.location_id, qr.timezone, qr.business_day_cutoff_min, now);
++  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId), { dailyMenu }), input.lines);
+   // Promotions et taxes du moment, dans le fuseau de l'établissement ; un code refusé bloque la commande.
+   const quote = await priceOrderLines(ctx.db, { id: qr.location_id, timezone: qr.timezone, currency: qr.currency }, priced, input.promoCode, now);
+   const total = quote.pricing.total;
+--- a/services/api/src/services/pricing.ts
++++ b/services/api/src/services/pricing.ts
+@@ -31,6 +31,7 @@
+ import type { TenantScope } from '../lib/access.ts';
+ import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
+ import { emitRow } from './menu.ts';
++import { resolveDailyMenuProductIds } from './dailyMenu.ts';
+ import { loadPricingProducts, priceLines, resolveQr, type Priced } from './orders.ts';
+ 
+ /**
+@@ -299,8 +300,10 @@
+ 
+ export async function quotePublicOrder(ctx: AppContext, token: string, input: QuoteInput): Promise<Quote> {
+   const qr = await resolveQr(ctx.db, token);
+-  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId)), input.lines);
+-  return toQuote(await priceOrderLines(ctx.db, { id: qr.location_id, timezone: qr.timezone, currency: qr.currency }, priced, input.promoCode, ctx.now()));
++  const now = ctx.now();
++  const dailyMenu = await resolveDailyMenuProductIds(ctx.db, qr.location_id, qr.timezone, qr.business_day_cutoff_min, now);
++  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId), { dailyMenu }), input.lines);
++  return toQuote(await priceOrderLines(ctx.db, { id: qr.location_id, timezone: qr.timezone, currency: qr.currency }, priced, input.promoCode, now));
+ }
+ 
+ async function checkCode(db: Db, location: { id: string; timezone: string; currency: CurrencyCode }, code: string, now: number): Promise<PromotionRule> {
+--- a/services/api/src/services/menu.ts
++++ b/services/api/src/services/menu.ts
+@@ -29,6 +29,7 @@
+   ProductVariantsTable,
+ } from '@afrikaisse/database';
+ import { publicAnnouncements } from './announcements.ts';
++import { resolveDailyMenuProductIds } from './dailyMenu.ts';
+ import type { AppContext, Db, RequestMeta } from '../context.ts';
+ import type { TenantScope } from '../lib/access.ts';
+ import { inspectImage } from '../lib/images.ts';
+@@ -691,6 +692,8 @@
+       'l.bill_mode',
+       'l.menu_theme',
+       'l.slogan',
++      'l.timezone',
++      'l.business_day_cutoff_min',
+       'o.name as tenant_name',
+       'o.status as tenant_status',
+     ])
+@@ -700,6 +703,9 @@
+   if (!found || found.table_status !== 'ACTIVE' || found.location_status !== 'ACTIVE' || found.tenant_status !== 'ACTIVE') throw invalid;
+ 
+   const m = await readLocationMenu(ctx.db, found.location_id);
++  // Menu du jour en vigueur : le client ne voit (et ne peut commander) que ces plats ; sans menu du jour, toute la carte.
++  const dailyMenu = await resolveDailyMenuProductIds(ctx.db, found.location_id, found.timezone, found.business_day_cutoff_min, ctx.now());
++  if (dailyMenu) m.products = m.products.filter((p) => dailyMenu.has(p.id));
+   const visibleCategories = m.categories.filter((c) => c.is_visible === 1);
+   const option = (o: { id: string; name: string; price_delta: number; is_available: 0 | 1 }) => ({ id: o.id, name: o.name, priceDelta: o.price_delta, isAvailable: bool(o.is_available) });
+   // Recommandations : seulement parmi ce que le client peut commander maintenant.
+--- a/services/api/src/services/sync/apply.ts
++++ b/services/api/src/services/sync/apply.ts
+@@ -40,6 +40,7 @@
+   tax_rate: 'tax_rates',
+   promotion: 'promotions',
+   announcement: 'announcements',
++  daily_menu: 'daily_menus',
+ };
+ 
+ /** Ajout seulement. */
+--- a/services/api/src/services/sync/server.ts
++++ b/services/api/src/services/sync/server.ts
+@@ -53,7 +53,7 @@
+ }
+ 
+ /** Tables copiées sur le serveur local à l'appairage, dans l'ordre des clés étrangères. */
+-const LOCATION_TABLES = ['zones', 'dining_tables', 'qr_codes', 'stations', 'menu_categories', 'modifier_groups', 'modifiers', 'products', 'product_variants', 'product_modifier_groups', 'printers', 'inventory_items', 'recipe_items', 'pricing_settings', 'tax_rates', 'promotions', 'announcements'];
++const LOCATION_TABLES = ['zones', 'dining_tables', 'qr_codes', 'stations', 'menu_categories', 'modifier_groups', 'modifiers', 'products', 'product_variants', 'product_modifier_groups', 'printers', 'inventory_items', 'recipe_items', 'pricing_settings', 'tax_rates', 'promotions', 'announcements', 'daily_menus'];
+ 
+ async function buildSnapshot(db: Db, tenantId: string, locationId: string): Promise<Snapshot> {
+   const any = db as unknown as AnyDb;
+--- a/apps/web/src/main.tsx
++++ b/apps/web/src/main.tsx
+@@ -24,6 +24,7 @@
+ import './styles/tablette-doux.css';
+ import './styles/pc.css';
+ import './styles/v3.css';
++import './styles/daily-menu.css';
+ import { enforceTouchLayout, markDevice } from './touch.ts';
+ 
+ markDevice();
+--- a/apps/web/src/pages/Dashboard.tsx
++++ b/apps/web/src/pages/Dashboard.tsx
+@@ -7,13 +7,14 @@
+ import { useProductPhotos } from '../productPhotos.ts';
+ import { ServiceHeader } from '../serviceHeader.tsx';
+ import { ErrorMessage, Icon } from '../ui.tsx';
++import { DailyMenuWidget } from './DailyMenuWidget.tsx';
+ import '../styles/reports.css';
+ 
+ /**
+  * Tableau de bord (design v3) : ce qui se passe aujourd'hui dans l'établissement.
+  * 1. les chiffres clés en cartes (le chiffre d'affaires en carte dégradée), comparés à hier ;
+  * 2. les ventes heure par heure et les commandes en direct (flux d'activité) ;
+- * 3. le service en cours (compteurs qui ouvrent l'écran concerné) et les plats les plus vendus, en photo.
++ * 3. le menu du jour (en hauteur : menu du client QR, plats épuisés) et le service en cours (compteurs qui ouvrent l'écran concerné).
+  * L'analyse d'une période est dans Rapports. Même écran à la tablette et au PC ; il défile s'il le faut.
+  */
+ 
+@@ -252,6 +253,13 @@
+         </div>
+ 
+         <div className="dash-col dash-col-side">
++          {locationId && can('menu.read') && (
++            <section className="card dm-card">
++              <h3>Menu du jour</h3>
++              <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} />
++            </section>
++          )}
++
+           {feed && (
+             <section className="card">
+               <h3>
+@@ -270,45 +278,6 @@
+               </div>
+             </section>
+           )}
+-
+-          <section className="card">
+-            <h3>
+-              Plats les plus vendus
+-              {can('reports.read') && (
+-                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
+-                  Tout voir
+-                  <Icon name="chevronRight" />
+-                </button>
+-              )}
+-            </h3>
+-            {today && today.topProducts.length > 0 ? (
+-              <ol className="pop-list">
+-                {today.topProducts.slice(0, 5).map((p, i) => {
+-                  const src = photo(null, p.name);
+-                  return (
+-                    <li key={p.name} className="pop">
+-                      {src ? (
+-                        <img src={src} alt="" />
+-                      ) : (
+-                        <span className="pop-blank" aria-hidden="true">
+-                          <Icon name="kitchen" />
+-                        </span>
+-                      )}
+-                      <span className="pop-text">
+-                        <strong>{p.name}</strong>
+-                        <small>
+-                          {p.quantity} vendu{p.quantity > 1 ? 's' : ''} · {money(p.revenue)}
+-                        </small>
+-                      </span>
+-                      <b>#{i + 1}</b>
+-                    </li>
+-                  );
+-                })}
+-              </ol>
+-            ) : (
+-              <p className="card-empty">Aucune vente aujourd'hui</p>
+-            )}
+-          </section>
+         </div>
+       </div>
+     </section>
+--- a/apps/web/src/menu/MenuApp.tsx
++++ b/apps/web/src/menu/MenuApp.tsx
+@@ -137,9 +137,14 @@
+   const pinsRef = useRef<HTMLElement | null>(null);
+   const searchRef = useRef<HTMLInputElement | null>(null);
+ 
++  const lastMenuRef = useRef('');
+   const loadMenu = useCallback(() => {
+     request<PublicMenu>('GET', `/api/public/menu/${token}`)
+       .then((menu) => {
++        // Relecture régulière (menu du jour, plats épuisés) : rien à redessiner si la carte n'a pas changé.
++        const key = JSON.stringify(menu);
++        if (key === lastMenuRef.current) return;
++        lastMenuRef.current = key;
+         document.title = menu.restaurant.name;
+         applyMenuTheme(menu.restaurant.theme, token);
+         setState({ kind: 'ready', menu });
+@@ -158,6 +163,16 @@
+     return setupPwa(token, loadMenu);
+   }, [token, loadMenu]);
+ 
++  // « En direct » : un plat épuisé ou un changement de menu du jour apparaît en moins de 20 s, sans recharger la page.
++  // Page masquée : on ne relit pas ; le serveur refuse de toute façon une commande hors menu ou épuisée.
++  useEffect(() => {
++    if (!token) return;
++    const id = setInterval(() => {
++      if (!document.hidden) loadMenu();
++    }, 20_000);
++    return () => clearInterval(id);
++  }, [token, loadMenu]);
++
+   // Promotions et taxes : sans elles le menu reste utilisable (prix de la carte), le serveur recalcule tout.
+   useEffect(() => {
+     if (token) request<PublicPricing>('GET', `/api/public/menu/${token}/pricing`).then(setPricing, () => setPricing(null));
+--- a/apps/web/src/menu/menu.css
++++ b/apps/web/src/menu/menu.css
+@@ -41,13 +41,13 @@
+   --m-danger: #c62828;
+   --m-danger-soft: #fdecec;
+   --m-shadow-color: #0b1730;
+-  --m-action: #f5b400;
+-  --m-action-press: #d99a00;
+-  --m-on-action: #1a1300;
++  --m-action: #1d4ed8;
++  --m-action-press: #1a43bd;
++  --m-on-action: #ffffff;
+   --m-live: #16a34a;
+   --m-accent-rgb: 29, 78, 216;
+   --m-on-accent-rgb: 255, 255, 255;
+-  --m-action-rgb: 245, 180, 0;
++  --m-action-rgb: 29, 78, 216;
+   --m-card-rgb: 255, 255, 255;
+   --m-shadow-rgb: 11, 23, 48;
+   --m-shadow: 0 2px 10px rgba(11, 23, 48, 0.05);
+@@ -87,13 +87,13 @@
+     --m-danger: #f28b82;
+     --m-danger-soft: #3a1f24;
+     --m-shadow-color: #000000;
+-    --m-action: #f5b400;
+-    --m-action-press: #d99a00;
+-    --m-on-action: #1a1300;
++    --m-action: #2f63e8;
++    --m-action-press: #2754cc;
++    --m-on-action: #ffffff;
+     --m-live: #4ade80;
+     --m-accent-rgb: 47, 99, 232;
+     --m-on-accent-rgb: 255, 255, 255;
+-    --m-action-rgb: 245, 180, 0;
++    --m-action-rgb: 47, 99, 232;
+     --m-card-rgb: 20, 29, 48;
+     --m-shadow-rgb: 0, 0, 0;
+     --m-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+--- a/apps/web/src/styles.css
++++ b/apps/web/src/styles.css
+@@ -4803,8 +4803,8 @@
+ }
+ 
+ .kds-card footer .btn-primary {
+-  border-color: #2f7a4c;
+-  background: #2f7a4c;
++  border-color: var(--primary);
++  background: var(--primary);
+   color: #ffffff;
+ }
+ 
+--- a/apps/web/src/styles/v3.css
++++ b/apps/web/src/styles/v3.css
+@@ -17,10 +17,11 @@
+   --rail-w: 92px;
+   --nuit: #0b1730;
+   --nuit2: #122448;
+-  --or: #f5b400;
+-  --or2: #d99a00;
+-  --or-text: #1a1300;
+-  --or-shadow: 0 8px 20px rgba(245, 180, 0, 0.32);
++  /* Tous les boutons principaux sont bleus (plus de jaune) : les anciens jetons « or » pointent vers le bleu. */
++  --or: #2563eb;
++  --or2: #1d4ed8;
++  --or-text: #ffffff;
++  --or-shadow: 0 8px 20px rgba(37, 99, 235, 0.32);
+   --vert: #15803d;
+   --vert-soft: #e9f9ee;
+   --ambre: #b45309;
+@@ -985,7 +986,7 @@
+ }
+ 
+ .tablette .hbar-top {
+-  background: linear-gradient(180deg, #f5b400, #d99a00);
++  background: linear-gradient(180deg, #1e40af, #1e3a8a);
+ }
+ 
+ @media (max-width: 1000px) {
+@@ -1532,7 +1533,7 @@
+   height: 56px;
+   border-radius: 16px;
+   background: var(--or);
+-  box-shadow: 0 10px 24px rgba(245, 180, 0, 0.35);
++  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+   color: var(--or-text);
+   font-size: 16px;
+ }
+@@ -1682,8 +1683,9 @@
+   background: var(--nuit2);
+ }
+ 
++/* Numéro sur fond sombre : bleu clair, lisible. */
+ .tablette .kds-num {
+-  color: var(--or);
++  color: #93c5fd;
+ }
+ 
+ .tablette .kds-item {
+--- a/apps/web/src/styles/tablette-doux.css
++++ b/apps/web/src/styles/tablette-doux.css
+@@ -1038,7 +1038,7 @@
+ }
+ 
+ .tablette .kds-card footer .btn-primary {
+-  background: #2f7a4c;
++  background: var(--primary);
+   color: #ffffff;
+ }
+ 
+--- a/docs/ARCHITECTURE.md
++++ b/docs/ARCHITECTURE.md
+@@ -269,3 +269,4 @@
+ | 009 | Le Cloud n'appelle jamais le réseau du restaurant |
+ | 010 | Temps réel sans WebSocket : SSE / polling ; temps réel critique sur le LAN |
+ | 011 | **Tablette d'abord** (demande GLOBALTECH, 13/09/2026). L'appareil de référence de toutes les interfaces du personnel est la **tablette Android 10"**, au doigt, en paysage (1280×800) **et** en portrait (800×1280). Cibles tactiles ≥ 44 px, champs ≥ 16 px (pas de zoom au clavier), aucune action accessible seulement par survol, clic droit ou double-clic, vérification aux deux orientations à chaque phase. L'**application tablette** (Capacitor + appairage au serveur local) est avancée en **phase 2 bis**, avant le POS. POS, écran serveur et KDS sont conçus pour la tablette d'abord, le PC ensuite. |
++| 012 | **Menu du jour** (19/09/2026). Donnée maître synchronisée `daily_menus` (une ligne = un jour ou une période, plats en tableau JSON : remplacement d'un bloc, pas de fusion partielle). Sans menu du jour en vigueur, toute la carte est proposée. Le menu du jour limite le **client QR seulement** (menu public, devis, commande) ; la caisse n'est bloquée que par « épuisé ». Le jour est le jour d'exploitation de l'établissement (fuseau + coupure). Un menu d'un seul jour l'emporte sur une période. « Épuisé » reste `products.is_available`. Le menu client relit la carte toutes les 20 s (page visible) ; le serveur refuse (409) toute ligne hors menu ou épuisée. |
+--- a/docs/DATABASE.md
++++ b/docs/DATABASE.md
+@@ -270,3 +270,11 @@
+ - En place (`0013_platform`) : `error_logs`, `screen_heartbeats`, `app_releases`, colonnes de supervision de `devices`.
+ - Les sauvegardes du serveur local sont lues sur disque (`listBackups`), pas en base.
+ - À venir : `sync_cursors` (device_id, stream, last_seq), `sync_conflicts` (event_id, entity, local, remote, resolution), `notifications` (location_id, audience, kind, payload, read_at)
++
++### Menu du jour (`0022_daily_menu`)
++- `daily_menus` (donnée maître, synchronisée) : `location_id`, `start_date`, `end_date` (jours d'exploitation
++  AAAA-MM-JJ, bornes incluses ; identiques pour un menu d'un jour), `product_ids` (tableau JSON d'identifiants,
++  sans clé étrangère : un événement peut arriver avant le plat), `status` (`ACTIVE` / `ARCHIVED`), `updated_hlc`.
++- Règle : un menu d'un seul jour l'emporte sur une période ; à égalité, le plus récemment modifié, puis l'identifiant.
++- Jamais supprimé (archivé). « Épuisé » n'est pas ici : c'est `products.is_available`.
++
+--- a/docs/API.md
++++ b/docs/API.md
+@@ -475,6 +475,19 @@
+ - **Optimisation possible ensuite** : SSE sur le serveur local, et dans le Cloud si la sonde o2switch
+   confirme qu'il n'est pas bufferisé. Pas de WebSocket (ADR-010).
+ 
++## Menu du jour
++
++| Route | Rôle |
++|---|---|
++| `GET /api/locations/:locationId/daily-menu` | Jour d'exploitation, menu en vigueur et menus à venir (permission `menu.read`) |
++| `PUT /api/locations/:locationId/daily-menu` | Fixer ou ajuster le menu d'un jour ou d'une période : `{ startDate, endDate, productIds[] }`. Mêmes dates = même menu, remplacé (`menu.manage`) |
++| `POST /api/daily-menus/:menuId/archive` | Retirer un menu (`menu.manage`) |
++| `POST /api/products/:productId/availability` | Plat épuisé / disponible (existant, `menu.availability`) |
++
++Côté client : `GET /api/public/menu/:token` ne renvoie que les plats du menu du jour en vigueur (toute la carte s'il
++n'y en a pas). `POST /api/public/menu/:token/orders` et `.../quote` refusent (409, « n'est plus au menu ») un plat
++hors menu, et un plat épuisé. Les routes de la caisse ne sont pas limitées par le menu du jour.
++
+ ## Groupes de routes à venir
+ 
+ `/api/menu` · `/api/categories` · `/api/products` ·

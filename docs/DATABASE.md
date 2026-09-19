@@ -270,3 +270,11 @@ Chaque table porte `id`, `tenant_id`, `created_at`, `updated_at`, `updated_hlc` 
 - En place (`0013_platform`) : `error_logs`, `screen_heartbeats`, `app_releases`, colonnes de supervision de `devices`.
 - Les sauvegardes du serveur local sont lues sur disque (`listBackups`), pas en base.
 - À venir : `sync_cursors` (device_id, stream, last_seq), `sync_conflicts` (event_id, entity, local, remote, resolution), `notifications` (location_id, audience, kind, payload, read_at)
+
+### Menu du jour (`0022_daily_menu`)
+- `daily_menus` (donnée maître, synchronisée) : `location_id`, `start_date`, `end_date` (jours d'exploitation
+  AAAA-MM-JJ, bornes incluses ; identiques pour un menu d'un jour), `product_ids` (tableau JSON d'identifiants,
+  sans clé étrangère : un événement peut arriver avant le plat), `status` (`ACTIVE` / `ARCHIVED`), `updated_hlc`.
+- Règle : un menu d'un seul jour l'emporte sur une période ; à égalité, le plus récemment modifié, puis l'identifiant.
+- Jamais supprimé (archivé). « Épuisé » n'est pas ici : c'est `products.is_available`.
+

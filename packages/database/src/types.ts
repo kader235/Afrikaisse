@@ -789,6 +789,21 @@ export interface AnnouncementsTable {
   updated_hlc: string;
 }
 
+export interface DailyMenusTable {
+  id: string;
+  tenant_id: string;
+  location_id: string;
+  /** Jours d'exploitation AAAA-MM-JJ, bornes incluses (identiques pour un menu d'un seul jour). */
+  start_date: string;
+  end_date: string;
+  /** Tableau JSON d'identifiants de plats. */
+  product_ids: string;
+  status: 'ACTIVE' | 'ARCHIVED';
+  created_at: number;
+  updated_at: number;
+  updated_hlc: string;
+}
+
 export interface PromotionsTable {
   id: string;
   tenant_id: string;
@@ -874,6 +889,7 @@ export interface Database {
   tax_rates: TaxRatesTable;
   promotions: PromotionsTable;
   announcements: AnnouncementsTable;
+  daily_menus: DailyMenusTable;
   error_logs: ErrorLogsTable;
   screen_heartbeats: ScreenHeartbeatsTable;
   app_releases: AppReleasesTable;

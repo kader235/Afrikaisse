@@ -53,7 +53,7 @@ export async function createPairingCode(ctx: AppContext, scope: TenantScope, loc
 }
 
 /** Tables copiées sur le serveur local à l'appairage, dans l'ordre des clés étrangères. */
-const LOCATION_TABLES = ['zones', 'dining_tables', 'qr_codes', 'stations', 'menu_categories', 'modifier_groups', 'modifiers', 'products', 'product_variants', 'product_modifier_groups', 'printers', 'inventory_items', 'recipe_items', 'pricing_settings', 'tax_rates', 'promotions', 'announcements'];
+const LOCATION_TABLES = ['zones', 'dining_tables', 'qr_codes', 'stations', 'menu_categories', 'modifier_groups', 'modifiers', 'products', 'product_variants', 'product_modifier_groups', 'printers', 'inventory_items', 'recipe_items', 'pricing_settings', 'tax_rates', 'promotions', 'announcements', 'daily_menus'];
 
 async function buildSnapshot(db: Db, tenantId: string, locationId: string): Promise<Snapshot> {
   const any = db as unknown as AnyDb;

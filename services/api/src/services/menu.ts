@@ -29,6 +29,7 @@ import type {
   ProductVariantsTable,
 } from '@afrikaisse/database';
 import { publicAnnouncements } from './announcements.ts';
+import { resolveDailyMenuProductIds } from './dailyMenu.ts';
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { inspectImage } from '../lib/images.ts';
@@ -691,6 +692,8 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
       'l.bill_mode',
       'l.menu_theme',
       'l.slogan',
+      'l.timezone',
+      'l.business_day_cutoff_min',
       'o.name as tenant_name',
       'o.status as tenant_status',
     ])
@@ -700,6 +703,9 @@ export async function getPublicMenu(ctx: AppContext, token: string): Promise<Pub
   if (!found || found.table_status !== 'ACTIVE' || found.location_status !== 'ACTIVE' || found.tenant_status !== 'ACTIVE') throw invalid;
 
   const m = await readLocationMenu(ctx.db, found.location_id);
+  // Menu du jour en vigueur : le client ne voit (et ne peut commander) que ces plats ; sans menu du jour, toute la carte.
+  const dailyMenu = await resolveDailyMenuProductIds(ctx.db, found.location_id, found.timezone, found.business_day_cutoff_min, ctx.now());
+  if (dailyMenu) m.products = m.products.filter((p) => dailyMenu.has(p.id));
   const visibleCategories = m.categories.filter((c) => c.is_visible === 1);
   const option = (o: { id: string; name: string; price_delta: number; is_available: 0 | 1 }) => ({ id: o.id, name: o.name, priceDelta: o.price_delta, isAvailable: bool(o.is_available) });
   // Recommandations : seulement parmi ce que le client peut commander maintenant.

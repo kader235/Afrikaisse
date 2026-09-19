@@ -8,7 +8,7 @@
  * Toutes les couleurs sont en hexadécimal #rrggbb ; les ombres et voiles sont calculés
  * à partir de `shadowColor` (et `accent`, `action`, `card`, `onAccent`) avec une opacité fixée par la feuille.
  * Design « v3 » (09/2026) : page bleutée, cartes blanches, bleu pour les prix et la catégorie active,
- * et une couleur d'action à part (`action`, or sur « bleu ») pour ce que le client doit toucher.
+ * et une couleur d'action à part (`action`, bleue) pour ce que le client doit toucher.
  */
 
 export const MENU_THEMES = ['bleu', 'savane', 'nuit', 'foret', 'maquis', 'ocean'] as const;
@@ -71,7 +71,7 @@ export interface MenuPalette {
   dangerSoft: string;
   /** Base des ombres et du voile derrière les fiches. */
   shadowColor: string;
-  /** Couleur de l'action principale (« + », bouton central du panier, « Commander », « Ajouter ») : or sur le thème par défaut. */
+  /** Couleur de l'action principale (« + », bouton central du panier, « Commander », « Ajouter ») : bleue (plus de bouton jaune). */
   action: string;
   /** Action appuyée. */
   actionPress: string;
@@ -129,7 +129,7 @@ export type MenuColorKey = (typeof MENU_PALETTE_KEYS)[number];
 const bleu: MenuTheme = {
   id: 'bleu',
   label: 'Bleu AfriKaisse',
-  description: 'Clair et net, bleu de confiance et boutons dorés. Convient à tous les établissements.',
+  description: 'Clair et net, bleu de confiance, boutons bleus. Convient à tous les établissements.',
   light: {
     dark: false,
     bg: '#eef2f8',
@@ -161,9 +161,9 @@ const bleu: MenuTheme = {
     danger: '#c62828',
     dangerSoft: '#fdecec',
     shadowColor: '#0b1730',
-    action: '#f5b400',
-    actionPress: '#d99a00',
-    onAction: '#1a1300',
+    action: '#1d4ed8',
+    actionPress: '#1a43bd',
+    onAction: '#ffffff',
     live: '#16a34a',
   },
   dark: {
@@ -197,9 +197,9 @@ const bleu: MenuTheme = {
     danger: '#f28b82',
     dangerSoft: '#3a1f24',
     shadowColor: '#000000',
-    action: '#f5b400',
-    actionPress: '#d99a00',
-    onAction: '#1a1300',
+    action: '#2f63e8',
+    actionPress: '#2754cc',
+    onAction: '#ffffff',
     live: '#4ade80',
   },
 };
@@ -313,9 +313,9 @@ const nuitPalette: MenuPalette = {
   danger: '#f28b82',
   dangerSoft: '#3a1f24',
   shadowColor: '#000000',
-  action: '#d4a64a',
-  actionPress: '#bf923a',
-  onAction: '#1a1206',
+  action: '#2f63e8',
+  actionPress: '#2754cc',
+  onAction: '#ffffff',
   live: '#4ade80',
 };
 

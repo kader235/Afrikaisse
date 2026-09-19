@@ -68,12 +68,12 @@ describe('Thèmes du menu client', () => {
     }
   });
 
-  it('« bleu » clair : palette v3 (page bleutée, bleu pour les prix, or pour l’action, bandeau bleu nuit → bleu)', () => {
+  it('« bleu » clair : palette v3 (page bleutée, bleu pour les prix et pour l’action, bandeau bleu nuit → bleu)', () => {
     const p = menuTheme('bleu').light;
     expect(p).toMatchObject({ bg: '#eef2f8', card: '#ffffff', text: '#0f1f40', muted: '#5b6478', line: '#e3e8f1', accent: '#1d4ed8', accentDark: '#1d4ed8', bannerStart: '#0b1730', bannerEnd: '#1d4ed8' });
-    expect(p).toMatchObject({ action: '#f5b400', onAction: '#1a1300' });
-    // L'or du thème « nuit » reste sa couleur d'action ; les autres thèmes gardent leur accent.
-    expect(menuTheme('nuit').light.action).toBe(menuTheme('nuit').light.accent);
+    expect(p).toMatchObject({ action: '#1d4ed8', onAction: '#ffffff' });
+    // Plus aucun bouton jaune : « nuit » garde son or pour les accents, mais son action est bleue.
+    expect(menuTheme('nuit').light.action).toBe('#2f63e8');
     for (const id of ['savane', 'foret', 'maquis', 'ocean'] as const) expect(menuTheme(id).light.action, id).toBe(menuTheme(id).light.accent);
     for (const [name, p] of palettes) expect(relativeLuminance(p.live), name).toBeGreaterThan(0.2);
   });
@@ -108,7 +108,7 @@ describe('Thèmes du menu client', () => {
     expect(css).toContain('--m-accent:#c2410c;');
     expect(css).toContain('--m-accent-rgb:194, 65, 12;');
     expect(css).toContain('--m-action:#c2410c;');
-    expect(menuThemeCss('bleu')).toContain('--m-action-rgb:245, 180, 0;');
+    expect(menuThemeCss('bleu')).toContain('--m-action-rgb:29, 78, 216;');
     expect(css).toContain('@media (prefers-color-scheme: dark)');
     expect(css).toContain('color-scheme:light;');
     expect(menuThemeCss('nuit')).not.toContain('color-scheme:light;');

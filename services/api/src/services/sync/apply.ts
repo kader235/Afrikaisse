@@ -40,6 +40,7 @@ export const MASTER_TABLES: Record<string, string> = {
   tax_rate: 'tax_rates',
   promotion: 'promotions',
   announcement: 'announcements',
+  daily_menu: 'daily_menus',
 };
 
 /** Ajout seulement. */

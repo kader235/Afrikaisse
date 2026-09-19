@@ -31,6 +31,7 @@ import type { AppContext, Db, RequestMeta } from '../context.ts';
 import type { TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { emitRow } from './menu.ts';
+import { resolveDailyMenuProductIds } from './dailyMenu.ts';
 import { loadPricingProducts, priceLines, resolveQr, type Priced } from './orders.ts';
 
 /**
@@ -299,8 +300,10 @@ export async function quoteStaffOrder(ctx: AppContext, scope: TenantScope, locat
 
 export async function quotePublicOrder(ctx: AppContext, token: string, input: QuoteInput): Promise<Quote> {
   const qr = await resolveQr(ctx.db, token);
-  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId)), input.lines);
-  return toQuote(await priceOrderLines(ctx.db, { id: qr.location_id, timezone: qr.timezone, currency: qr.currency }, priced, input.promoCode, ctx.now()));
+  const now = ctx.now();
+  const dailyMenu = await resolveDailyMenuProductIds(ctx.db, qr.location_id, qr.timezone, qr.business_day_cutoff_min, now);
+  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId), { dailyMenu }), input.lines);
+  return toQuote(await priceOrderLines(ctx.db, { id: qr.location_id, timezone: qr.timezone, currency: qr.currency }, priced, input.promoCode, now));
 }
 
 async function checkCode(db: Db, location: { id: string; timezone: string; currency: CurrencyCode }, code: string, now: number): Promise<PromotionRule> {

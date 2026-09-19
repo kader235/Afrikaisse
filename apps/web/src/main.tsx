@@ -24,6 +24,7 @@ import './styles/tablette.css';
 import './styles/tablette-doux.css';
 import './styles/pc.css';
 import './styles/v3.css';
+import './styles/daily-menu.css';
 import { enforceTouchLayout, markDevice } from './touch.ts';
 
 markDevice();

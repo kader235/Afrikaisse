@@ -475,6 +475,19 @@ Publication : `cli release-sign` puis `cli release-publish` (DEPLOYMENT.md §4.1
 - **Optimisation possible ensuite** : SSE sur le serveur local, et dans le Cloud si la sonde o2switch
   confirme qu'il n'est pas bufferisé. Pas de WebSocket (ADR-010).
 
+## Menu du jour
+
+| Route | Rôle |
+|---|---|
+| `GET /api/locations/:locationId/daily-menu` | Jour d'exploitation, menu en vigueur et menus à venir (permission `menu.read`) |
+| `PUT /api/locations/:locationId/daily-menu` | Fixer ou ajuster le menu d'un jour ou d'une période : `{ startDate, endDate, productIds[] }`. Mêmes dates = même menu, remplacé (`menu.manage`) |
+| `POST /api/daily-menus/:menuId/archive` | Retirer un menu (`menu.manage`) |
+| `POST /api/products/:productId/availability` | Plat épuisé / disponible (existant, `menu.availability`) |
+
+Côté client : `GET /api/public/menu/:token` ne renvoie que les plats du menu du jour en vigueur (toute la carte s'il
+n'y en a pas). `POST /api/public/menu/:token/orders` et `.../quote` refusent (409, « n'est plus au menu ») un plat
+hors menu, et un plat épuisé. Les routes de la caisse ne sont pas limitées par le menu du jour.
+
 ## Groupes de routes à venir
 
 `/api/menu` · `/api/categories` · `/api/products` ·

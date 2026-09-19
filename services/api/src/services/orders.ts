@@ -28,6 +28,7 @@ import type { AppContext, Db, RequestMeta } from '../context.ts';
 import { requireTenant, type AuthState, type TenantScope } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
 import { notifyOrder, notifyRequest } from '../lib/notify.ts';
+import { resolveDailyMenuProductIds } from './dailyMenu.ts';
 import { findGuest, loadGuests, onlineOrderingOpen, upsertGuest, verifyTableCode } from './guests.ts';
 import { enqueueKitchenTickets } from './printing.ts';
 import { consumeStock, restoreStock } from './stock.ts';
@@ -99,7 +100,7 @@ async function countSince(db: Db, table: 'orders' | 'service_requests', location
 // --- Prix depuis le menu du moment ------------------------------------------
 
 /** `includeHidden` : la caisse vend aussi les catégories masquées au client (repas du personnel…). */
-export async function loadPricingProducts(db: Db, locationId: string, productIds: string[], options: { includeHidden?: boolean } = {}): Promise<Map<string, PricingProduct>> {
+export async function loadPricingProducts(db: Db, locationId: string, productIds: string[], options: { includeHidden?: boolean; dailyMenu?: Set<string> | null } = {}): Promise<Map<string, PricingProduct>> {
   const ids = [...new Set(productIds)];
   const result = new Map<string, PricingProduct>();
   if (ids.length === 0) return result;
@@ -112,7 +113,9 @@ export async function loadPricingProducts(db: Db, locationId: string, productIds
     .where('p.status', '=', 'ACTIVE')
     .where('c.status', '=', 'ACTIVE');
   if (!options.includeHidden) query = query.where('c.is_visible', '=', 1);
-  const products = await query.execute();
+  const found = await query.execute();
+  // `dailyMenu` : menu du jour en vigueur (chemins du client QR seulement) ; un plat hors menu est traité comme absent de la carte.
+  const products = options.dailyMenu ? found.filter((p) => options.dailyMenu!.has(p.id)) : found;
   if (products.length === 0) return result;
   const pids = products.map((p) => p.id);
   const [variants, links] = await Promise.all([
@@ -344,7 +347,8 @@ export async function placeQrOrder(ctx: AppContext, token: string, input: PlaceQ
     throw new AppError('TOO_MANY_ATTEMPTS', 'Plusieurs commandes de cette table attendent déjà la confirmation du personnel.');
   }
 
-  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId)), input.lines);
+  const dailyMenu = await resolveDailyMenuProductIds(ctx.db, qr.location_id, qr.timezone, qr.business_day_cutoff_min, now);
+  const priced = priceLines(await loadPricingProducts(ctx.db, qr.location_id, input.lines.map((l) => l.productId), { dailyMenu }), input.lines);
   // Promotions et taxes du moment, dans le fuseau de l'établissement ; un code refusé bloque la commande.
   const quote = await priceOrderLines(ctx.db, { id: qr.location_id, timezone: qr.timezone, currency: qr.currency }, priced, input.promoCode, now);
   const total = quote.pricing.total;

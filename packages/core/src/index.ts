@@ -32,5 +32,6 @@ export * from './notifications.ts';
 export * from './guests.ts';
 export * from './client.ts';
 export * from './announcements.ts';
+export * from './dailyMenu.ts';
 export * from './dishPhotos.ts';
 export * from './menuThemes.ts';

@@ -7,13 +7,14 @@ import { mediaSrc } from '../platform.ts';
 import { useProductPhotos } from '../productPhotos.ts';
 import { ServiceHeader } from '../serviceHeader.tsx';
 import { ErrorMessage, Icon } from '../ui.tsx';
+import { DailyMenuWidget } from './DailyMenuWidget.tsx';
 import '../styles/reports.css';
 
 /**
  * Tableau de bord (design v3) : ce qui se passe aujourd'hui dans l'établissement.
  * 1. les chiffres clés en cartes (le chiffre d'affaires en carte dégradée), comparés à hier ;
  * 2. les ventes heure par heure et les commandes en direct (flux d'activité) ;
- * 3. le service en cours (compteurs qui ouvrent l'écran concerné) et les plats les plus vendus, en photo.
+ * 3. le menu du jour (en hauteur : menu du client QR, plats épuisés) et le service en cours (compteurs qui ouvrent l'écran concerné).
  * L'analyse d'une période est dans Rapports. Même écran à la tablette et au PC ; il défile s'il le faut.
  */
 
@@ -252,6 +253,13 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         </div>
 
         <div className="dash-col dash-col-side">
+          {locationId && can('menu.read') && (
+            <section className="card dm-card">
+              <h3>Menu du jour</h3>
+              <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} />
+            </section>
+          )}
+
           {feed && (
             <section className="card">
               <h3>
@@ -270,45 +278,6 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
               </div>
             </section>
           )}
-
-          <section className="card">
-            <h3>
-              Plats les plus vendus
-              {can('reports.read') && (
-                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
-                  Tout voir
-                  <Icon name="chevronRight" />
-                </button>
-              )}
-            </h3>
-            {today && today.topProducts.length > 0 ? (
-              <ol className="pop-list">
-                {today.topProducts.slice(0, 5).map((p, i) => {
-                  const src = photo(null, p.name);
-                  return (
-                    <li key={p.name} className="pop">
-                      {src ? (
-                        <img src={src} alt="" />
-                      ) : (
-                        <span className="pop-blank" aria-hidden="true">
-                          <Icon name="kitchen" />
-                        </span>
-                      )}
-                      <span className="pop-text">
-                        <strong>{p.name}</strong>
-                        <small>
-                          {p.quantity} vendu{p.quantity > 1 ? 's' : ''} · {money(p.revenue)}
-                        </small>
-                      </span>
-                      <b>#{i + 1}</b>
-                    </li>
-                  );
-                })}
-              </ol>
-            ) : (
-              <p className="card-empty">Aucune vente aujourd'hui</p>
-            )}
-          </section>
         </div>
       </div>
     </section>

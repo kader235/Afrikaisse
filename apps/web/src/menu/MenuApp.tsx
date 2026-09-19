@@ -137,9 +137,14 @@ function Menu() {
   const pinsRef = useRef<HTMLElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
+  const lastMenuRef = useRef('');
   const loadMenu = useCallback(() => {
     request<PublicMenu>('GET', `/api/public/menu/${token}`)
       .then((menu) => {
+        // Relecture régulière (menu du jour, plats épuisés) : rien à redessiner si la carte n'a pas changé.
+        const key = JSON.stringify(menu);
+        if (key === lastMenuRef.current) return;
+        lastMenuRef.current = key;
         document.title = menu.restaurant.name;
         applyMenuTheme(menu.restaurant.theme, token);
         setState({ kind: 'ready', menu });
@@ -156,6 +161,16 @@ function Menu() {
     }
     loadMenu();
     return setupPwa(token, loadMenu);
+  }, [token, loadMenu]);
+
+  // « En direct » : un plat épuisé ou un changement de menu du jour apparaît en moins de 20 s, sans recharger la page.
+  // Page masquée : on ne relit pas ; le serveur refuse de toute façon une commande hors menu ou épuisée.
+  useEffect(() => {
+    if (!token) return;
+    const id = setInterval(() => {
+      if (!document.hidden) loadMenu();
+    }, 20_000);
+    return () => clearInterval(id);
   }, [token, loadMenu]);
 
   // Promotions et taxes : sans elles le menu reste utilisable (prix de la carte), le serveur recalcule tout.

@@ -17,10 +17,11 @@
   --rail-w: 92px;
   --nuit: #0b1730;
   --nuit2: #122448;
-  --or: #f5b400;
-  --or2: #d99a00;
-  --or-text: #1a1300;
-  --or-shadow: 0 8px 20px rgba(245, 180, 0, 0.32);
+  /* Tous les boutons principaux sont bleus (plus de jaune) : les anciens jetons « or » pointent vers le bleu. */
+  --or: #2563eb;
+  --or2: #1d4ed8;
+  --or-text: #ffffff;
+  --or-shadow: 0 8px 20px rgba(37, 99, 235, 0.32);
   --vert: #15803d;
   --vert-soft: #e9f9ee;
   --ambre: #b45309;
@@ -985,7 +986,7 @@
 }
 
 .tablette .hbar-top {
-  background: linear-gradient(180deg, #f5b400, #d99a00);
+  background: linear-gradient(180deg, #1e40af, #1e3a8a);
 }
 
 @media (max-width: 1000px) {
@@ -1532,7 +1533,7 @@
   height: 56px;
   border-radius: 16px;
   background: var(--or);
-  box-shadow: 0 10px 24px rgba(245, 180, 0, 0.35);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
   color: var(--or-text);
   font-size: 16px;
 }
@@ -1682,8 +1683,9 @@
   background: var(--nuit2);
 }
 
+/* Numéro sur fond sombre : bleu clair, lisible. */
 .tablette .kds-num {
-  color: var(--or);
+  color: #93c5fd;
 }
 
 .tablette .kds-item {

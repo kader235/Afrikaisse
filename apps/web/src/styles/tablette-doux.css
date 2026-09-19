@@ -1038,7 +1038,7 @@
 }
 
 .tablette .kds-card footer .btn-primary {
-  background: #2f7a4c;
+  background: var(--primary);
   color: #ffffff;
 }
 

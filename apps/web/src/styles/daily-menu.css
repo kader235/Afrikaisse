@@ -1,0 +1,325 @@
+/* === Étiquettes d'état : un code couleur, réservé à ces états ===============
+   bleu = information / en cours · jaune = attention · rouge = urgent · vert = terminé */
+.etq {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.etq::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.etq-info {
+  border-color: var(--primary-line);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.etq-warn {
+  border-color: #f2d58a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.etq-danger {
+  border-color: #efb4b1;
+  background: #fdecec;
+  color: #b42318;
+}
+
+.etq-ok {
+  border-color: #a7e3bd;
+  background: #dcfce7;
+  color: #166534;
+}
+
+:root[data-theme='dark'] .etq-warn {
+  border-color: #6b5320;
+  background: rgba(245, 180, 0, 0.16);
+  color: #f7d071;
+}
+
+:root[data-theme='dark'] .etq-danger {
+  border-color: #7a3335;
+  background: rgba(242, 139, 130, 0.16);
+  color: #f6a8a1;
+}
+
+:root[data-theme='dark'] .etq-ok {
+  border-color: #2b6b47;
+  background: rgba(74, 222, 128, 0.14);
+  color: #86e3ab;
+}
+
+/* === Tableau de bord : informations centrées dans les widgets =============== */
+.dash .card {
+  text-align: center;
+}
+
+.dash .card h3 {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.dash .card h3 .btn-dashboard {
+  margin-inline-start: 0;
+}
+
+.dash .card-empty {
+  text-align: center;
+}
+
+.dash .kpi {
+  text-align: center;
+}
+
+.dash .kpi small {
+  justify-content: center;
+}
+
+.dash .serv {
+  align-items: center;
+  text-align: center;
+}
+
+/* Étiquettes de statut des commandes (flux d'activité) : pastilles aux couleurs des états. */
+.dash .st {
+  gap: 0;
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+.dash .st::before {
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 6px;
+  background: currentColor;
+}
+
+.dash .st-pending {
+  border-color: #f2d58a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.dash .st-progress {
+  border-color: var(--primary-line);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.dash .st-ready,
+.dash .st-served {
+  border-color: #a7e3bd;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.dash .st-served::before {
+  opacity: 1;
+}
+
+.dash .st-cancelled {
+  border-color: #efb4b1;
+  background: #fdecec;
+  color: #b42318;
+}
+
+/* Compteurs du service : jaune = à traiter, vert = prêt. */
+.dash .serv-alert {
+  background: #fef3c7;
+}
+
+.dash .serv-alert b {
+  color: #92400e;
+}
+
+.dash .serv-ok {
+  background: #dcfce7;
+}
+
+.dash .serv-ok b {
+  color: #166534;
+}
+
+:root[data-theme='dark'] .dash .st-pending,
+:root[data-theme='dark'] .dash .serv-alert {
+  border-color: #6b5320;
+  background: rgba(245, 180, 0, 0.16);
+  color: #f7d071;
+}
+
+:root[data-theme='dark'] .dash .serv-alert b {
+  color: #f7d071;
+}
+
+:root[data-theme='dark'] .dash .st-ready,
+:root[data-theme='dark'] .dash .st-served,
+:root[data-theme='dark'] .dash .serv-ok {
+  border-color: #2b6b47;
+  background: rgba(74, 222, 128, 0.14);
+  color: #86e3ab;
+}
+
+:root[data-theme='dark'] .dash .serv-ok b {
+  color: #86e3ab;
+}
+
+:root[data-theme='dark'] .dash .st-cancelled {
+  border-color: #7a3335;
+  background: rgba(242, 139, 130, 0.16);
+  color: #f6a8a1;
+}
+
+/* === Widget « Menu du jour » (en hauteur) =================================== */
+.dm-card {
+  min-height: 460px;
+}
+
+.dm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-height: 400px;
+  text-align: center;
+}
+
+.dm-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dm-list,
+.dm-next {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dm-list {
+  flex: 1 1 auto;
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.dm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.dm-item strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.dm-item.off strong {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
+.dm-next li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dm-next small,
+.dm-hint {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.dm-hint {
+  margin: 0;
+}
+
+.dm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dm-dates {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dm-dates label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dm-dates input {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+.dm-picker {
+  width: 100%;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.dm-cat {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+}
+
+.dm-cat legend {
+  margin: 0 auto 6px;
+  padding: 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dm-chips .chip {
+  min-height: 44px;
+}
