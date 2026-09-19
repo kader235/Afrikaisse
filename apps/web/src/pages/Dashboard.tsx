@@ -112,8 +112,12 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const ordersChange = t && y ? change(t.orders, y.orders) : null;
   const kitchenOk = !!kitchen && kitchen.totals.measured > 0;
   const inKitchen = count('CONFIRMED', 'PREPARING');
+  const pending = count('PENDING');
+  const lateCount = kitchenOk ? kitchen.totals.lateCount : 0;
+  // Nuage du widget : bleu = information, jaune = à traiter, rouge = urgent.
+  const liveTone = feed && feed.requests.length > 0 ? 'rouge' : pending > 0 ? 'jaune' : 'bleu';
   return (
-    <section className="dash">
+    <section className="dash dash-fit">
       <ServiceHeader userName={me.user.displayName} restaurantName={location?.name ?? me.tenant?.name ?? 'AfriKaisse'} logo={logo} restaurantOnly>
         {locations && locations.length > 1 && (
           <select aria-label="Établissement" value={locationId ?? ''} onChange={(e) => setLocationId(e.target.value)}>
@@ -135,7 +139,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
       <ErrorMessage error={error} />
 
       <div className="kpis" aria-label="Aujourd'hui">
-        <div className="kpi kpi-hero">
+        <div className="kpi kpi-hero nuage">
           {heroPhoto && <img src={heroPhoto} alt="" />}
           <small>
             <Icon name="cash" />
@@ -144,7 +148,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
           <strong>{t ? money(t.revenue) : '—'}</strong>
           <span>{revenueChange ? revenueChange.text : t ? `Panier moyen ${money(t.averageTicket)}` : 'Chargement…'}</span>
         </div>
-        <div className="kpi">
+        <div className="kpi nuage nuage-bleu">
           <small>
             <Icon name="ticket" />
             Commandes
@@ -153,7 +157,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
           <span className={ordersChange ? `kpi-${ordersChange.tone}` : ''}>{ordersChange ? ordersChange.text : t ? `Panier moyen ${money(t.averageTicket)}` : ''}</span>
         </div>
         {tablesTotal !== null ? (
-          <div className="kpi">
+          <div className="kpi nuage nuage-bleu">
             <small>
               <Icon name="table" />
               Tables occupées
@@ -164,7 +168,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <span>{tablesTotal > 0 ? `${Math.round((occupied * 100) / tablesTotal)} % de la salle` : 'Aucune table'}</span>
           </div>
         ) : (
-          <div className="kpi">
+          <div className="kpi nuage nuage-bleu">
             <small>
               <Icon name="cash" />
               Panier moyen
@@ -173,7 +177,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <span>{t ? `${t.orders} commande${t.orders > 1 ? 's' : ''}` : ''}</span>
           </div>
         )}
-        <div className="kpi">
+        <div className={`kpi nuage nuage-${lateCount > 0 ? 'rouge' : 'bleu'}`}>
           <small>
             <Icon name="clock" />
             Temps cuisine
@@ -185,7 +189,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
 
       <div className="dash-cols">
         <div className="dash-col">
-          <section className="card">
+          <section className="card dash-chart nuage nuage-bleu">
             <h3>
               Ventes par heure
               {can('reports.read') && (
@@ -199,7 +203,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
           </section>
 
           {feed && (
-            <section className="card">
+            <section className={`card dash-live nuage nuage-${liveTone}`}>
               <h3>
                 <span className="card-title">
                   Commandes en direct
@@ -213,6 +217,35 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
                   <Icon name="chevronRight" />
                 </button>
               </h3>
+              {(pending > 0 || inKitchen > 0 || count('READY') > 0 || feed.requests.length > 0 || (lowStock?.length ?? 0) > 0) && (
+                <div className="live-tags">
+                  {pending > 0 && (
+                    <button type="button" className="etq etq-warn" onClick={() => onNavigate('orders')}>
+                      {pending} à confirmer
+                    </button>
+                  )}
+                  {inKitchen > 0 && (
+                    <button type="button" className="etq etq-info" onClick={() => onNavigate(can('kitchen.use') || can('bar.use') ? 'kitchen' : 'orders')}>
+                      {inKitchen} en cuisine
+                    </button>
+                  )}
+                  {count('READY') > 0 && (
+                    <button type="button" className="etq etq-ok" onClick={() => onNavigate('orders')}>
+                      {count('READY')} prête{count('READY') > 1 ? 's' : ''} à servir
+                    </button>
+                  )}
+                  {feed.requests.length > 0 && (
+                    <button type="button" className="etq etq-danger" onClick={() => onNavigate('orders')}>
+                      {feed.requests.length} demande{feed.requests.length > 1 ? 's' : ''} de table
+                    </button>
+                  )}
+                  {lowStock !== null && lowStock.length > 0 && (
+                    <button type="button" className="etq etq-warn" onClick={() => onNavigate('stock')}>
+                      Stock faible : {lowStock.length}
+                    </button>
+                  )}
+                </div>
+              )}
               {latest.length === 0 ? (
                 <p className="card-empty">{feed.loaded ? 'Aucune commande en cours' : 'Chargement…'}</p>
               ) : (
@@ -253,46 +286,10 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         </div>
 
         <div className="dash-col dash-col-side">
-          {locationId && can('menu.read') && (
-            <section className="card dm-card">
-              <h3>Menu du jour</h3>
-              <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} />
-            </section>
-          )}
-
-          {feed && (
-            <section className="card">
-              <h3>
-                Service en cours
-                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('orders')}>
-                  Commandes
-                  <Icon name="chevronRight" />
-                </button>
-              </h3>
-              <div className="service">
-                <ServiceTile n={count('PENDING')} label="À confirmer" alert onOpen={() => onNavigate('orders')} />
-                <ServiceTile n={inKitchen} label="En cuisine" onOpen={() => onNavigate(can('kitchen.use') || can('bar.use') ? 'kitchen' : 'orders')} />
-                <ServiceTile n={count('READY')} label="Prêtes à servir" ok onOpen={() => onNavigate('orders')} />
-                <ServiceTile n={feed.requests.length} label="Demandes des tables" alert onOpen={() => onNavigate('orders')} />
-                {lowStock !== null && <ServiceTile n={lowStock.length} label="Stock faible" alert detail={lowStock.slice(0, 2).join(', ')} onOpen={() => onNavigate('stock')} />}
-              </div>
-            </section>
-          )}
+          {locationId && can('menu.read') && <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} />}
         </div>
       </div>
     </section>
-  );
-}
-
-/** Compteur du service : l'ambre signale ce qui attend une action, le vert ce qui est prêt. */
-function ServiceTile({ n, label, detail, alert, ok, onOpen }: { n: number; label: string; detail?: string; alert?: boolean; ok?: boolean; onOpen: () => void }) {
-  const tone = n > 0 && alert ? ' serv-alert' : n > 0 && ok ? ' serv-ok' : '';
-  return (
-    <button type="button" className={`serv${tone}`} onClick={onOpen}>
-      <b>{n}</b>
-      <span>{label}</span>
-      {detail && n > 0 && <small>{detail}</small>}
-    </button>
   );
 }
 

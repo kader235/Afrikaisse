@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AdminMenu, DailyMenuState, Product } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { readCache, saveCache } from '../offline.ts';
@@ -61,6 +61,14 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
       .sort((a, b) => (rank.get(a.categoryId) ?? 0) - (rank.get(b.categoryId) ?? 0) || a.sort - b.sort);
   }, [menu, current]);
   const others = state?.menus.filter((m) => m.id !== current?.id) ?? [];
+  // Nuage de la carte : bleu = menu en place, jaune = aucun menu (toute la carte proposée), rouge = au moins un plat épuisé.
+  const tone = !current ? 'jaune' : dishes.some((p) => !p.isAvailable) ? 'rouge' : 'bleu';
+  const wrap = (color: 'bleu' | 'jaune' | 'rouge', body: ReactNode) => (
+    <section className={`card dm-card nuage nuage-${color}`}>
+      <h3>Menu du jour</h3>
+      {body}
+    </section>
+  );
 
   async function toggle(p: Product) {
     setBusy(p.id);
@@ -108,7 +116,8 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
   const flip = (id: string) => setDraft((d) => (d ? { ...d, ids: new Set(d.ids.has(id) ? [...d.ids].filter((x) => x !== id) : [...d.ids, id]) } : d));
 
   if (draft && menu) {
-    return (
+    return wrap(
+      'bleu',
       <div className="dm dm-edit">
         <ErrorMessage error={error} />
         <div className="dm-dates">
@@ -157,14 +166,15 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
             Annuler
           </button>
         </div>
-      </div>
+      </div>,
     );
   }
 
-  if (!state || !menu) return error ? <ErrorMessage error={error} /> : <p className="card-empty">Chargement…</p>;
+  if (!state || !menu) return wrap('bleu', error ? <ErrorMessage error={error} /> : <p className="card-empty">Chargement…</p>);
 
   const single = current && current.startDate === current.endDate;
-  return (
+  return wrap(
+    tone,
     <div className="dm">
       <ErrorMessage error={error} />
       {current ? (
@@ -222,6 +232,6 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
           ))}
         </ul>
       )}
-    </div>
+    </div>,
   );
 }

@@ -1,0 +1,237 @@
+/* === Tableau de bord : tient dans l'écran (aucun défilement de page) ========
+   Les listes longues défilent DANS leur carte ; sur petit écran (< 1000 px de large ou < 560 px de haut)
+   la page reprend son défilement normal. */
+.workspace:has(> .dash-fit) {
+  overflow: hidden;
+}
+
+.workspace > .dash-fit {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.dash-fit > * {
+  flex: none;
+  min-width: 0;
+}
+
+.dash-fit .kpis {
+  margin-bottom: 0;
+  grid-gap: 12px;
+}
+
+.dash-fit .kpi {
+  padding: 12px 16px;
+}
+
+.dash-fit .kpi strong {
+  margin: 4px 0 0;
+  font-size: 24px;
+}
+
+.dash-fit .kpi-hero strong {
+  font-size: 28px;
+}
+
+.dash-fit .dash-cols {
+  flex: 1 1 0;
+  align-items: stretch;
+  grid-gap: 12px;
+  min-height: 0;
+}
+
+.dash-fit .dash-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.dash-fit .dash-col > .card + .card {
+  margin-top: 0;
+}
+
+.dash-fit .dash-col > .card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 14px 16px;
+}
+
+.dash-fit .card > h3 {
+  margin-bottom: 8px;
+}
+
+.dash-fit .dash-chart {
+  flex: 1 1 40%;
+}
+
+.dash-fit .dash-live {
+  flex: 1 1 60%;
+}
+
+.dash-fit .dash-chart .hchart {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 110px;
+}
+
+.dash-fit .live-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.dash-fit .dm-card {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dash-fit .dm {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.dash-fit .dm-list,
+.dash-fit .dm-picker {
+  flex: 1 1 0;
+  max-height: none;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.dash-fit .dm-edit .dm-picker {
+  flex: 1 1 0;
+}
+
+@media (max-width: 1000px), (max-height: 560px) {
+  .workspace:has(> .dash-fit) {
+    overflow: auto;
+  }
+
+  .workspace > .dash-fit {
+    flex: none;
+  }
+
+  .dash-fit .dash-cols {
+    flex: none;
+  }
+
+  .dash-fit .dash-col > .card {
+    flex: none;
+  }
+
+  .dash-fit .live-list,
+  .dash-fit .dm-list {
+    max-height: 340px;
+  }
+
+  .dash-fit .dm-card {
+    min-height: 380px;
+  }
+}
+
+/* === Étiquettes de service, dans l'en-tête de « Commandes en direct » ======== */
+.live-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+button.etq {
+  min-height: 30px;
+  padding: 3px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* === Nuages : fond de chaque widget ==========================================
+   Deux nuages doux, teintés selon l'état du widget (bleu = information, jaune = à traiter, rouge = urgent),
+   rognés par les bords de la carte, sous le contenu, plus une lueur dans le coin. Aucun élément de
+   contenu n'est touché : tout est en pseudo-éléments. */
+.nuage {
+  --nuage: 29, 78, 216;
+  --nuage-forme: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 140'%3E%3Cg fill='%23000'%3E%3Ccircle cx='72' cy='84' r='38'/%3E%3Ccircle cx='122' cy='60' r='50'/%3E%3Ccircle cx='178' cy='82' r='40'/%3E%3Crect x='34' y='84' width='184' height='40' rx='20'/%3E%3C/g%3E%3C/svg%3E");
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-image: radial-gradient(90% 70% at 100% 0%, rgba(var(--nuage), 0.1), transparent 62%);
+}
+
+.nuage-bleu {
+  --nuage: 29, 78, 216;
+}
+
+.nuage-jaune {
+  --nuage: 232, 168, 0;
+}
+
+.nuage-rouge {
+  --nuage: 220, 38, 38;
+}
+
+.nuage::before,
+.nuage::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  background: rgb(var(--nuage));
+  pointer-events: none;
+  -webkit-mask: var(--nuage-forme) center / contain no-repeat;
+  mask: var(--nuage-forme) center / contain no-repeat;
+}
+
+.nuage::before {
+  top: -14%;
+  right: -12%;
+  width: 72%;
+  aspect-ratio: 240 / 140;
+  opacity: 0.12;
+}
+
+.nuage::after {
+  bottom: -12%;
+  left: -10%;
+  width: 46%;
+  aspect-ratio: 240 / 140;
+  opacity: 0.07;
+  transform: scaleX(-1);
+}
+
+.nuage > :not(img) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Carte du chiffre d'affaires (fond bleu) : nuages blancs. */
+.kpi-hero.nuage {
+  --nuage: 255, 255, 255;
+}
+
+.kpi-hero.nuage::before {
+  opacity: 0.14;
+}
+
+.kpi-hero.nuage::after {
+  opacity: 0.09;
+}
+
+:root[data-theme='dark'] .nuage::before {
+  opacity: 0.2;
+}
+
+:root[data-theme='dark'] .nuage::after {
+  opacity: 0.11;
+}
+
+:root[data-theme='dark'] .nuage-jaune {
+  --nuage: 245, 180, 0;
+}

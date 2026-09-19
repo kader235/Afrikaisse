@@ -18,10 +18,13 @@
   --nuit: #0b1730;
   --nuit2: #122448;
   /* Tous les boutons principaux sont bleus (plus de jaune) : les anciens jetons « or » pointent vers le bleu. */
-  --or: #2563eb;
-  --or2: #1d4ed8;
+  --bleu: #1d4ed8;
+  --bleu-press: #1a43bd;
+  --bleu-nuit: #1738a8;
+  --or: var(--bleu);
+  --or2: var(--bleu-press);
   --or-text: #ffffff;
-  --or-shadow: 0 8px 20px rgba(37, 99, 235, 0.32);
+  --or-shadow: 0 8px 20px rgba(29, 78, 216, 0.32);
   --vert: #15803d;
   --vert-soft: #e9f9ee;
   --ambre: #b45309;
@@ -41,7 +44,10 @@
   --column: rgba(15, 32, 68, 0.04);
   --border: #e3e8f1;
   --line: #e3e8f1;
-  --primary-soft: #eef3ff;
+  --primary: #1d4ed8;
+  --primary-strong: #1a43bd;
+  --primary-line: #b7c8f7;
+  --primary-soft: #eaf0ff;
   --shadow-card: 0 4px 16px rgba(15, 32, 68, 0.06);
   --shadow-lift: 0 10px 30px rgba(15, 32, 68, 0.12);
   --chart-prev: #dfe5ef;
@@ -71,8 +77,8 @@
   min-height: 0;
   padding: calc(14px + env(safe-area-inset-top, 0px)) 0 14px;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--nuit) 0%, var(--nuit2) 100%);
-  color: rgba(255, 255, 255, 0.72);
+  background: linear-gradient(180deg, var(--bleu) 0%, var(--bleu-nuit) 100%);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .tablette .rail-brand {
@@ -153,9 +159,9 @@
 
 .tablette .rail-item[aria-current='page'],
 .tablette .rail-item[aria-current='page']:hover {
-  background: var(--or);
-  box-shadow: var(--or-shadow);
-  color: var(--or-text);
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(9, 24, 84, 0.28);
+  color: var(--bleu);
 }
 
 .tablette .rail-badge {
@@ -713,7 +719,7 @@
 }
 
 .tablette .kpi-hero {
-  background: linear-gradient(135deg, #0b1730 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #1a43bd 0%, #1d4ed8 55%, #2f63e8 100%);
   color: #ffffff;
 }
 
@@ -978,7 +984,7 @@
   width: 60%;
   max-width: 40px;
   border-radius: 8px 8px 4px 4px;
-  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  background: linear-gradient(180deg, #5b86f2, #1d4ed8);
 }
 
 .tablette .hbar-prev {
@@ -1533,7 +1539,7 @@
   height: 56px;
   border-radius: 16px;
   background: var(--or);
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.35);
   color: var(--or-text);
   font-size: 16px;
 }
