@@ -62,8 +62,8 @@
  * tient sur une seule ligne en haut de l'écran, tablette comme PC. Le panneau
  * « Plus » reste le seul endroit qui regroupe encore les rubriques par catégorie.
  */
-.tablette .app.app-topnav,
-.souris .app.app-topnav {
+.tablette .app.app-navbar,
+.souris .app.app-navbar {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -74,7 +74,7 @@
   display: none;
 }
 
-.topnav {
+.navbar {
   display: flex;
   flex: none;
   align-items: center;
@@ -85,20 +85,20 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
-.topnav-brand {
+.navbar-brand {
   display: flex;
   flex: none;
   align-items: center;
   margin-inline-end: 12px;
 }
 
-.topnav-brand svg {
+.navbar-brand svg {
   width: 34px;
   height: 34px;
   margin-inline-end: 8px;
 }
 
-.topnav-product {
+.navbar-product {
   display: none;
   color: #ffffff;
   font-size: 18px;
@@ -106,11 +106,11 @@
   white-space: nowrap;
 }
 
-.topnav-product span {
+.navbar-product span {
   color: #f5d27a;
 }
 
-.topnav-items {
+.navbar-items {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
@@ -121,11 +121,11 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.topnav-items::-webkit-scrollbar {
+.navbar-items::-webkit-scrollbar {
   display: none;
 }
 
-.topnav-item {
+.navbar-item {
   position: relative;
   display: flex;
   flex: none;
@@ -146,24 +146,24 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.topnav-item .ico {
+.navbar-item .ico {
   width: 22px;
   height: 22px;
   flex: none;
 }
 
-.topnav-item:hover {
+.navbar-item:hover {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.1);
 }
 
-.topnav-item[aria-current='page'] {
+.navbar-item[aria-current='page'] {
   background: #ffffff;
   box-shadow: 0 6px 16px rgba(9, 24, 84, 0.28);
   color: var(--bleu);
 }
 
-.topnav-badge {
+.navbar-badge {
   position: absolute;
   top: 2px;
   right: 4px;
@@ -179,7 +179,7 @@
   text-align: center;
 }
 
-.topnav-side {
+.navbar-side {
   display: flex;
   flex: none;
   align-items: center;
@@ -188,11 +188,11 @@
   border-inline-start: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.topnav-side > * + * {
+.navbar-side > * + * {
   margin-inline-start: 4px;
 }
 
-.topnav-offline {
+.navbar-offline {
   display: flex;
   align-items: center;
   margin-inline-end: 4px;
@@ -202,11 +202,11 @@
   white-space: nowrap;
 }
 
-.topnav-offline .dot {
+.navbar-offline .dot {
   margin-inline-end: 5px;
 }
 
-.topnav-card {
+.navbar-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -223,8 +223,8 @@
   cursor: pointer;
 }
 
-.topnav-card strong,
-.topnav-card span {
+.navbar-card strong,
+.navbar-card span {
   display: block;
   max-width: 100%;
   overflow: hidden;
@@ -232,58 +232,58 @@
   text-overflow: ellipsis;
 }
 
-.topnav-card strong {
+.navbar-card strong {
   font-size: 13px;
   font-weight: 800;
 }
 
-.topnav-card span {
+.navbar-card span {
   margin-top: 1px;
   color: rgba(255, 255, 255, 0.78);
   font-size: 11px;
 }
 
-.topnav-card:hover {
+.navbar-card:hover {
   background: rgba(255, 255, 255, 0.22);
 }
 
 /* Tablette : icônes seules pour que toute la barre tienne sur une ligne. */
-.tablette .topnav-item {
+.tablette .navbar-item {
   flex-direction: column;
   min-width: 58px;
   padding: 5px 8px;
   font-size: 10.5px;
 }
 
-.tablette .topnav-item .ico {
+.tablette .navbar-item .ico {
   margin-bottom: 3px;
 }
 
-.tablette .topnav-card span {
+.tablette .navbar-card span {
   display: none;
 }
 
-.tablette .app.app-topnav .workspace {
+.tablette .app.app-navbar .workspace {
   padding-top: 18px;
 }
 
 /* PC : icône + libellé côte à côte, nom du produit visible. */
-.souris .topnav-product {
+.souris .navbar-product {
   display: block;
 }
 
-.souris .topnav-item {
+.souris .navbar-item {
   gap: 8px;
   font-size: 14px;
 }
 
-.souris .app.app-topnav .workspace {
+.souris .app.app-navbar .workspace {
   padding-top: 22px;
 }
 
 /* Écran de PC bas : la barre reste compacte. */
 @media (max-height: 760px) {
-  .souris .topnav-item {
+  .souris .navbar-item {
     min-height: 38px;
   }
 }

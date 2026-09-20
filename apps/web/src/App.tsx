@@ -370,47 +370,47 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   }
 
   return (
-    <div className="app app-topnav">
-      <header className="topnav" aria-label="Navigation principale">
-        <div className="topnav-brand">
+    <div className="app app-navbar">
+      <header className="navbar" aria-label="Navigation principale">
+        <div className="navbar-brand">
           <LogoAfrikaisse />
-          <span className="topnav-product">
+          <span className="navbar-product">
             Afri<span>Kaisse</span>
           </span>
         </div>
-        <div className="topnav-items">
+        <div className="navbar-items">
           {topNav.map((s) => (
-            <button key={s.id} className="topnav-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
+            <button key={s.id} className="navbar-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
               <Icon name={s.icon} />
-              <span className="topnav-label">{s.short ?? s.label}</span>
-              {!!s.badge && <span className="topnav-badge">{s.badge > 99 ? '99+' : s.badge}</span>}
+              <span className="navbar-label">{s.short ?? s.label}</span>
+              {!!s.badge && <span className="navbar-badge">{s.badge > 99 ? '99+' : s.badge}</span>}
             </button>
           ))}
         </div>
-        <div className="topnav-side">
+        <div className="navbar-side">
           {!online && (
-            <span className="topnav-offline" role="status">
+            <span className="navbar-offline" role="status">
               <span className="dot dot-off" aria-hidden="true" />
               Hors ligne
             </span>
           )}
           {notifyEnabled && (
             <button
-              className="topnav-item topnav-bell"
+              className="navbar-item navbar-bell"
               aria-haspopup="dialog"
               aria-label={notifications.unread > 0 ? `Notifications : ${notifications.unread} non lues` : 'Notifications'}
               onClick={() => setPanel('notifications')}
             >
               <Icon name="bell" />
-              <span className="topnav-label">Alertes</span>
-              {notifications.unread > 0 && <span className="topnav-badge">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
+              <span className="navbar-label">Alertes</span>
+              {notifications.unread > 0 && <span className="navbar-badge">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
             </button>
           )}
-          <button className="topnav-item topnav-more" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
+          <button className="navbar-item navbar-more" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
             <Icon name="more" />
-            <span className="topnav-label">Plus</span>
+            <span className="navbar-label">Plus</span>
           </button>
-          <button className="topnav-card" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
+          <button className="navbar-card" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
             <strong>{place}</strong>
             <span>
               {me.user.displayName}
