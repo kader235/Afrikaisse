@@ -12,7 +12,7 @@ import '../styles/reports.css';
 
 /**
  * Tableau de bord (design v3) : ce qui se passe aujourd'hui dans l'établissement.
- * 1. les chiffres clés en cartes sobres (le chiffre d'affaires en carte bleue unie), comparés à hier ;
+ * 1. les chiffres clés en cartes (libellé et chiffre, centrés, sans détail dessous) ;
  * 2. les ventes heure par heure et les commandes en direct (flux d'activité) ;
  * 3. le menu du jour (en hauteur : menu du client QR, plats épuisés) et le service en cours (compteurs qui ouvrent l'écran concerné).
  * L'analyse d'une période est dans Rapports. Même écran à la tablette et au PC ; il défile s'il le faut.
@@ -27,14 +27,6 @@ const STATUS_CLASS: Partial<Record<Order['status'], string>> = {
   READY: 'st st-ready',
   SERVED: 'st st-served',
 };
-
-/** Écart avec hier, en pourcentage ; rien quand hier est vide (un « +∞ % » n'apprend rien). */
-function change(now: number, before: number): { text: string; tone: 'up' | 'down' | 'flat' } | null {
-  if (before === 0) return null;
-  const pct = Math.round(((now - before) * 1000) / before) / 10;
-  if (pct === 0) return { text: 'Comme hier à la même heure', tone: 'flat' };
-  return { text: `${pct > 0 ? '+' : '−'} ${Math.abs(pct).toLocaleString('fr-FR')} % par rapport à hier`, tone: pct > 0 ? 'up' : 'down' };
-}
 
 export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: ActivityFeed; onNavigate: (target: DashboardTarget) => void }) {
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
@@ -96,25 +88,15 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const occupied = new Set(orders.map((o) => o.tableId).filter(Boolean)).size;
   const money = (v: number) => (today ? formatMoney(v, today.currency) : '—');
   const t = today?.totals;
-  // Hier jusqu'à la même heure de la journée d'exploitation : comparer une journée entière à une journée
-  // commencée afficherait « ▼ 100 % » chaque matin.
-  const hourNow = new Date().getHours();
   const cutoffHour = location ? Math.floor(location.businessDayCutoffMin / 60) : 0;
-  const rank = (hour: number) => (hour - cutoffHour + 24) % 24;
-  const sameTime = yesterday?.byHour.filter((h) => rank(h.hour) <= rank(hourNow)) ?? null;
-  const yRevenue = sameTime?.reduce((n, h) => n + h.revenue, 0) ?? 0;
-  const yOrders = sameTime?.reduce((n, h) => n + h.orders, 0) ?? 0;
-  const y = sameTime ? { revenue: yRevenue, orders: yOrders, averageTicket: yOrders > 0 ? Math.round(yRevenue / yOrders) : 0 } : null;
   const latest = [...orders].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
   const heroPhoto = today?.topProducts.map((p) => photo(null, p.name)).find((x) => x) ?? null;
   const logo = location?.logoUrl ? mediaSrc(location.logoUrl) : heroPhoto;
-  const revenueChange = t && y ? change(t.revenue, y.revenue) : null;
-  const ordersChange = t && y ? change(t.orders, y.orders) : null;
   const kitchenOk = !!kitchen && kitchen.totals.measured > 0;
   const inKitchen = count('CONFIRMED', 'PREPARING');
   const pending = count('PENDING');
   const lateCount = kitchenOk ? kitchen.totals.lateCount : 0;
-  // Liseré du widget : bleu = information, jaune = à traiter, rouge = urgent.
+  // Teinte du nuage de chaque widget : bleu = information, jaune = à traiter, rouge = urgent.
   const liveTone = feed && feed.requests.length > 0 ? 'rouge' : pending > 0 ? 'jaune' : 'bleu';
   return (
     <section className="dash dash-fit">
@@ -134,24 +116,21 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
 
       <div className="kpis" aria-label="Aujourd'hui">
         <div className="kpi kpi-hero nuage">
-          {heroPhoto && <img src={heroPhoto} alt="" />}
           <small>
             <Icon name="cash" />
             Chiffre d'affaires du jour
           </small>
           <strong>{t ? money(t.revenue) : '—'}</strong>
-          <span>{revenueChange ? revenueChange.text : t ? `Panier moyen ${money(t.averageTicket)}` : 'Chargement…'}</span>
         </div>
-        <div className="kpi nuage nuage-bleu">
+        <div className={`kpi nuage nuage-${pending > 0 ? 'jaune' : 'bleu'}`}>
           <small>
             <Icon name="ticket" />
             Commandes
           </small>
           <strong>{t ? String(t.orders) : '—'}</strong>
-          <span className={ordersChange ? `kpi-${ordersChange.tone}` : ''}>{ordersChange ? ordersChange.text : t ? `Panier moyen ${money(t.averageTicket)}` : ''}</span>
         </div>
         {tablesTotal !== null ? (
-          <div className="kpi nuage nuage-bleu">
+          <div className={`kpi nuage nuage-${feed && feed.requests.length > 0 ? 'rouge' : 'bleu'}`}>
             <small>
               <Icon name="table" />
               Tables occupées
@@ -159,7 +138,6 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <strong>
               {occupied} / {tablesTotal}
             </strong>
-            <span>{tablesTotal > 0 ? `${Math.round((occupied * 100) / tablesTotal)} % de la salle` : 'Aucune table'}</span>
           </div>
         ) : (
           <div className="kpi nuage nuage-bleu">
@@ -168,7 +146,6 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
               Panier moyen
             </small>
             <strong>{t ? money(t.averageTicket) : '—'}</strong>
-            <span>{t ? `${t.orders} commande${t.orders > 1 ? 's' : ''}` : ''}</span>
           </div>
         )}
         <div className={`kpi nuage nuage-${lateCount > 0 ? 'rouge' : 'bleu'}`}>
@@ -177,7 +154,6 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             Temps cuisine
           </small>
           <strong>{kitchenOk ? formatDuration(kitchen.totals.averageMs) : '—'}</strong>
-          <span className={kitchenOk && kitchen.totals.lateCount > 0 ? 'kpi-down' : ''}>{kitchenOk ? (kitchen.totals.lateCount > 0 ? `${kitchen.totals.lateCount} en retard` : 'Aucun retard') : 'Aucune commande prête'}</span>
         </div>
       </div>
 

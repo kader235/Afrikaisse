@@ -171,21 +171,11 @@ button.etq {
   touch-action: manipulation;
 }
 
-/* === Cartes du tableau de bord : sobres, à plat ===============================
-   Fond blanc, filet gris fin, ombre discrète, texte aligné à gauche, une seule couleur d'action.
-   Aucune bordure de couleur (les classes nuage-* ne servent plus qu'au code). Le fond de la page est blanc
-   (classe app-white posée par App.tsx sur le tableau de bord) : l'espace entre les cartes est blanc. */
-.dash .kpis > .kpi.nuage,
-.dash .card.nuage {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  background-image: none;
-  box-shadow: 0 1px 3px rgba(15, 32, 68, 0.06);
-  text-align: start;
-}
-
-/* Fond blanc de toute la page du tableau de bord, barre du haut comprise. */
+/* === Cartes du tableau de bord : un nuage de couleur par widget ================
+   Fond blanc de page (classe app-white posée par App.tsx : l'espace entre les cartes est blanc), cartes claires
+   à filet gris neutre (jamais de bordure de couleur) et, dedans, de grands nuages de couleur floue, comme des
+   lueurs (dégradés radiaux superposés : rien à charger, rien sur le texte). La teinte suit l'état du widget :
+   bleu = information, jaune = à traiter, rouge = urgent. Tout est centré. */
 .tablette .app.app-navbar.app-white {
   background: var(--surface);
 }
@@ -202,34 +192,93 @@ button.etq {
   box-shadow: 0 0 0 2px var(--surface);
 }
 
-/* Chiffres clés : libellé discret, chiffre net, précision en dessous. */
+.dash .nuage {
+  --nuage: 59, 130, 246;
+  --nuage2: 125, 190, 252;
+  --nuage-base: #f7fbff;
+  border: 1px solid rgba(15, 32, 68, 0.07);
+  border-radius: 16px;
+  background-color: var(--nuage-base);
+  background-image:
+    radial-gradient(54% 80% at var(--nx, 50%) var(--ny, 56%), rgba(var(--nuage), 0.34) 0%, rgba(var(--nuage), 0.15) 50%, transparent 78%),
+    radial-gradient(44% 62% at 94% 6%, rgba(var(--nuage2), 0.34) 0%, transparent 72%),
+    radial-gradient(40% 54% at 4% 100%, rgba(var(--nuage2), 0.24) 0%, transparent 70%);
+  box-shadow: 0 6px 18px rgba(15, 32, 68, 0.08);
+  text-align: center;
+}
+
+.dash .nuage-bleu {
+  --nuage: 59, 130, 246;
+  --nuage2: 125, 190, 252;
+  --nuage-base: #f7fbff;
+}
+
+.dash .nuage-jaune {
+  --nuage: 245, 176, 20;
+  --nuage2: 253, 216, 110;
+  --nuage-base: #fffdf5;
+}
+
+.dash .nuage-rouge {
+  --nuage: 239, 68, 68;
+  --nuage2: 252, 165, 165;
+  --nuage-base: #fff8f8;
+}
+
+/* Position du nuage : variée d'un widget à l'autre. */
+.dash .kpis > .nuage:nth-child(2n) {
+  --nx: 62%;
+  --ny: 44%;
+}
+
+.dash .kpis > .nuage:nth-child(3n) {
+  --nx: 40%;
+  --ny: 70%;
+}
+
+.dash .dash-col > .nuage:nth-child(2n) {
+  --nx: 64%;
+  --ny: 48%;
+}
+
+/* Chiffres clés : libellé, puis chiffre, centrés dans la carte. */
+.dash .kpis > .kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+}
+
 .dash .kpi small {
+  justify-content: center;
   color: var(--text-soft);
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 600;
 }
 
 .dash .kpi small .ico {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   color: var(--text-soft);
 }
 
 .dash .kpi strong {
+  max-width: 100%;
   color: var(--text);
+  font-size: 30px;
   letter-spacing: -0.01em;
 }
 
-.dash .kpi span {
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-/* Chiffre d'affaires : la seule carte pleine, en bleu uni (pas de dégradé, pas de photo). */
+/* Chiffre d'affaires : nuage clair sur bleu profond. */
 .dash .kpis > .kpi-hero.nuage {
-  border: 1px solid var(--primary);
-  background: var(--primary);
-  box-shadow: none;
+  border-color: transparent;
+  background-color: #1d4ed8;
+  background-image:
+    radial-gradient(60% 90% at 24% 62%, rgba(255, 255, 255, 0.26) 0%, transparent 70%),
+    radial-gradient(46% 70% at 92% 8%, rgba(255, 255, 255, 0.18) 0%, transparent 72%),
+    linear-gradient(135deg, #1a43bd 0%, #1d4ed8 55%, #2f63e8 100%);
+  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.26);
 }
 
 .dash .kpi-hero small,
@@ -238,51 +287,45 @@ button.etq {
   color: #ffffff;
 }
 
-.dash .kpi-hero span {
-  color: rgba(255, 255, 255, 0.85);
-}
-
 .dash .kpi-hero img {
   display: none;
 }
 
-:root[data-theme='dark'] .dash .kpi-hero small,
-:root[data-theme='dark'] .dash .kpi-hero small .ico,
-:root[data-theme='dark'] .dash .kpi-hero strong {
-  color: #0b1627;
-}
-
-:root[data-theme='dark'] .dash .kpi-hero span {
-  color: rgba(11, 22, 39, 0.75);
-}
-
-/* Titres de carte : titre à gauche, accès à droite. */
+/* Titres de carte : centrés ; les boutons d'accès se posent à l'extrémité. */
 .dash .card h3 {
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  position: relative;
+  justify-content: center;
   margin: 0 0 8px;
+  padding: 0 112px;
   font-size: 15px;
   font-weight: 700;
-  text-align: start;
+  text-align: center;
 }
 
-/* Boutons d'accès (« Rapports », « Toutes ») : discrets, comme des boutons secondaires. */
 .dash .card h3 .btn-dashboard {
+  position: absolute;
+  top: 50%;
+  right: 0;
   height: 34px;
   min-width: 0;
+  margin: -17px 0 0;
   padding: 0 12px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(15, 32, 68, 0.1);
   border-radius: 10px;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.85);
   box-shadow: none;
   color: var(--primary);
   font-size: 13px;
   font-weight: 700;
 }
 
+.tablette[dir='rtl'] .dash .card h3 .btn-dashboard {
+  right: auto;
+  left: 0;
+}
+
 .dash .card h3 .btn-dashboard:hover:not(:disabled) {
-  background: var(--hover);
+  background: #ffffff;
   box-shadow: none;
 }
 
@@ -300,8 +343,42 @@ button.etq {
   background: var(--primary-strong);
 }
 
+/* Contenus posés sur les nuages : lignes légèrement voilées pour rester lisibles. */
 .dash .live-row {
-  border-bottom-color: var(--line);
+  border-bottom-color: rgba(15, 32, 68, 0.08);
+}
+
+.dash .nuage .chip {
+  border-color: rgba(15, 32, 68, 0.12);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.dash .nuage .chip[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: rgba(var(--nuage), 0.18);
+  color: var(--text);
+}
+
+.dash .nuage .dm-dates input {
+  border-color: rgba(15, 32, 68, 0.14);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Thème sombre : fond de la carte conservé, lueurs plus présentes. */
+:root[data-theme='dark'] .dash .nuage {
+  --nuage-base: var(--surface);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme='dark'] .dash .nuage-jaune {
+  --nuage: 245, 180, 0;
+}
+
+:root[data-theme='dark'] .dash .kpi-hero small,
+:root[data-theme='dark'] .dash .kpi-hero small .ico,
+:root[data-theme='dark'] .dash .kpi-hero strong {
+  color: #ffffff;
 }
 
 /* === Nuages ailleurs qu'au tableau de bord : le cadre de la page Menu =========
