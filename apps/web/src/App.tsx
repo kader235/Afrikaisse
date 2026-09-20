@@ -225,14 +225,6 @@ const NAV_GROUPS: [NavGroup, string][] = [
 /** Rail de gauche sur PC (design v3) : tout le service, groupé ; le reste (établissements, journal, supervision…) sous « Plus ». */
 const PC_RAIL: Section[] = ['dashboard', 'take', 'orders', 'pos', 'floor', 'kitchen', 'menu', 'stock', 'team', 'organization'];
 
-/** Intitulés des groupes du rail PC ; la gestion et l'administration sont réunies. */
-const RAIL_GROUPS: [NavGroup[], string][] = [
-  [['home'], ''],
-  [['sale'], 'Vente'],
-  [['restaurant'], 'Restaurant'],
-  [['manage', 'admin'], 'Gestion'],
-];
-
 /** Rail de la tablette et du téléphone : l'outil du métier d'abord, tout le reste sous « Plus ». */
 const TABLET_NAV: Record<Role, Section[]> = {
   OWNER: ['take', 'orders', 'pos', 'floor', 'dashboard'],
@@ -279,14 +271,11 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
     { id: 'platform', label: t('nav.platform'), icon: 'server', visible: me.user.isPlatformAdmin && !isTouchDevice(), group: 'admin' },
   ];
   const visible = sections.filter((s) => s.visible);
-  // Même rail à gauche partout (design v3) ; l'appareil ne décide que de son contenu et de sa largeur.
+  // Même barre partout (design v3.1) : horizontale, en haut ; l'appareil ne décide que de son contenu.
   const touch = isTouchDevice();
   const railIds = touch ? TABLET_NAV[me.role ?? 'OWNER'] : PC_RAIL;
   const topNav = railIds.map((id) => visible.find((s) => s.id === id)).filter((s): s is NavItem => !!s);
   if (topNav.length === 0 && visible[0]) topNav.push(visible[0]);
-  const railGroups: [string, NavItem[]][] = touch
-    ? [['', topNav]]
-    : RAIL_GROUPS.map(([groups, title]) => [title, topNav.filter((s) => groups.includes(s.group))] as [string, NavItem[]]).filter(([, list]) => list.length > 0);
   const [panel, setPanel] = useState<'account' | 'nav' | 'notifications' | null>(null);
   const [section, setSection] = useState<Section>(() => sectionFromHash() ?? topNav[0]?.id ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
@@ -381,52 +370,47 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   }
 
   return (
-    <div className="app">
-      <nav className="rail" aria-label="Navigation principale">
-        <div className="rail-brand">
+    <div className="app app-topnav">
+      <header className="topnav" aria-label="Navigation principale">
+        <div className="topnav-brand">
           <LogoAfrikaisse />
-          <span className="rail-product">
+          <span className="topnav-product">
             Afri<span>Kaisse</span>
           </span>
         </div>
-        <div className="rail-items">
-          {railGroups.map(([title, list]) => (
-            <div key={title || 'home'} className="rail-group">
-              {title && <span className="rail-group-title">{title}</span>}
-              {list.map((s) => (
-                <button key={s.id} className="rail-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
-                  <Icon name={s.icon} />
-                  <span className="rail-label">{s.short ?? s.label}</span>
-                  {!!s.badge && <span className="rail-badge">{s.badge > 99 ? '99+' : s.badge}</span>}
-                </button>
-              ))}
-            </div>
+        <div className="topnav-items">
+          {topNav.map((s) => (
+            <button key={s.id} className="topnav-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
+              <Icon name={s.icon} />
+              <span className="topnav-label">{s.short ?? s.label}</span>
+              {!!s.badge && <span className="topnav-badge">{s.badge > 99 ? '99+' : s.badge}</span>}
+            </button>
           ))}
         </div>
-        <div className="rail-bottom">
+        <div className="topnav-side">
           {!online && (
-            <span className="rail-offline" role="status">
+            <span className="topnav-offline" role="status">
               <span className="dot dot-off" aria-hidden="true" />
               Hors ligne
             </span>
           )}
           {notifyEnabled && (
             <button
-              className="rail-item rail-bell"
+              className="topnav-item topnav-bell"
               aria-haspopup="dialog"
               aria-label={notifications.unread > 0 ? `Notifications : ${notifications.unread} non lues` : 'Notifications'}
               onClick={() => setPanel('notifications')}
             >
               <Icon name="bell" />
-              <span className="rail-label">Alertes</span>
-              {notifications.unread > 0 && <span className="rail-badge">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
+              <span className="topnav-label">Alertes</span>
+              {notifications.unread > 0 && <span className="topnav-badge">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
             </button>
           )}
-          <button className="rail-item rail-more" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
+          <button className="topnav-item topnav-more" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
             <Icon name="more" />
-            <span className="rail-label">Plus</span>
+            <span className="topnav-label">Plus</span>
           </button>
-          <button className="rail-card" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
+          <button className="topnav-card" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
             <strong>{place}</strong>
             <span>
               {me.user.displayName}
@@ -434,7 +418,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
             </span>
           </button>
         </div>
-      </nav>
+      </header>
 
       <main className={current === 'take' ? 'workspace workspace-bleed' : 'workspace'}>
         {can('tenant.read') && !touch && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
