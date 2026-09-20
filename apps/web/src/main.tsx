@@ -26,6 +26,7 @@ import './styles/pc.css';
 import './styles/v3.css';
 import './styles/daily-menu.css';
 import './styles/dashboard-fit.css';
+import './styles/password-toggle.css';
 import { enforceTouchLayout, markDevice } from './touch.ts';
 
 markDevice();

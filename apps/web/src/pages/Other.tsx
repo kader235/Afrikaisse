@@ -19,7 +19,7 @@ import {
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { AUDIT_ACTION_LABELS, ROLE_LABELS, formatDateTime } from '../labels.ts';
-import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
+import { Dialog, ErrorMessage, Icon, OkMessage, PasswordInput, Window } from '../ui.tsx';
 import { BackupsPanel } from './Backups.tsx';
 import { SyncPanel } from './Sync.tsx';
 import { RecoverySection } from './Recovery.tsx';
@@ -274,9 +274,9 @@ export function AccountPage({ me, onChanged }: { me: Me; onChanged?: () => void 
             {ok && <OkMessage>{t('account.passwordChanged')}</OkMessage>}
             <div className="form">
               <label htmlFor="a-current">{t('account.currentPassword')}</label>
-              <input id="a-current" type="password" required autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} />
+              <PasswordInput id="a-current" required autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} />
               <label htmlFor="a-new">{t('account.newPassword')}</label>
-              <input id="a-new" type="password" required minLength={10} autoComplete="new-password" value={newPassword} onChange={(e) => setNext(e.target.value)} />
+              <PasswordInput id="a-new" required minLength={10} autoComplete="new-password" value={newPassword} onChange={(e) => setNext(e.target.value)} />
               <span className="hint">{t('auth.passwordHint')}</span>
               <span />
               <div>

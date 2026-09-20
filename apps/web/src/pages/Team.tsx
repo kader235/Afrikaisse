@@ -3,7 +3,7 @@ import { ROLES, canManageRole, type Me, type Member, type Role } from '@afrikais
 import { api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { ROLE_LABELS, formatDateTime } from '../labels.ts';
-import { Dialog, ErrorMessage, Icon, OkMessage, Window } from '../ui.tsx';
+import { Dialog, ErrorMessage, Icon, OkMessage, PasswordInput, Window } from '../ui.tsx';
 
 type DialogState = null | { kind: 'add' } | { kind: 'edit'; member: Member } | { kind: 'password'; member: Member } | { kind: 'disable'; member: Member };
 
@@ -288,7 +288,7 @@ function MemberDialog({ me, grantable, member, onSaved, onClose }: { me: Me; gra
             {!member && (
               <>
                 <label htmlFor="m-password">{t('team.initialPassword')}</label>
-                <input id="m-password" type="password" minLength={10} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                <PasswordInput id="m-password" minLength={10} autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
               </>
             )}
           </div>
@@ -332,7 +332,7 @@ function PasswordDialog({ member, onDone, onClose }: { member: Member; onDone: (
           <ErrorMessage error={error} />
           <div className="form">
             <label htmlFor="p-new">{t('account.newPassword')}</label>
-            <input id="p-new" type="password" required minLength={10} autoFocus autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput id="p-new" required minLength={10} autoFocus autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
             <span className="hint">{t('auth.passwordHint')}</span>
           </div>
         </div>

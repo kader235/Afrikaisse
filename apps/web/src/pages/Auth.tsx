@@ -5,7 +5,7 @@ import { CURRENCY_CODES, LOCATION_TYPES, type SessionResponse } from '@afrikaiss
 import { ApiError, api } from '../api.ts';
 import { useI18n } from '../i18n.tsx';
 import { COUNTRIES, LOCATION_TYPE_LABELS } from '../labels.ts';
-import { APP_VERSION, ErrorMessage, Icon, Preferences } from '../ui.tsx';
+import { APP_VERSION, ErrorMessage, Icon, PasswordInput, Preferences } from '../ui.tsx';
 import { EMPTY_RECOVERY, RecoveryFields } from './Recovery.tsx';
 
 /** Écran d'accès : une fenêtre centrée, une barre d'état. */
@@ -179,7 +179,7 @@ export function LoginPage({ onSession, onRegister, server }: { onSession: (s: Se
             <label htmlFor="login-password">{t('auth.password')}</label>
             <div className="access-input">
               <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
-              <input id="login-password" type="password" autoComplete="current-password" required placeholder={t('auth.password')} value={password} onChange={(e) => setPassword(e.target.value)} />
+              <PasswordInput id="login-password" autoComplete="current-password" required placeholder={t('auth.password')} value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <button type="button" className="link access-forgot" onClick={() => setForgot(true)}>
               {t('auth.forgot')}
@@ -304,14 +304,14 @@ function RecoveryScreen({ server, initialEmail, onSession, onCancel }: { server?
               <label htmlFor="rec-password">Nouveau mot de passe</label>
               <div className="access-input">
                 <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
-                <input id="rec-password" type="password" required minLength={10} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <PasswordInput id="rec-password" required minLength={10} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </div>
             </div>
             <div className="access-field">
               <label htmlFor="rec-confirm">Confirmer le nouveau mot de passe</label>
               <div className="access-input">
                 <FieldIcon d="M4 7.5h8v6H4zM5.5 7.5v-2a2.5 2.5 0 0 1 5 0v2" />
-                <input id="rec-confirm" type="password" required minLength={10} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+                <PasswordInput id="rec-confirm" required minLength={10} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
               </div>
               <span className="access-note">Au moins 10 caractères. Vos autres appareils seront déconnectés.</span>
             </div>
@@ -471,7 +471,7 @@ export function RegisterPage({ onSession, onLogin, server }: { onSession: (s: Se
             <label htmlFor="r-email">{t('auth.email')}</label>
             <input id="r-email" type="email" required autoComplete="username" value={form.email} onChange={set('email')} />
             <label htmlFor="r-password">{t('auth.password')}</label>
-            <input id="r-password" type="password" required minLength={10} autoComplete="new-password" value={form.password} onChange={set('password')} />
+            <PasswordInput id="r-password" required minLength={10} autoComplete="new-password" value={form.password} onChange={set('password')} />
             <span className="hint">{t('auth.passwordHint')}</span>
           </div>
         </fieldset>

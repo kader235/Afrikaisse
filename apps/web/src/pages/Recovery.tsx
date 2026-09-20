@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { Me } from '@afrikaisse/core';
 import { api } from '../api.ts';
-import { Dialog, ErrorMessage, OkMessage } from '../ui.tsx';
+import { Dialog, ErrorMessage, OkMessage, PasswordInput } from '../ui.tsx';
 
 /** Questions proposées : des souvenirs qui ne changent pas et que les collègues ne connaissent pas. */
 export const RECOVERY_QUESTIONS = [
@@ -130,7 +130,7 @@ export function RecoveryPrompt({ onSaved, onLater }: { onSaved: () => void; onLa
           <ErrorMessage error={f.error} />
           <div className="form">
             <label htmlFor="rp-password">Mot de passe actuel</label>
-            <input id="rp-password" type="password" required autoComplete="current-password" value={f.password} onChange={(e) => f.setPassword(e.target.value)} />
+            <PasswordInput id="rp-password" required autoComplete="current-password" value={f.password} onChange={(e) => f.setPassword(e.target.value)} />
             <RecoveryFields id="rp" value={f.value} onChange={f.setValue} />
           </div>
         </div>
@@ -159,7 +159,7 @@ export function RecoverySection({ me, onSaved }: { me: Me; onSaved?: () => void 
         {ok && <OkMessage>Question secrète enregistrée.</OkMessage>}
         <div className="form">
           <label htmlFor="as-password">{'Mot de passe actuel'}</label>
-          <input id="as-password" type="password" required autoComplete="current-password" value={f.password} onChange={(e) => f.setPassword(e.target.value)} />
+          <PasswordInput id="as-password" required autoComplete="current-password" value={f.password} onChange={(e) => f.setPassword(e.target.value)} />
           <RecoveryFields id="as" value={f.value} onChange={f.setValue} />
           <span />
           <div>

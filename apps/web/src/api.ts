@@ -106,12 +106,27 @@ async function send(method: string, path: string, body?: unknown): Promise<Respo
   }
 }
 
+/**
+ * Délai avant de pouvoir réessayer après un 429, lu dans Retry-After.
+ * Vide si l'en-tête est absent ou illisible : en appel d'un autre domaine (tablette en mode Cloud),
+ * le navigateur le cache tant que le serveur ne l'expose pas (Access-Control-Expose-Headers).
+ */
+function waitText(res: Response): string {
+  const seconds = Number(res.headers.get('retry-after'));
+  if (!Number.isFinite(seconds) || seconds <= 0) return '';
+  return seconds < 90 ? `${Math.ceil(seconds)} s` : `${Math.ceil(seconds / 60)} min`;
+}
+
 async function toError(res: Response): Promise<ApiError> {
+  const wait = res.status === 429 ? waitText(res) : '';
   try {
     const data = (await res.json()) as ErrorResponse;
-    return new ApiError(res.status, data.error.code, data.error.message, data.error.details);
+    // Le message du serveur reste prioritaire ; on ajoute le délai seulement s'il n'y figure pas déjà.
+    const message = wait && !/\d/.test(data.error.message) ? `${data.error.message} Réessayez dans ${wait}.` : data.error.message;
+    return new ApiError(res.status, data.error.code, message, data.error.details);
   } catch {
     // Page d'erreur de l'hébergeur (pare-feu, application qui redémarre…) : le code HTTP aide à trouver la cause.
+    if (res.status === 429) return new ApiError(429, 'RATE_LIMITED', wait ? `Trop de tentatives. Réessayez dans ${wait}.` : 'Trop de tentatives. Patientez un moment puis réessayez.');
     if (res.status === 503) return new ApiError(503, 'SERVICE_UNAVAILABLE', 'Le serveur est temporairement indisponible. Réessayez dans quelques secondes.');
     return new ApiError(res.status, 'INTERNAL', `Réponse inattendue du serveur (HTTP ${res.status}).`);
   }

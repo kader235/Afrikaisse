@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   mdiAccount,
@@ -205,6 +205,45 @@ export function OkMessage({ children }: { children: ReactNode }) {
     <div className="msg msg-ok" role="status">
       {children}
     </div>
+  );
+}
+
+/**
+ * Champ mot de passe avec un œil : au doigt, sur une tablette, on se trompe vite et on ne voit pas ce qu'on tape.
+ * Le mot de passe reste masqué par défaut. Le bouton ne prend pas le focus (mousedown annulé) pour que
+ * le clavier ne se ferme pas quand on touche l'œil. Aucun CSS moderne : la WebView de la tablette est un Chrome 83.
+ */
+export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const { t } = useI18n();
+  const [visible, setVisible] = useState(false);
+  const label = visible ? t('auth.password.hide') : t('auth.password.show');
+  const { style, ...rest } = props;
+  return (
+    <span className="pw-field">
+      <input
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
+        {...rest}
+        type={visible ? 'text' : 'password'}
+        style={{ paddingInlineEnd: 48, ...style }}
+      />
+      <button
+        type="button"
+        className="pw-toggle"
+        aria-label={label}
+        aria-pressed={visible}
+        title={label}
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setVisible((v) => !v)}
+      >
+        <svg className="pw-eye" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M1.5 8s2.3-4.5 6.5-4.5S14.5 8 14.5 8s-2.3 4.5-6.5 4.5S1.5 8 1.5 8z" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+          <circle cx="8" cy="8" r="2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+          {visible && <path d="M2.5 2.5l11 11" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />}
+        </svg>
+      </button>
+    </span>
   );
 }
 
