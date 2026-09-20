@@ -65,40 +65,23 @@
   color: #86e3ab;
 }
 
-/* === Tableau de bord : informations centrées dans les widgets =============== */
+/* === Tableau de bord : informations alignées à gauche, comme un vrai tableau de bord ===== */
 .dash .card {
-  text-align: center;
-}
-
-.dash .card h3 {
-  flex-wrap: wrap;
-  justify-content: center;
-  text-align: center;
-}
-
-.dash .card h3 > * {
-  margin: 3px 5px;
-}
-
-.dash .card h3 .btn-dashboard {
-  margin-inline-start: 0;
+  text-align: start;
 }
 
 .dash .card-empty {
+  padding: 14px 0;
   text-align: center;
 }
 
 .dash .kpi {
-  text-align: center;
-}
-
-.dash .kpi small {
-  justify-content: center;
+  text-align: start;
 }
 
 .dash .serv {
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: start;
 }
 
 /* Étiquettes de statut des commandes (flux d'activité) : pastilles aux couleurs des états. */
@@ -194,155 +177,305 @@
   color: #f6a8a1;
 }
 
-/* === Widget « Menu du jour » (en hauteur) =================================== */
-.dm-card {
-  min-height: 460px;
+/* === Widget « Menu du jour » ===============================================
+   Une carte de service : période en haut à droite, résumé, plats groupés par catégorie (photo, nom, prix,
+   état), actions en pied. WebView Chrome 83 : pas de gap sur flexbox, des marges. */
+.dm-period {
+  flex: none;
+  margin-inline-start: 8px;
 }
 
 .dm {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  min-height: 400px;
-  text-align: center;
+  min-height: 0;
+  text-align: start;
 }
 
-.dm > * + * {
+.dm-summary {
+  flex: none;
+  margin: 0 0 8px;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dm-summary b {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.dm-out {
+  color: #b42318;
+  font-weight: 700;
+}
+
+:root[data-theme='dark'] .dm-out {
+  color: #f6a8a1;
+}
+
+.dm-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dm-group + .dm-group {
   margin-top: 12px;
 }
 
-.dm-head {
+.dm-group h4 {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.dm-head > *,
-.dm-actions > *,
-.dm-chips > *,
-.dm-next li > * {
-  margin: 4px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0 0 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-soft);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .dm-list,
-.dm-next {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+.dm-next ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.dm-list > * + *,
-.dm-next > * + * {
-  margin-top: 8px;
-}
-
-.dm-list {
-  flex: 1 1 auto;
-  max-height: 520px;
-  overflow-y: auto;
-}
-
-.dm-item {
+.dm-dish {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 12px;
-  border-radius: 14px;
-  background: var(--bg);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.dm-item > * + * {
-  margin-top: 8px;
+.dm-group .dm-dish:last-child {
+  border-bottom: 0;
 }
 
-.dm-item strong {
-  font-size: 15px;
-  font-weight: 800;
+.dm-thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-inline-end: 12px;
+  border-radius: 10px;
+  background: var(--fill);
+  object-fit: cover;
 }
 
-.dm-item.off strong {
-  opacity: 0.6;
+.dm-thumb-blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border-strong);
+}
+
+.dm-dish-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dm-dish-text strong {
+  display: block;
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dm-dish-text small {
+  color: var(--text-soft);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dm-dish.off .dm-dish-text strong {
+  color: var(--text-soft);
   text-decoration: line-through;
+}
+
+.dm-dish .etq {
+  flex: none;
+  margin-inline-end: 8px;
+}
+
+.dm-dish .btn {
+  flex: none;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: 13px;
+}
+
+.dm-empty {
+  padding: 18px 6px;
+  text-align: center;
+}
+
+.dm-empty strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dm-empty p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 13.5px;
+}
+
+.dm-next {
+  margin-top: 14px;
+}
+
+.dm-next h4 {
+  margin: 0;
+  padding: 0 0 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-soft);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .dm-next li {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.dm-next small,
-.dm-hint {
+.dm-next li:last-child {
+  border-bottom: 0;
+}
+
+.dm-next li small {
+  flex: 1 1 auto;
+  margin-inline-start: 10px;
   color: var(--text-soft);
   font-size: 13px;
 }
 
-.dm-hint {
-  margin: 0;
+.dm-next li .btn {
+  flex: none;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: 13px;
 }
 
-.dm-actions {
+/* Pied de carte : les actions restent visibles, la liste défile au-dessus. */
+.dm-foot {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
-  justify-content: center;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
 }
 
+.dm-foot .btn {
+  flex: 1 1 auto;
+  height: 44px;
+  margin: 0 8px 0 0;
+}
+
+.dm-foot .btn:last-child {
+  margin-inline-end: 0;
+}
+
+.tablette[dir='rtl'] .dm-foot .btn {
+  margin: 0 0 0 8px;
+}
+
+/* Édition : dates, choix des plats par catégorie. */
 .dm-dates {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.dm-dates > * {
-  margin: 6px;
+  flex: none;
 }
 
 .dm-dates label {
-  display: flex;
-  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  margin-inline-end: 10px;
   font-size: 12px;
   font-weight: 700;
 }
 
-.dm-dates label > * + * {
-  margin-top: 4px;
+.dm-dates label:last-child {
+  margin-inline-end: 0;
 }
 
 .dm-dates input {
+  display: block;
+  width: 100%;
   min-height: 44px;
+  margin-top: 4px;
   font-size: 16px;
 }
 
+.dm-hint {
+  flex: none;
+  margin: 10px 0 6px;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.dm-tools {
+  display: flex;
+  flex: none;
+  margin-bottom: 8px;
+}
+
+.dm-tools .btn {
+  height: 36px;
+  margin-inline-end: 8px;
+  padding: 0 12px;
+  border-radius: 10px;
+  box-shadow: none;
+  font-size: 13px;
+}
+
 .dm-picker {
-  width: 100%;
-  max-height: 420px;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dm-cat {
+  min-width: 0;
   margin: 0 0 10px;
   padding: 0;
   border: 0;
 }
 
 .dm-cat legend {
-  margin: 0 auto 6px;
+  margin: 0 0 6px;
   padding: 0;
   color: var(--text-soft);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .dm-chips {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
 }
 
 .dm-chips .chip {
-  min-height: 44px;
+  min-height: 40px;
+  margin: 0 8px 8px 0;
+}
+
+.tablette[dir='rtl'] .dm-chips .chip {
+  margin: 0 0 8px 8px;
 }

@@ -221,14 +221,14 @@ const NAV_GROUPS: [NavGroup, string][] = [
   ['admin', 'Administration'],
 ];
 
-/** Rail de gauche sur PC (design v3) : tout le service, groupé ; le reste (établissements, journal, supervision…) sous « Plus ». */
-const PC_RAIL: Section[] = ['dashboard', 'take', 'orders', 'pos', 'floor', 'kitchen', 'menu', 'stock', 'team', 'organization'];
+/** Barre du PC : le tableau de bord d'abord, puis tout le service sur une seule ligne ; le reste (équipe, organisation, journal, supervision…) sous « Plus ». */
+const PC_RAIL: Section[] = ['dashboard', 'take', 'orders', 'pos', 'floor', 'kitchen', 'menu', 'stock'];
 
-/** Rail de la tablette et du téléphone : l'outil du métier d'abord, tout le reste sous « Plus ». */
+/** Barre de la tablette et du téléphone : le tableau de bord d'abord (s'il est permis), puis l'outil du métier ; tout le reste sous « Plus ». */
 const TABLET_NAV: Record<Role, Section[]> = {
-  OWNER: ['take', 'orders', 'pos', 'floor', 'dashboard'],
-  ADMIN: ['take', 'orders', 'pos', 'floor', 'dashboard'],
-  MANAGER: ['take', 'orders', 'pos', 'floor', 'dashboard'],
+  OWNER: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu'],
+  ADMIN: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu'],
+  MANAGER: ['dashboard', 'take', 'orders', 'pos', 'floor', 'menu'],
   CASHIER: ['pos', 'take', 'orders', 'floor'],
   WAITER: ['take', 'orders', 'floor'],
   KITCHEN: ['kitchen'],

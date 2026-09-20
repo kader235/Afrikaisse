@@ -107,7 +107,7 @@
   min-height: 0;
 }
 
-.dash-fit .dm-list,
+.dash-fit .dm-scroll,
 .dash-fit .dm-picker {
   flex: 1 1 0;
   max-height: none;
@@ -139,7 +139,8 @@
   }
 
   .dash-fit .live-list,
-  .dash-fit .dm-list {
+  .dash-fit .dm-scroll,
+  .dash-fit .dm-picker {
     max-height: 340px;
   }
 
@@ -170,125 +171,133 @@ button.etq {
   touch-action: manipulation;
 }
 
-/* === Nuages : fond de chaque widget ==========================================
-   Chaque widget a un fond clair teinté et de larges nuages de couleur floue, comme des lueurs
-   (dégradés radiaux superposés : rien à charger, rien sur le texte). La teinte suit l'état du widget :
-   bleu = information, jaune = à traiter, rouge = urgent. La position des nuages varie d'un widget à l'autre. */
-.dash .nuage {
-  --nuage: 59, 130, 246;
-  --nuage2: 125, 190, 252;
-  --nuage-base: #f6faff;
-  border: 1px solid rgba(var(--nuage), 0.16);
-  background-color: var(--nuage-base);
-  background-image:
-    radial-gradient(58% 80% at var(--nx, 30%) var(--ny, 60%), rgba(var(--nuage), 0.32) 0%, rgba(var(--nuage), 0.14) 48%, transparent 76%),
-    radial-gradient(40% 58% at 90% 10%, rgba(var(--nuage2), 0.32) 0%, transparent 72%),
-    radial-gradient(36% 48% at 6% 100%, rgba(var(--nuage2), 0.2) 0%, transparent 70%);
-  box-shadow: 0 8px 22px rgba(var(--nuage), 0.14);
-}
-
-.dash .nuage-bleu {
-  --nuage: 59, 130, 246;
-  --nuage2: 125, 190, 252;
-  --nuage-base: #f6faff;
+/* === Cartes du tableau de bord : sobres, à plat ===============================
+   Fond uni, filet fin, ombre discrète, texte aligné à gauche, une seule couleur d'action. L'état d'un
+   widget se lit sur le liseré du haut : bleu clair = information, jaune = à traiter, rouge = urgent
+   (les classes nuage-* portent ce ton ; le flou de couleur d'avant est abandonné ici). */
+.dash {
+  --accent: var(--primary-line);
 }
 
 .dash .nuage-jaune {
-  --nuage: 245, 176, 20;
-  --nuage2: 253, 216, 110;
-  --nuage-base: #fffcf2;
+  --accent: #f0b429;
 }
 
 .dash .nuage-rouge {
-  --nuage: 239, 68, 68;
-  --nuage2: 252, 165, 165;
-  --nuage-base: #fff7f7;
+  --accent: #e5484d;
 }
 
-/* Position variée des nuages */
-.dash .kpis .nuage:nth-child(2n) {
-  --nx: 66%;
-  --ny: 42%;
+.dash .kpis > .kpi.nuage,
+.dash .card.nuage {
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  background-image: none;
+  box-shadow: 0 1px 3px rgba(15, 32, 68, 0.06);
+  text-align: start;
 }
 
-.dash .kpis .nuage:nth-child(3n) {
-  --nx: 44%;
-  --ny: 72%;
+/* Chiffres clés : libellé discret, chiffre net, précision en dessous. */
+.dash .kpi small {
+  color: var(--text-soft);
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
-.dash .dash-col > .nuage:nth-child(2n) {
-  --nx: 62%;
-  --ny: 48%;
+.dash .kpi small .ico {
+  width: 16px;
+  height: 16px;
+  color: var(--text-soft);
 }
 
-/* Carte du chiffre d'affaires : fond bleu profond, lueurs blanches. */
-.tablette .dash .kpi-hero.nuage {
-  border-color: transparent;
-  background-image:
-    radial-gradient(60% 90% at 24% 62%, rgba(255, 255, 255, 0.26) 0%, transparent 70%),
-    radial-gradient(46% 70% at 92% 8%, rgba(255, 255, 255, 0.16) 0%, transparent 72%),
-    linear-gradient(135deg, #1a43bd 0%, #1d4ed8 55%, #2f63e8 100%);
-  box-shadow: 0 10px 26px rgba(29, 78, 216, 0.3);
-}
-
-/* Contenus posés sur les nuages : cartes légèrement voilées pour rester lisibles. */
-.dash .nuage .dm-item {
-  border: 1px solid rgba(var(--nuage), 0.16);
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.dash .nuage .live-row {
-  border-bottom-color: rgba(var(--nuage), 0.16);
-}
-
-/* Cadre « menu complet » (widget Menu du jour, bouton « + ») : les puces de plats et les
-   champs de date sont opaques par défaut et masquent le nuage en dessous. On les voile
-   comme .dm-item, pour que l'effet reste visible même quand le sélecteur est plein. */
-.dash .nuage .dm-picker .chip {
-  border-color: rgba(var(--nuage), 0.2);
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.dash .nuage .dm-picker .chip[aria-pressed='true'] {
-  border-color: rgba(var(--nuage), 0.45);
-  background: rgba(var(--nuage), 0.18);
+.dash .kpi strong {
   color: var(--text);
+  letter-spacing: -0.01em;
 }
 
-.dash .nuage .dm-dates input {
-  border-color: rgba(var(--nuage), 0.22);
-  background: rgba(255, 255, 255, 0.72);
+.dash .kpi span {
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
-/* Thème sombre : fond de la carte conservé, lueurs plus présentes. */
-:root[data-theme='dark'] .dash .nuage {
-  --nuage-base: var(--surface);
-  border-color: rgba(var(--nuage), 0.28);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+/* Chiffre d'affaires : la seule carte pleine, en bleu uni (pas de dégradé, pas de photo). */
+.dash .kpis > .kpi-hero.nuage {
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  box-shadow: none;
 }
 
-:root[data-theme='dark'] .dash .nuage-jaune {
-  --nuage: 245, 180, 0;
+.dash .kpi-hero small,
+.dash .kpi-hero small .ico,
+.dash .kpi-hero strong {
+  color: #ffffff;
 }
 
-:root[data-theme='dark'] .dash .nuage .dm-item {
-  border-color: rgba(var(--nuage), 0.24);
-  background: rgba(255, 255, 255, 0.06);
+.dash .kpi-hero span {
+  color: rgba(255, 255, 255, 0.85);
 }
 
-:root[data-theme='dark'] .dash .nuage .dm-picker .chip {
-  border-color: rgba(var(--nuage), 0.3);
-  background: rgba(255, 255, 255, 0.06);
+.dash .kpi-hero img {
+  display: none;
 }
 
-:root[data-theme='dark'] .dash .nuage .dm-picker .chip[aria-pressed='true'] {
-  border-color: rgba(var(--nuage), 0.5);
-  background: rgba(var(--nuage), 0.28);
+:root[data-theme='dark'] .dash .kpi-hero small,
+:root[data-theme='dark'] .dash .kpi-hero small .ico,
+:root[data-theme='dark'] .dash .kpi-hero strong {
+  color: #0b1627;
 }
 
-:root[data-theme='dark'] .dash .nuage .dm-dates input {
-  border-color: rgba(var(--nuage), 0.3);
-  background: rgba(255, 255, 255, 0.06);
+:root[data-theme='dark'] .dash .kpi-hero span {
+  color: rgba(11, 22, 39, 0.75);
+}
+
+/* Titres de carte : titre à gauche, accès à droite. */
+.dash .card h3 {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: start;
+}
+
+/* Boutons d'accès (« Rapports », « Toutes ») : discrets, comme des boutons secondaires. */
+.dash .card h3 .btn-dashboard {
+  height: 34px;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.dash .card h3 .btn-dashboard:hover:not(:disabled) {
+  background: var(--hover);
+  box-shadow: none;
+}
+
+.dash .card h3 .btn-dashboard:active:not(:disabled) {
+  background: var(--primary-soft);
+  transform: none;
+}
+
+/* Histogramme : barres unies. */
+.tablette .dash .hbar {
+  background: var(--primary);
+}
+
+.tablette .dash .hbar-top {
+  background: var(--primary-strong);
+}
+
+.dash .live-row {
+  border-bottom-color: var(--line);
 }
 
 /* === Nuages ailleurs qu'au tableau de bord : le cadre de la page Menu =========

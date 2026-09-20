@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { AdminMenu, DailyMenuState, Product } from '@afrikaisse/core';
+import { formatMoney, type AdminMenu, type DailyMenuState, type Product } from '@afrikaisse/core';
 import { api } from '../api.ts';
 import { readCache, saveCache } from '../offline.ts';
+import { mediaSrc } from '../platform.ts';
 import { ErrorMessage, Icon } from '../ui.tsx';
 import '../styles/daily-menu.css';
 
 /**
- * Widget « Menu du jour » du tableau de bord (en hauteur).
+ * Widget « Menu du jour » du tableau de bord (en hauteur) : période, résumé, plats groupés par catégorie avec photo et prix.
  * - Le gérant fixe le menu d'un jour ou d'une période, le réajuste à tout moment (mêmes dates = même menu) ou le retire.
  * - Il marque un plat épuisé / disponible (geste existant, `POST /products/:id/availability`).
  * - Le menu du jour EST celui du menu client (QR) : le client ne voit et ne commande que ces plats ; le serveur refuse le reste.
@@ -21,7 +22,18 @@ interface Draft {
   ids: Set<string>;
 }
 
-export function DailyMenuWidget({ locationId, canManage, canAvailability }: { locationId: string; canManage: boolean; canAvailability: boolean }) {
+export function DailyMenuWidget({
+  locationId,
+  canManage,
+  canAvailability,
+  photo,
+}: {
+  locationId: string;
+  canManage: boolean;
+  canAvailability: boolean;
+  /** Photo de repli (photo d'exemple du catalogue) quand le plat n'a pas la sienne. */
+  photo?: (productId: string | null, name: string) => string | null;
+}) {
   const cacheKey = `daily-menu.${locationId}`;
   const [menu, setMenu] = useState<AdminMenu | null>(null);
   const [state, setState] = useState<DailyMenuState | null>(null);
@@ -61,11 +73,24 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
       .sort((a, b) => (rank.get(a.categoryId) ?? 0) - (rank.get(b.categoryId) ?? 0) || a.sort - b.sort);
   }, [menu, current]);
   const others = state?.menus.filter((m) => m.id !== current?.id) ?? [];
-  // Nuage de la carte : bleu = menu en place, jaune = aucun menu (toute la carte proposée), rouge = au moins un plat épuisé.
-  const tone = !current ? 'jaune' : dishes.some((p) => !p.isAvailable) ? 'rouge' : 'bleu';
-  const wrap = (color: 'bleu' | 'jaune' | 'rouge', body: ReactNode) => (
+  // Plats du menu du jour, groupés par catégorie dans l'ordre de la carte.
+  const groups = useMemo(() => {
+    if (!menu) return [];
+    return [...menu.categories]
+      .sort((a, b) => a.sort - b.sort)
+      .map((c) => ({ id: c.id, name: c.name, items: dishes.filter((p) => p.categoryId === c.id) }))
+      .filter((g) => g.items.length > 0);
+  }, [menu, dishes]);
+  const soldOut = dishes.filter((p) => !p.isAvailable).length;
+  const currency = menu?.location.currency;
+  // Liseré de la carte : bleu = menu en place, jaune = aucun menu (toute la carte proposée), rouge = au moins un plat épuisé.
+  const tone = !current ? 'jaune' : soldOut > 0 ? 'rouge' : 'bleu';
+  const wrap = (color: 'bleu' | 'jaune' | 'rouge', body: ReactNode, period?: string | null) => (
     <section className={`card dm-card nuage nuage-${color}`}>
-      <h3>Menu du jour</h3>
+      <h3>
+        <span className="card-title">Menu du jour</span>
+        {period && <span className="etq etq-info dm-period">{period}</span>}
+      </h3>
       {body}
     </section>
   );
@@ -130,8 +155,10 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
             <input type="date" value={draft.end} min={draft.start} onChange={(e) => setDraft({ ...draft, end: e.target.value })} />
           </label>
         </div>
-        <p className="dm-hint">Touchez les plats proposés aux clients ({draft.ids.size} choisi{draft.ids.size > 1 ? 's' : ''}).</p>
-        <div className="dm-actions">
+        <p className="dm-hint">
+          Touchez les plats proposés aux clients : {draft.ids.size} choisi{draft.ids.size > 1 ? 's' : ''}.
+        </p>
+        <div className="dm-tools">
           <button type="button" className="btn" onClick={() => setDraft({ ...draft, ids: new Set(menu.products.map((p) => p.id)) })}>
             Tout cocher
           </button>
@@ -157,7 +184,7 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
             );
           })}
         </div>
-        <div className="dm-actions">
+        <div className="dm-foot">
           <button type="button" className="btn btn-primary" disabled={saving || draft.ids.size === 0} onClick={() => void save()}>
             <Icon name="save" />
             Enregistrer
@@ -173,37 +200,83 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
   if (!state || !menu) return wrap('bleu', error ? <ErrorMessage error={error} /> : <p className="card-empty">Chargement…</p>);
 
   const single = current && current.startDate === current.endDate;
+  const period = current ? (single ? (current.startDate === state.today ? 'Aujourd’hui' : day(current.startDate)) : `Du ${day(current.startDate)} au ${day(current.endDate)}`) : null;
   return wrap(
     tone,
     <div className="dm">
       <ErrorMessage error={error} />
       {current ? (
-        <>
-          <div className="dm-head">
-            <span className="etq etq-info">{single ? (current.startDate === state.today ? 'Aujourd’hui' : day(current.startDate)) : `Du ${day(current.startDate)} au ${day(current.endDate)}`}</span>
-            <span className="etq etq-info">
-              {dishes.length} plat{dishes.length > 1 ? 's' : ''}
-            </span>
-          </div>
-          <ul className="dm-list">
-            {dishes.map((p) => (
-              <li key={p.id} className={p.isAvailable ? 'dm-item' : 'dm-item off'}>
-                <strong>{p.name}</strong>
-                {!p.isAvailable && <span className="etq etq-danger">Épuisé</span>}
-                {canAvailability && (
-                  <button type="button" className="btn" disabled={busy === p.id} onClick={() => void toggle(p)}>
-                    {p.isAvailable ? 'Marquer épuisé' : 'Remettre disponible'}
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
+        <p className="dm-summary">
+          <b>
+            {dishes.length} plat{dishes.length > 1 ? 's' : ''}
+          </b>{' '}
+          proposé{dishes.length > 1 ? 's' : ''} aux clients
+          {soldOut > 0 && <span className="dm-out"> · {soldOut} épuisé{soldOut > 1 ? 's' : ''}</span>}
+        </p>
       ) : (
-        <p className="card-empty">Aucun menu du jour : toute la carte est proposée aux clients.</p>
+        <div className="dm-empty">
+          <strong>Aucun menu du jour</strong>
+          <p>Toute la carte est proposée aux clients.</p>
+        </div>
       )}
+      <div className="dm-scroll">
+        {groups.map((g) => (
+          <section key={g.id} className="dm-group">
+            <h4>
+              <span>{g.name}</span>
+              <span>{g.items.length}</span>
+            </h4>
+            <ul className="dm-list">
+              {g.items.map((p) => {
+                const src = p.photoUrl ? mediaSrc(p.photoUrl) : (photo?.(p.id, p.name) ?? null);
+                return (
+                  <li key={p.id} className={p.isAvailable ? 'dm-dish' : 'dm-dish off'}>
+                    {src ? (
+                      <img className="dm-thumb" src={src} alt="" loading="lazy" />
+                    ) : (
+                      <span className="dm-thumb dm-thumb-blank" aria-hidden="true">
+                        <Icon name="kitchen" />
+                      </span>
+                    )}
+                    <span className="dm-dish-text">
+                      <strong>{p.name}</strong>
+                      {currency && <small>{formatMoney(p.promoPrice ?? p.price, currency)}</small>}
+                    </span>
+                    {!p.isAvailable && <span className="etq etq-danger">Épuisé</span>}
+                    {canAvailability && (
+                      <button type="button" className="btn" disabled={busy === p.id} onClick={() => void toggle(p)}>
+                        {p.isAvailable ? 'Marquer épuisé' : 'Remettre'}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+        {others.length > 0 && (
+          <div className="dm-next" aria-label="Menus à venir">
+            <h4>À venir</h4>
+            <ul>
+              {others.map((m) => (
+                <li key={m.id}>
+                  <span className="etq etq-warn">{m.startDate === m.endDate ? day(m.startDate) : `${day(m.startDate)} → ${day(m.endDate)}`}</span>
+                  <small>
+                    {m.productIds.length} plat{m.productIds.length > 1 ? 's' : ''}
+                  </small>
+                  {canManage && (
+                    <button type="button" className="btn" disabled={busy === m.id} onClick={() => void remove(m.id)}>
+                      Retirer
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
       {canManage && (
-        <div className="dm-actions">
+        <div className="dm-foot">
           <button type="button" className="btn btn-primary" onClick={edit}>
             <Icon name={current ? 'edit' : 'add'} />
             {current ? 'Ajuster le menu' : 'Définir le menu du jour'}
@@ -215,23 +288,7 @@ export function DailyMenuWidget({ locationId, canManage, canAvailability }: { lo
           )}
         </div>
       )}
-      {others.length > 0 && (
-        <ul className="dm-next" aria-label="Menus à venir">
-          {others.map((m) => (
-            <li key={m.id}>
-              <span className="etq etq-warn">{m.startDate === m.endDate ? day(m.startDate) : `${day(m.startDate)} → ${day(m.endDate)}`}</span>
-              <small>
-                {m.productIds.length} plat{m.productIds.length > 1 ? 's' : ''}
-              </small>
-              {canManage && (
-                <button type="button" className="btn" disabled={busy === m.id} onClick={() => void remove(m.id)}>
-                  Retirer
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>,
+    period,
   );
 }

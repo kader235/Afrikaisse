@@ -12,7 +12,7 @@ import '../styles/reports.css';
 
 /**
  * Tableau de bord (design v3) : ce qui se passe aujourd'hui dans l'établissement.
- * 1. les chiffres clés en cartes (le chiffre d'affaires en carte dégradée), comparés à hier ;
+ * 1. les chiffres clés en cartes sobres (le chiffre d'affaires en carte bleue unie), comparés à hier ;
  * 2. les ventes heure par heure et les commandes en direct (flux d'activité) ;
  * 3. le menu du jour (en hauteur : menu du client QR, plats épuisés) et le service en cours (compteurs qui ouvrent l'écran concerné).
  * L'analyse d'une période est dans Rapports. Même écran à la tablette et au PC ; il défile s'il le faut.
@@ -114,7 +114,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const inKitchen = count('CONFIRMED', 'PREPARING');
   const pending = count('PENDING');
   const lateCount = kitchenOk ? kitchen.totals.lateCount : 0;
-  // Nuage du widget : bleu = information, jaune = à traiter, rouge = urgent.
+  // Liseré du widget : bleu = information, jaune = à traiter, rouge = urgent.
   const liveTone = feed && feed.requests.length > 0 ? 'rouge' : pending > 0 ? 'jaune' : 'bleu';
   return (
     <section className="dash dash-fit">
@@ -128,22 +128,6 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             ))}
           </select>
         )}
-        {(can('orders.create') || can('pos.use')) && (
-          <button className="btn btn-primary" onClick={() => onNavigate(can('orders.create') && canTables ? 'take' : 'pos')}>
-            <Icon name="add" />
-            Nouvelle commande
-          </button>
-        )}
-        {can('menu.read') && (
-          <button className="btn" onClick={() => onNavigate('menu')}>
-            <Icon name="menu" />
-            Menu
-          </button>
-        )}
-        <button className="btn" onClick={() => onNavigate('account')}>
-          <Icon name="team" />
-          Mon compte
-        </button>
       </ServiceHeader>
 
       <ErrorMessage error={error} />
@@ -296,7 +280,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         </div>
 
         <div className="dash-col dash-col-side">
-          {locationId && can('menu.read') && <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} />}
+          {locationId && can('menu.read') && <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} photo={photo} />}
         </div>
       </div>
     </section>
