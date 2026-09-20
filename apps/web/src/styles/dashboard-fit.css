@@ -273,3 +273,71 @@ button.etq {
   border-color: rgba(var(--nuage), 0.3);
   background: rgba(255, 255, 255, 0.06);
 }
+
+/* === Nuages ailleurs qu'au tableau de bord : le cadre de la page Menu =========
+   Même effet que .dash .nuage, appliqué au grand cadre de la page Menu (le page-card,
+   catégories + tableau des plats). Couleur au chargement (menuTone dans Menu.tsx) :
+   bleu = information, jaune = menu vide (à traiter), rouge = au moins un plat épuisé (urgent). */
+.page.nuage-bleu > .page-card,
+.page.nuage-jaune > .page-card,
+.page.nuage-rouge > .page-card {
+  --nuage: 59, 130, 246;
+  --nuage2: 125, 190, 252;
+  --nuage-base: #f6faff;
+  border-color: rgba(var(--nuage), 0.16);
+  background-color: var(--nuage-base);
+  background-image:
+    radial-gradient(58% 80% at 28% 0%, rgba(var(--nuage), 0.26) 0%, rgba(var(--nuage), 0.1) 48%, transparent 76%),
+    radial-gradient(42% 60% at 96% 6%, rgba(var(--nuage2), 0.24) 0%, transparent 72%),
+    radial-gradient(38% 50% at 6% 100%, rgba(var(--nuage2), 0.16) 0%, transparent 70%);
+  box-shadow: 0 8px 22px rgba(var(--nuage), 0.12);
+}
+
+.page.nuage-jaune > .page-card {
+  --nuage: 245, 176, 20;
+  --nuage2: 253, 216, 110;
+  --nuage-base: #fffcf2;
+}
+
+.page.nuage-rouge > .page-card {
+  --nuage: 239, 68, 68;
+  --nuage2: 252, 165, 165;
+  --nuage-base: #fff7f7;
+}
+
+/* Les listes posées sur le nuage restent lisibles : catégories et lignes du tableau légèrement voilées. */
+.menu-page.nuage-bleu .cat-panel,
+.menu-page.nuage-jaune .cat-panel,
+.menu-page.nuage-rouge .cat-panel {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.menu-page.nuage-bleu .grid-wrap .grid tbody tr,
+.menu-page.nuage-jaune .grid-wrap .grid tbody tr,
+.menu-page.nuage-rouge .grid-wrap .grid tbody tr {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:root[data-theme='dark'] .page.nuage-bleu > .page-card,
+:root[data-theme='dark'] .page.nuage-jaune > .page-card,
+:root[data-theme='dark'] .page.nuage-rouge > .page-card {
+  --nuage-base: var(--surface);
+  border-color: rgba(var(--nuage), 0.28);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme='dark'] .page.nuage-jaune > .page-card {
+  --nuage: 245, 180, 0;
+}
+
+:root[data-theme='dark'] .menu-page.nuage-bleu .cat-panel,
+:root[data-theme='dark'] .menu-page.nuage-jaune .cat-panel,
+:root[data-theme='dark'] .menu-page.nuage-rouge .cat-panel {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-theme='dark'] .menu-page.nuage-bleu .grid-wrap .grid tbody tr,
+:root[data-theme='dark'] .menu-page.nuage-jaune .grid-wrap .grid tbody tr,
+:root[data-theme='dark'] .menu-page.nuage-rouge .grid-wrap .grid tbody tr {
+  background: rgba(255, 255, 255, 0.03);
+}

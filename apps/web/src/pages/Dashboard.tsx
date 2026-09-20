@@ -18,7 +18,7 @@ import '../styles/reports.css';
  * L'analyse d'une période est dans Rapports. Même écran à la tablette et au PC ; il défile s'il le faut.
  */
 
-export type DashboardTarget = 'orders' | 'kitchen' | 'floor' | 'stock' | 'pos' | 'reports' | 'take';
+export type DashboardTarget = 'orders' | 'kitchen' | 'floor' | 'stock' | 'pos' | 'reports' | 'take' | 'menu' | 'account';
 
 const STATUS_CLASS: Partial<Record<Order['status'], string>> = {
   PENDING: 'st st-pending',
@@ -134,6 +134,16 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             Nouvelle commande
           </button>
         )}
+        {can('menu.read') && (
+          <button className="btn" onClick={() => onNavigate('menu')}>
+            <Icon name="menu" />
+            Menu
+          </button>
+        )}
+        <button className="btn" onClick={() => onNavigate('account')}>
+          <Icon name="team" />
+          Mon compte
+        </button>
       </ServiceHeader>
 
       <ErrorMessage error={error} />

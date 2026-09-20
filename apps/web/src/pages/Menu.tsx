@@ -92,9 +92,12 @@ export function MenuPage({ me }: { me: Me }) {
     ['theme', 'Thème du menu'],
   ];
   const location = locations?.find((l) => l.id === locationId) ?? null;
+  // Nuage du cadre : bleu = information, jaune = menu vide (à traiter), rouge = au moins un plat épuisé (urgent).
+  const menuTone = !menu || menu.products.length === 0 ? 'jaune' : menu.products.some((p) => !p.isAvailable) ? 'rouge' : 'bleu';
 
   return (
     <Window
+      className={`menu-page nuage-${menuTone}`}
       title={menu ? `${t('menu.title')} — ${menu.location.name}` : t('menu.title')}
       count={menu ? `${menu.products.length} ${t('menu.productsCount')}` : undefined}
       bodyless
@@ -286,7 +289,7 @@ function ProductsTab({ menu, canManage, canAvailability, save, act, onRefresh }:
             <strong>{t('menu.categories')}</strong>
             {canManage && (
               <span>
-                <button className="btn" onClick={() => setDialog({ kind: 'category' })}>
+                <button className="btn cat-add" onClick={() => setDialog({ kind: 'category' })}>
                   <Icon name="add" />
                   {t('menu.addCategory')}
                 </button>

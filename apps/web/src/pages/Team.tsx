@@ -85,7 +85,7 @@ export function TeamPage({ me }: { me: Me }) {
 
   return (
     <>
-      <Window title={t('team.title')} count={members ? `${members.length} ${t('team.count')}` : undefined} toolbar={toolbar} bodyless>
+      <Window className="nuage-bleu" title={t('team.title')} count={members ? `${members.length} ${t('team.count')}` : undefined} toolbar={toolbar} bodyless>
         {(error || notice) && (
           <div className="window-body" style={{ paddingBottom: 0 }}>
             <ErrorMessage error={error} />

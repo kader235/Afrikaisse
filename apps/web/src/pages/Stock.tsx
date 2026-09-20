@@ -81,10 +81,12 @@ export function StockPage({ me }: { me: Me }) {
 
   const low = (items ?? []).filter((i) => i.state !== 'OK').length;
   const value = (items ?? []).reduce((s, i) => s + i.value, 0);
+  // Nuage du cadre : rouge si des articles sont à réapprovisionner, sinon bleu.
+  const stockTone = low > 0 ? 'rouge' : 'bleu';
 
   return (
     <>
-      <Window title="Stock" count={items ? `${items.length} article(s) · valeur ${formatMoney(value, currency)}${low ? ` · ${low} à réapprovisionner` : ''}` : undefined} bodyless>
+      <Window className={`page-stock nuage-${stockTone}`} title="Stock" count={items ? `${items.length} article(s) · valeur ${formatMoney(value, currency)}${low ? ` · ${low} à réapprovisionner` : ''}` : undefined} bodyless>
         <div className="subtabs" role="tablist">
           <button role="tab" aria-current={tab === 'items' ? 'page' : undefined} onClick={() => setTab('items')}>
             Articles

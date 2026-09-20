@@ -360,9 +360,12 @@ export function FloorPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
     </div>
   );
 
+  // Nuage du cadre : rouge si des tables appellent (addition, appel...), sinon bleu.
+  const floorTone = feed && feed.requests.length > 0 ? 'rouge' : 'bleu';
+
   return (
     <>
-      <Window className="page-floor" title={floor ? `${t('floor.title')} — ${floor.location.name}` : t('floor.title')} count={zone ? `${tables.length} ${t('floor.tables').toLowerCase()} · ${seats} ${t('floor.seats').toLowerCase()}` : undefined} bodyless>
+      <Window className={`page-floor nuage-${floorTone}`} title={floor ? `${t('floor.title')} — ${floor.location.name}` : t('floor.title')} count={zone ? `${tables.length} ${t('floor.tables').toLowerCase()} · ${seats} ${t('floor.seats').toLowerCase()}` : undefined} bodyless>
         <div className="pos-bar floor-bar">
           {floor && floor.zones.length > 0 ? (
             <div className="subtabs" role="tablist">

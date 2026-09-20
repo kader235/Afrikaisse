@@ -228,7 +228,7 @@ export function PosPage({ me }: { me: Me }) {
 
   return (
     <>
-      <Window className="page-pos" title="Caisse" bodyless>
+      <Window className="page-pos nuage-bleu" title="Caisse" bodyless>
         <div className="pos-bar">
           <div className="subtabs" role="tablist">
             {tabs
