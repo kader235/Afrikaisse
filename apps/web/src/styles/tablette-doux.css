@@ -215,6 +215,12 @@
   padding: 0;
 }
 
+/* Le bouton « Nouveau plat/catégorie » a un texte, il garde sa marge intérieure (sinon le texte
+   déborde du bouton — c'est exactement le bug vu sur tablette). */
+.tablette .cat-panel-head .btn.cat-add {
+  padding: 0 12px;
+}
+
 .tablette .pos-tools .btn {
   padding: 0 12px;
 }
@@ -1396,6 +1402,14 @@
 .tablette .cat-panel-head .btn + .btn {
   width: 42px;
   border-radius: 12px;
+}
+
+.tablette .cat-panel-head .btn.cat-add,
+.tablette .cat-panel-head .btn.cat-add + .btn {
+  width: auto;
+  height: 40px;
+  border-radius: var(--radius);
+  gap: 6px;
 }
 
 .tablette .cat-list {

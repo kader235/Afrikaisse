@@ -98,6 +98,10 @@
   padding: 0;
 }
 
+.souris .cat-panel-head .btn.cat-add {
+  padding: 0 12px;
+}
+
 .souris .btn-primary:hover:not(:disabled) {
   border-color: var(--primary-hover);
   background: var(--primary-hover);
