@@ -368,7 +368,7 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   }
 
   return (
-    <div className="app app-navbar">
+    <div className={current === 'dashboard' ? 'app app-navbar app-white' : 'app app-navbar'}>
       {/* Une seule rangée de boutons simples (les mêmes que « Nouvelle commande / Menu / Mon compte »), sans cadre de couleur. */}
       <header className="navbar" aria-label="Navigation principale">
         {topNav.map((s) => (

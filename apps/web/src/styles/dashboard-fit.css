@@ -172,30 +172,34 @@ button.etq {
 }
 
 /* === Cartes du tableau de bord : sobres, à plat ===============================
-   Fond uni, filet fin, ombre discrète, texte aligné à gauche, une seule couleur d'action. L'état d'un
-   widget se lit sur le liseré du haut : bleu clair = information, jaune = à traiter, rouge = urgent
-   (les classes nuage-* portent ce ton ; le flou de couleur d'avant est abandonné ici). */
-.dash {
-  --accent: var(--primary-line);
-}
-
-.dash .nuage-jaune {
-  --accent: #f0b429;
-}
-
-.dash .nuage-rouge {
-  --accent: #e5484d;
-}
-
+   Fond blanc, filet gris fin, ombre discrète, texte aligné à gauche, une seule couleur d'action.
+   Aucune bordure de couleur (les classes nuage-* ne servent plus qu'au code). Le fond de la page est blanc
+   (classe app-white posée par App.tsx sur le tableau de bord) : l'espace entre les cartes est blanc. */
 .dash .kpis > .kpi.nuage,
 .dash .card.nuage {
   border: 1px solid var(--border);
-  border-top: 3px solid var(--accent);
   border-radius: 14px;
   background: var(--surface);
   background-image: none;
   box-shadow: 0 1px 3px rgba(15, 32, 68, 0.06);
   text-align: start;
+}
+
+/* Fond blanc de toute la page du tableau de bord, barre du haut comprise. */
+.tablette .app.app-navbar.app-white {
+  background: var(--surface);
+}
+
+.app-white .workspace {
+  background: transparent;
+}
+
+.app-white .svc-open {
+  border-color: var(--surface);
+}
+
+.app-white .navbar-badge {
+  box-shadow: 0 0 0 2px var(--surface);
 }
 
 /* Chiffres clés : libellé discret, chiffre net, précision en dessous. */

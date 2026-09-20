@@ -83,13 +83,13 @@ export function DailyMenuWidget({
   }, [menu, dishes]);
   const soldOut = dishes.filter((p) => !p.isAvailable).length;
   const currency = menu?.location.currency;
-  // Liseré de la carte : bleu = menu en place, jaune = aucun menu (toute la carte proposée), rouge = au moins un plat épuisé.
+  // Ton du menu (bleu = en place, jaune = aucun menu, rouge = un plat épuisé) : gardé pour le code, sans effet visuel sur la carte.
   const tone = !current ? 'jaune' : soldOut > 0 ? 'rouge' : 'bleu';
-  const wrap = (color: 'bleu' | 'jaune' | 'rouge', body: ReactNode, period?: string | null) => (
+  const wrap = (color: 'bleu' | 'jaune' | 'rouge', body: ReactNode, actions?: ReactNode) => (
     <section className={`card dm-card nuage nuage-${color}`}>
       <h3>
         <span className="card-title">Menu du jour</span>
-        {period && <span className="etq etq-info dm-period">{period}</span>}
+        {actions}
       </h3>
       {body}
     </section>
@@ -199,8 +199,19 @@ export function DailyMenuWidget({
 
   if (!state || !menu) return wrap('bleu', error ? <ErrorMessage error={error} /> : <p className="card-empty">Chargement…</p>);
 
-  const single = current && current.startDate === current.endDate;
-  const period = current ? (single ? (current.startDate === state.today ? 'Aujourd’hui' : day(current.startDate)) : `Du ${day(current.startDate)} au ${day(current.endDate)}`) : null;
+  // Deux petites icônes à droite du titre : ajuster (ou définir) le menu, le retirer.
+  const icons = canManage ? (
+    <span className="dm-icons">
+      <button type="button" className="dm-icon" title={current ? 'Ajuster le menu' : 'Définir le menu du jour'} aria-label={current ? 'Ajuster le menu' : 'Définir le menu du jour'} onClick={edit}>
+        <Icon name={current ? 'edit' : 'add'} />
+      </button>
+      {current && (
+        <button type="button" className="dm-icon" title="Retirer le menu" aria-label="Retirer le menu du jour" disabled={busy === current.id} onClick={() => void remove(current.id)}>
+          <Icon name="trash" />
+        </button>
+      )}
+    </span>
+  ) : null;
   return wrap(
     tone,
     <div className="dm">
@@ -265,8 +276,8 @@ export function DailyMenuWidget({
                     {m.productIds.length} plat{m.productIds.length > 1 ? 's' : ''}
                   </small>
                   {canManage && (
-                    <button type="button" className="btn" disabled={busy === m.id} onClick={() => void remove(m.id)}>
-                      Retirer
+                    <button type="button" className="dm-icon" title="Retirer" aria-label="Retirer ce menu" disabled={busy === m.id} onClick={() => void remove(m.id)}>
+                      <Icon name="trash" />
                     </button>
                   )}
                 </li>
@@ -275,20 +286,7 @@ export function DailyMenuWidget({
           </div>
         )}
       </div>
-      {canManage && (
-        <div className="dm-foot">
-          <button type="button" className="btn btn-primary" onClick={edit}>
-            <Icon name={current ? 'edit' : 'add'} />
-            {current ? 'Ajuster le menu' : 'Définir le menu du jour'}
-          </button>
-          {current && (
-            <button type="button" className="btn" disabled={busy === current.id} onClick={() => void remove(current.id)}>
-              Retirer
-            </button>
-          )}
-        </div>
-      )}
     </div>,
-    period,
+    icons,
   );
 }

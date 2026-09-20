@@ -180,9 +180,44 @@
 /* === Widget « Menu du jour » ===============================================
    Une carte de service : période en haut à droite, résumé, plats groupés par catégorie (photo, nom, prix,
    état), actions en pied. WebView Chrome 83 : pas de gap sur flexbox, des marges. */
-.dm-period {
+.dm-icons {
+  display: flex;
   flex: none;
   margin-inline-start: 8px;
+}
+
+/* Petites icônes seules (ajuster, retirer) : sans texte. */
+.dm-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-inline-start: 6px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-soft);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dm-icon .ico {
+  width: 16px;
+  height: 16px;
+}
+
+.dm-icon:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.dm-icon:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .dm {
@@ -359,15 +394,6 @@
   flex: 1 1 auto;
   margin-inline-start: 10px;
   color: var(--text-soft);
-  font-size: 13px;
-}
-
-.dm-next li .btn {
-  flex: none;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
-  box-shadow: none;
   font-size: 13px;
 }
 
