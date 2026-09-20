@@ -15,38 +15,9 @@
   font-size: 15px;
 }
 
-/* === Bandeau ============================================================ */
-.souris .topnav-item {
-  height: 42px;
-  padding: 0 14px;
-  font-size: 15px;
-}
-
-.souris .topnav-item .ico {
-  width: 20px;
-  height: 20px;
-  margin-inline-end: 8px;
-}
-
-.souris .topnav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-.souris .topnav-item[aria-current='page'] {
-  background: rgba(255, 255, 255, 0.14);
-}
-
 .souris .topbar-user:hover,
 .souris .topbar-bell:hover {
   background: rgba(255, 255, 255, 0.1);
-}
-
-/* Petit écran de PC : les onglets au-delà du cinquième passent sous « Plus », puis le nom s'efface. */
-@media (max-width: 1439px) {
-  .souris .topnav-extra {
-    display: none;
-  }
 }
 
 @media (max-width: 1199px) {

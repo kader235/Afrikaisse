@@ -1,7 +1,7 @@
 /*
  * Design « v3 » du personnel (validé par Kader le 16/09/2026, maquette maquette-v3.cjs) :
- * page bleutée #EEF2F8, cartes blanches arrondies (16 à 22 px) à ombre douce, rail bleu nuit À GAUCHE
- * (tablette : 92 px, icônes et libellés ; PC : 240 px, rubriques groupées et carte du restaurant en bas),
+ * page bleutée #EEF2F8, cartes blanches arrondies (16 à 22 px) à ombre douce, navigation en rangée de boutons EN HAUT
+ * (plus de rail vertical ni de cadre de couleur ; voir « Coque » plus bas),
  * bleu #1D4ED8 pour les prix, liens et catégorie ouverte, OR #F5B400 réservé à l'action principale et à la
  * rubrique active, police Outfit partout, boutons en minuscules, pas d'émoji.
  * La nourriture est la star : photo sur chaque plat, chaque catégorie, chaque ligne de commande, et un bandeau
@@ -57,17 +57,20 @@
   font-family: var(--font);
 }
 
-/* === Coque : barre de navigation horizontale en haut (design v3.1) ======
- * Remplace le rail vertical : tout — logo, rubriques, alertes, « Plus », compte —
- * tient sur une seule ligne en haut de l'écran, tablette comme PC. Le panneau
- * « Plus » reste le seul endroit qui regroupe encore les rubriques par catégorie.
+/* === Coque : une rangée de boutons en haut (design v3.2) ================
+ * Pas de cadre ni de fond de couleur : la barre est une simple rangée de boutons .btn, les mêmes que
+ * « Nouvelle commande / Menu / Mon compte » (le bouton de la page ouverte est plein, en bleu).
+ * Tablette comme PC ; si l'écran est trop étroit, la rangée passe à la ligne au lieu de couper un bouton.
+ * Le panneau « Plus » reste le seul endroit qui regroupe encore les rubriques par catégorie.
+ * WebView Chrome 83 : pas de gap sur flexbox, donc des marges.
  */
 .tablette .app.app-navbar,
 .souris .app.app-navbar {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .tablette .topbar {
@@ -76,128 +79,62 @@
 
 .navbar {
   display: flex;
-  flex: none;
+  flex-wrap: wrap;
   align-items: center;
   min-width: 0;
-  padding: calc(8px + env(safe-area-inset-top, 0px)) 10px 8px;
-  overflow: hidden;
-  background: linear-gradient(90deg, var(--bleu) 0%, var(--bleu-nuit) 100%);
-  color: rgba(255, 255, 255, 0.8);
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 22px 2px;
+  background: transparent;
 }
 
-.navbar-brand {
-  display: flex;
-  flex: none;
-  align-items: center;
-  margin-inline-end: 12px;
-}
-
-.navbar-brand svg {
-  width: 34px;
-  height: 34px;
-  margin-inline-end: 8px;
-}
-
-.navbar-product {
-  display: none;
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.navbar-product span {
-  color: #f5d27a;
-}
-
-.navbar-items {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  min-width: 0;
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-.navbar-items::-webkit-scrollbar {
-  display: none;
-}
-
-.navbar-item {
+.app-navbar .navbar .btn {
   position: relative;
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  min-height: 46px;
-  margin-inline-end: 4px;
-  padding: 6px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: none;
-  color: rgba(255, 255, 255, 0.72);
-  font: inherit;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  height: 44px;
+  margin: 0 8px 8px 0;
+  padding: 0 16px;
+  font-size: 15px;
 }
 
-.navbar-item .ico {
-  width: 22px;
-  height: 22px;
-  flex: none;
+.tablette[dir='rtl'] .app-navbar .navbar .btn {
+  margin: 0 0 8px 8px;
 }
 
-.navbar-item:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+.app-navbar .navbar .btn + .btn {
+  margin-inline-start: 0;
 }
 
-.navbar-item[aria-current='page'] {
-  background: #ffffff;
-  box-shadow: 0 6px 16px rgba(9, 24, 84, 0.28);
-  color: var(--bleu);
+/* « Mon compte » à l'extrémité de la rangée quand il y a la place. */
+.app-navbar .navbar .btn:last-of-type {
+  margin-inline-start: auto;
 }
 
 .navbar-badge {
   position: absolute;
-  top: 2px;
-  right: 4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
+  top: -7px;
+  right: -5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
   background: #ef4444;
+  box-shadow: 0 0 0 2px var(--bg);
   color: #ffffff;
   font-size: 11px;
   font-weight: 800;
-  line-height: 18px;
+  line-height: 20px;
   text-align: center;
 }
 
-.navbar-side {
-  display: flex;
-  flex: none;
-  align-items: center;
-  margin-inline-start: 8px;
-  padding-inline-start: 10px;
-  border-inline-start: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.navbar-side > * + * {
-  margin-inline-start: 4px;
+.tablette[dir='rtl'] .navbar-badge {
+  right: auto;
+  left: -5px;
 }
 
 .navbar-offline {
   display: flex;
   align-items: center;
-  margin-inline-end: 4px;
-  color: #ffffff;
-  font-size: 11px;
+  margin: 0 0 8px;
+  color: var(--text-soft);
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -206,85 +143,24 @@
   margin-inline-end: 5px;
 }
 
-.navbar-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  max-width: 190px;
-  min-height: 46px;
-  padding: 4px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
-.navbar-card strong,
-.navbar-card span {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.navbar-card strong {
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.navbar-card span {
-  margin-top: 1px;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 11px;
-}
-
-.navbar-card:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-/* Tablette : icônes seules pour que toute la barre tienne sur une ligne. */
-.tablette .navbar-item {
-  flex-direction: column;
-  min-width: 58px;
-  padding: 5px 8px;
-  font-size: 10.5px;
-}
-
-.tablette .navbar-item .ico {
-  margin-bottom: 3px;
-}
-
-.tablette .navbar-card span {
-  display: none;
-}
-
+/* La page commence juste sous la rangée de boutons (la barre d'état d'Android est déjà prise par la rangée). */
 .tablette .app.app-navbar .workspace {
-  padding-top: 18px;
-}
-
-/* PC : icône + libellé côte à côte, nom du produit visible. */
-.souris .navbar-product {
-  display: block;
-}
-
-.souris .navbar-item {
-  gap: 8px;
-  font-size: 14px;
+  padding: 6px 22px 18px;
 }
 
 .souris .app.app-navbar .workspace {
-  padding-top: 22px;
+  padding: 8px 28px 22px;
 }
 
-/* Écran de PC bas : la barre reste compacte. */
+.tablette .app.app-navbar .workspace.workspace-bleed,
+.souris .app.app-navbar .workspace.workspace-bleed {
+  padding: 0;
+}
+
+/* Petit écran de PC : boutons un peu plus bas. */
 @media (max-height: 760px) {
-  .souris .navbar-item {
-    min-height: 38px;
+  .souris .app-navbar .navbar .btn {
+    height: 38px;
   }
 }
 

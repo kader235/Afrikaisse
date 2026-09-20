@@ -1,4 +1,3 @@
-import { LogoAfrikaisse } from './logo.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { GRACE_DAYS, subscriptionState, type Me, type Role, type SessionResponse, type SetupStatus } from '@afrikaisse/core';
 import { api, isUnreachable, refreshSessionAtStartup, setSession } from './api.ts';
@@ -280,7 +279,6 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   const [section, setSection] = useState<Section>(() => sectionFromHash() ?? topNav[0]?.id ?? 'account');
   const current: Section = section === 'account' || visible.some((s) => s.id === section) ? section : (visible[0]?.id ?? 'account');
   const roleLabel = me.role ? ROLE_LABELS[lang][me.role] : '';
-  const place = me.locations.length === 1 ? me.locations[0]!.name : (me.tenant?.name ?? 'AfriKaisse');
 
   async function switchTo(tenantId: string) {
     setError(null);
@@ -371,56 +369,44 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
 
   return (
     <div className="app app-navbar">
+      {/* Une seule rangée de boutons simples (les mêmes que « Nouvelle commande / Menu / Mon compte »), sans cadre de couleur. */}
       <header className="navbar" aria-label="Navigation principale">
-        <div className="navbar-brand">
-          <LogoAfrikaisse />
-          <span className="navbar-product">
-            Afri<span>Kaisse</span>
+        {topNav.map((s) => (
+          <button key={s.id} className={current === s.id ? 'btn btn-primary' : 'btn'} aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
+            <Icon name={s.icon} />
+            {s.short ?? s.label}
+            {!!s.badge && <span className="navbar-badge">{s.badge > 99 ? '99+' : s.badge}</span>}
+          </button>
+        ))}
+        {notifyEnabled && (
+          <button
+            className="btn"
+            aria-haspopup="dialog"
+            aria-label={notifications.unread > 0 ? `Notifications : ${notifications.unread} non lues` : 'Notifications'}
+            onClick={() => setPanel('notifications')}
+          >
+            <Icon name="bell" />
+            Alertes
+            {notifications.unread > 0 && <span className="navbar-badge">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
+          </button>
+        )}
+        <button className={topNav.some((s) => s.id === current) ? 'btn' : 'btn btn-primary'} aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
+          <Icon name="more" />
+          Plus
+        </button>
+        <button className={current === 'account' ? 'btn btn-primary' : 'btn'} aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
+          <Icon name="team" />
+          Mon compte
+        </button>
+        {!online && (
+          <span className="navbar-offline" role="status">
+            <span className="dot dot-off" aria-hidden="true" />
+            Hors ligne
           </span>
-        </div>
-        <div className="navbar-items">
-          {topNav.map((s) => (
-            <button key={s.id} className="navbar-item" aria-current={current === s.id ? 'page' : undefined} onClick={() => open(s.id)}>
-              <Icon name={s.icon} />
-              <span className="navbar-label">{s.short ?? s.label}</span>
-              {!!s.badge && <span className="navbar-badge">{s.badge > 99 ? '99+' : s.badge}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="navbar-side">
-          {!online && (
-            <span className="navbar-offline" role="status">
-              <span className="dot dot-off" aria-hidden="true" />
-              Hors ligne
-            </span>
-          )}
-          {notifyEnabled && (
-            <button
-              className="navbar-item navbar-bell"
-              aria-haspopup="dialog"
-              aria-label={notifications.unread > 0 ? `Notifications : ${notifications.unread} non lues` : 'Notifications'}
-              onClick={() => setPanel('notifications')}
-            >
-              <Icon name="bell" />
-              <span className="navbar-label">Alertes</span>
-              {notifications.unread > 0 && <span className="navbar-badge">{notifications.unread > 99 ? '99+' : notifications.unread}</span>}
-            </button>
-          )}
-          <button className="navbar-item navbar-more" aria-haspopup="dialog" aria-current={topNav.some((s) => s.id === current) ? undefined : 'page'} onClick={() => setPanel('nav')}>
-            <Icon name="more" />
-            <span className="navbar-label">Plus</span>
-          </button>
-          <button className="navbar-card" aria-haspopup="dialog" aria-label="Mon compte et réglages" onClick={() => setPanel('account')}>
-            <strong>{place}</strong>
-            <span>
-              {me.user.displayName}
-              {roleLabel ? ` · ${roleLabel}` : ''}
-            </span>
-          </button>
-        </div>
+        )}
       </header>
 
-      <main className={current === 'take' ? 'workspace workspace-bleed' : 'workspace'}>
+      <main className={current === 'take' ? 'workspace workspace-bleed' : current === 'dashboard' ? 'workspace workspace-fit' : 'workspace'}>
         {can('tenant.read') && !touch && <SubscriptionBanner me={me} onOpen={() => open('organization')} />}
         {!!error && <ErrorMessage error={error} />}
         {current === 'dashboard' && <DashboardPage me={me} feed={can('orders.read') ? feed : undefined} onNavigate={open} />}

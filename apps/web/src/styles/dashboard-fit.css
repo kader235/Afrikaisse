@@ -1,7 +1,9 @@
 /* === Tableau de bord : tient dans l'écran (aucun défilement de page) ========
    Les listes longues défilent DANS leur carte ; sur petit écran (< 1000 px de large ou < 560 px de haut)
-   la page reprend son défilement normal. */
-.workspace:has(> .dash-fit) {
+   la page reprend son défilement normal.
+   WebView Chrome 83 (tablette) : ni :has() ni gap sur flexbox. L'espace de travail reçoit donc la classe
+   .workspace-fit (App.tsx) et les espacements sont des marges ; les grilles gardent grid-gap. */
+.workspace.workspace-fit {
   overflow: hidden;
 }
 
@@ -9,13 +11,20 @@
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
-  gap: 12px;
   min-height: 0;
 }
 
 .dash-fit > * {
   flex: none;
   min-width: 0;
+}
+
+.dash-fit > * + * {
+  margin-top: 12px;
+}
+
+.dash-fit .svc-head {
+  margin-bottom: 0;
 }
 
 .dash-fit .kpis {
@@ -36,22 +45,23 @@
   font-size: 28px;
 }
 
+/* Deux colonnes qui se partagent toute la hauteur restante : une seule rangée de grille, sans dépasser. */
 .dash-fit .dash-cols {
   flex: 1 1 0;
   align-items: stretch;
   grid-gap: 12px;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
 }
 
 .dash-fit .dash-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   min-height: 0;
 }
 
 .dash-fit .dash-col > .card + .card {
-  margin-top: 0;
+  margin-top: 12px;
 }
 
 .dash-fit .dash-col > .card {
@@ -59,9 +69,11 @@
   flex-direction: column;
   min-height: 0;
   padding: 14px 16px;
+  overflow: hidden;
 }
 
 .dash-fit .card > h3 {
+  flex: none;
   margin-bottom: 8px;
 }
 
@@ -108,7 +120,7 @@
 }
 
 @media (max-width: 1000px), (max-height: 560px) {
-  .workspace:has(> .dash-fit) {
+  .workspace.workspace-fit {
     overflow: auto;
   }
 
@@ -118,10 +130,12 @@
 
   .dash-fit .dash-cols {
     flex: none;
+    grid-template-rows: none;
   }
 
   .dash-fit .dash-col > .card {
     flex: none;
+    overflow: visible;
   }
 
   .dash-fit .live-list,
@@ -139,8 +153,11 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
-  margin: 0 0 8px;
+  margin: 0 0 5px;
+}
+
+.live-tags > * {
+  margin: 3px;
 }
 
 button.etq {

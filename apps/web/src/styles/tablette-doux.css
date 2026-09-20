@@ -99,34 +99,9 @@
   font-size: 14px;
 }
 
-/* === Bandeau bleu nuit : onglet actif en bouton clair arrondi, plus de soulignement ===== */
-.tablette .topnav {
-  align-items: center;
-  padding: 0 4px;
-}
-
-.tablette .topnav-item {
-  height: 48px;
-  margin: 0 2px;
-  padding: 0 16px;
-  border-bottom: 0;
-  border-radius: 14px;
-}
-
-.tablette .topnav-item[aria-current='page'] {
-  background: rgba(255, 255, 255, 0.13);
-}
-
 .tablette .topbar-user,
 .tablette .topbar-bell {
   border-radius: 14px;
-}
-
-@media (max-width: 1000px) {
-  .tablette .topnav-item {
-    height: 54px;
-    padding: 0 12px;
-  }
 }
 
 /* === Boutons : blancs à ombre douce, principal en bleu plein, jamais en capitales ======= */

@@ -3,7 +3,6 @@
 .etq {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   padding: 3px 10px;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -13,9 +12,11 @@
   white-space: nowrap;
 }
 
+/* Chrome 83 : pas de gap sur flexbox, donc des marges. */
 .etq::before {
   content: '';
   flex: none;
+  margin-inline-end: 6px;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -72,8 +73,11 @@
 .dash .card h3 {
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
   text-align: center;
+}
+
+.dash .card h3 > * {
+  margin: 3px 5px;
 }
 
 .dash .card h3 .btn-dashboard {
@@ -199,27 +203,40 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
   min-height: 400px;
   text-align: center;
+}
+
+.dm > * + * {
+  margin-top: 12px;
 }
 
 .dm-head {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+}
+
+.dm-head > *,
+.dm-actions > *,
+.dm-chips > *,
+.dm-next li > * {
+  margin: 4px;
 }
 
 .dm-list,
 .dm-next {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.dm-list > * + *,
+.dm-next > * + * {
+  margin-top: 8px;
 }
 
 .dm-list {
@@ -232,10 +249,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
   padding: 12px;
   border-radius: 14px;
   background: var(--bg);
+}
+
+.dm-item > * + * {
+  margin-top: 8px;
 }
 
 .dm-item strong {
@@ -253,7 +273,6 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px;
 }
 
 .dm-next small,
@@ -270,22 +289,27 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
 }
 
 .dm-dates {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+}
+
+.dm-dates > * {
+  margin: 6px;
 }
 
 .dm-dates label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
   font-size: 12px;
   font-weight: 700;
+}
+
+.dm-dates label > * + * {
+  margin-top: 4px;
 }
 
 .dm-dates input {
@@ -317,7 +341,6 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
 }
 
 .dm-chips .chip {
