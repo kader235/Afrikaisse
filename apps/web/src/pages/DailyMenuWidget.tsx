@@ -83,8 +83,8 @@ export function DailyMenuWidget({
   }, [menu, dishes]);
   const soldOut = dishes.filter((p) => !p.isAvailable).length;
   const currency = menu?.location.currency;
-  // Ton du menu (bleu = en place, jaune = aucun menu, rouge = un plat épuisé) : gardé pour le code, sans effet visuel sur la carte.
-  const tone = !current ? 'jaune' : soldOut > 0 ? 'rouge' : 'bleu';
+  // Nuage de la carte : rouge, fixe (les trois couleurs du tableau de bord se répartissent entre les widgets).
+  const tone = 'rouge' as const;
   const wrap = (color: 'bleu' | 'jaune' | 'rouge', body: ReactNode, actions?: ReactNode) => (
     <section className={`card dm-card nuage nuage-${color}`}>
       <h3>
@@ -142,7 +142,7 @@ export function DailyMenuWidget({
 
   if (draft && menu) {
     return wrap(
-      'bleu',
+      tone,
       <div className="dm dm-edit">
         <ErrorMessage error={error} />
         <div className="dm-dates">
@@ -197,7 +197,7 @@ export function DailyMenuWidget({
     );
   }
 
-  if (!state || !menu) return wrap('bleu', error ? <ErrorMessage error={error} /> : <p className="card-empty">Chargement…</p>);
+  if (!state || !menu) return wrap(tone, error ? <ErrorMessage error={error} /> : <p className="card-empty">Chargement…</p>);
 
   // Deux petites icônes à droite du titre : ajuster (ou définir) le menu, le retirer.
   const icons = canManage ? (

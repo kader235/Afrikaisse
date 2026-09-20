@@ -196,11 +196,16 @@ button.etq {
   --nuage: 59, 130, 246;
   --nuage2: 125, 190, 252;
   --nuage-base: #f7fbff;
+}
+
+/* .kpis > .kpi.nuage : plus spécifique que « .tablette .kpi + .kpi » (v3.css), qui remettait un fond uni aux chiffres clés. */
+.dash .nuage,
+.dash .kpis > .kpi.nuage {
   border: 1px solid rgba(15, 32, 68, 0.07);
   border-radius: 16px;
   background-color: var(--nuage-base);
   background-image:
-    radial-gradient(54% 80% at var(--nx, 50%) var(--ny, 56%), rgba(var(--nuage), 0.34) 0%, rgba(var(--nuage), 0.15) 50%, transparent 78%),
+    radial-gradient(54% 80% at var(--nx, 50%) var(--ny, 56%), rgba(var(--nuage), 0.4) 0%, rgba(var(--nuage), 0.17) 50%, transparent 78%),
     radial-gradient(44% 62% at 94% 6%, rgba(var(--nuage2), 0.34) 0%, transparent 72%),
     radial-gradient(40% 54% at 4% 100%, rgba(var(--nuage2), 0.24) 0%, transparent 70%);
   box-shadow: 0 6px 18px rgba(15, 32, 68, 0.08);

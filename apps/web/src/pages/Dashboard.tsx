@@ -95,9 +95,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const kitchenOk = !!kitchen && kitchen.totals.measured > 0;
   const inKitchen = count('CONFIRMED', 'PREPARING');
   const pending = count('PENDING');
-  const lateCount = kitchenOk ? kitchen.totals.lateCount : 0;
-  // Teinte du nuage de chaque widget : bleu = information, jaune = à traiter, rouge = urgent.
-  const liveTone = feed && feed.requests.length > 0 ? 'rouge' : pending > 0 ? 'jaune' : 'bleu';
+  // Teinte du nuage de chaque widget (fixe) : bleu, jaune ou rouge, pour que les trois couleurs se voient d'un coup d'œil.
   return (
     <section className="dash dash-fit">
       <ServiceHeader userName={me.user.displayName} restaurantName={location?.name ?? me.tenant?.name ?? 'AfriKaisse'} logo={logo} restaurantOnly>
@@ -122,7 +120,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
           </small>
           <strong>{t ? money(t.revenue) : '—'}</strong>
         </div>
-        <div className={`kpi nuage nuage-${pending > 0 ? 'jaune' : 'bleu'}`}>
+        <div className="kpi nuage nuage-jaune">
           <small>
             <Icon name="ticket" />
             Commandes
@@ -130,7 +128,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
           <strong>{t ? String(t.orders) : '—'}</strong>
         </div>
         {tablesTotal !== null ? (
-          <div className={`kpi nuage nuage-${feed && feed.requests.length > 0 ? 'rouge' : 'bleu'}`}>
+          <div className="kpi nuage nuage-rouge">
             <small>
               <Icon name="table" />
               Tables occupées
@@ -140,7 +138,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             </strong>
           </div>
         ) : (
-          <div className="kpi nuage nuage-bleu">
+          <div className="kpi nuage nuage-rouge">
             <small>
               <Icon name="cash" />
               Panier moyen
@@ -148,7 +146,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <strong>{t ? money(t.averageTicket) : '—'}</strong>
           </div>
         )}
-        <div className={`kpi nuage nuage-${lateCount > 0 ? 'rouge' : 'bleu'}`}>
+        <div className="kpi nuage nuage-bleu">
           <small>
             <Icon name="clock" />
             Temps cuisine
@@ -173,7 +171,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
           </section>
 
           {feed && (
-            <section className={`card dash-live nuage nuage-${liveTone}`}>
+            <section className="card dash-live nuage nuage-jaune">
               <h3>
                 <span className="card-title">
                   Commandes en direct
