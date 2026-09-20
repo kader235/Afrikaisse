@@ -115,14 +115,14 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
       <div className="kpis" aria-label="Aujourd'hui">
         <div className="kpi kpi-hero nuage">
           <small>
-            <Icon name="cash" />
+            <span className="kpi-ico"><Icon name="cash" /></span>
             Chiffre d'affaires du jour
           </small>
           <strong>{t ? money(t.revenue) : '—'}</strong>
         </div>
         <div className="kpi nuage nuage-jaune">
           <small>
-            <Icon name="ticket" />
+            <span className="kpi-ico"><Icon name="ticket" /></span>
             Commandes
           </small>
           <strong>{t ? String(t.orders) : '—'}</strong>
@@ -130,7 +130,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         {tablesTotal !== null ? (
           <div className="kpi nuage nuage-rouge">
             <small>
-              <Icon name="table" />
+              <span className="kpi-ico"><Icon name="table" /></span>
               Tables occupées
             </small>
             <strong>
@@ -140,7 +140,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         ) : (
           <div className="kpi nuage nuage-rouge">
             <small>
-              <Icon name="cash" />
+              <span className="kpi-ico"><Icon name="cash" /></span>
               Panier moyen
             </small>
             <strong>{t ? money(t.averageTicket) : '—'}</strong>
@@ -148,7 +148,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         )}
         <div className="kpi nuage nuage-bleu">
           <small>
-            <Icon name="clock" />
+            <span className="kpi-ico"><Icon name="clock" /></span>
             Temps cuisine
           </small>
           <strong>{kitchenOk ? formatDuration(kitchen.totals.averageMs) : '—'}</strong>
@@ -159,7 +159,12 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         <div className="dash-col">
           <section className="card dash-chart nuage nuage-bleu">
             <h3>
-              Ventes par heure
+              <span className="card-title">
+                <span className="card-ico">
+                  <Icon name="chart" />
+                </span>
+                Ventes par heure
+              </span>
               {can('reports.read') && (
                 <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
                   <Icon name="chart" />
@@ -174,6 +179,9 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <section className="card dash-live nuage nuage-jaune">
               <h3>
                 <span className="card-title">
+                  <span className="card-ico">
+                    <Icon name="ticket" />
+                  </span>
                   Commandes en direct
                   <span className={feed.online ? 'live-pill' : 'live-pill off'}>
                     <i aria-hidden="true" />

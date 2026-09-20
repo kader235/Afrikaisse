@@ -88,7 +88,12 @@ export function DailyMenuWidget({
   const wrap = (color: 'bleu' | 'jaune' | 'rouge', body: ReactNode, actions?: ReactNode) => (
     <section className={`card dm-card nuage nuage-${color}`}>
       <h3>
-        <span className="card-title">Menu du jour</span>
+        <span className="card-title">
+          <span className="card-ico">
+            <Icon name="menu" />
+          </span>
+          Menu du jour
+        </span>
         {actions}
       </h3>
       {body}
