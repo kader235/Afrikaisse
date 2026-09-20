@@ -631,7 +631,8 @@ function ProductDialog({ menu, categoryId, product, onSubmit, onClose }: { menu:
       photoMediaId: form.photoMediaId,
       modifierGroupIds: form.modifierGroupIds,
       variants: form.variants.map((v) => ({ ...(v.id && { id: v.id }), name: v.name, priceDelta: v.priceDelta, isAvailable: v.isAvailable })),
-      ...(product && { categoryId: form.categoryId }),
+      // Toujours envoyé, à la création comme à la modification : un plat ne doit jamais exister sans catégorie.
+      categoryId: form.categoryId,
     });
   }
 
