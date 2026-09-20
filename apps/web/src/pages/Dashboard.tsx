@@ -95,7 +95,9 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
   const kitchenOk = !!kitchen && kitchen.totals.measured > 0;
   const inKitchen = count('CONFIRMED', 'PREPARING');
   const pending = count('PENDING');
-  // Teinte du nuage de chaque widget (fixe) : bleu, jaune ou rouge, pour que les trois couleurs se voient d'un coup d'œil.
+  const lateCount = kitchenOk ? kitchen.totals.lateCount : 0;
+  // Teinte du nuage de chaque widget : bleu = information, jaune = à traiter, rouge = urgent.
+  const liveTone = feed && feed.requests.length > 0 ? 'rouge' : pending > 0 ? 'jaune' : 'bleu';
   return (
     <section className="dash dash-fit">
       <ServiceHeader userName={me.user.displayName} restaurantName={location?.name ?? me.tenant?.name ?? 'AfriKaisse'} logo={logo} restaurantOnly>
@@ -115,22 +117,22 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
       <div className="kpis" aria-label="Aujourd'hui">
         <div className="kpi kpi-hero nuage">
           <small>
-            <span className="kpi-ico"><Icon name="cash" /></span>
+            <Icon name="cash" />
             Chiffre d'affaires du jour
           </small>
           <strong>{t ? money(t.revenue) : '—'}</strong>
         </div>
-        <div className="kpi nuage nuage-jaune">
+        <div className={`kpi nuage nuage-${pending > 0 ? 'jaune' : 'bleu'}`}>
           <small>
-            <span className="kpi-ico"><Icon name="ticket" /></span>
+            <Icon name="ticket" />
             Commandes
           </small>
           <strong>{t ? String(t.orders) : '—'}</strong>
         </div>
         {tablesTotal !== null ? (
-          <div className="kpi nuage nuage-rouge">
+          <div className={`kpi nuage nuage-${feed && feed.requests.length > 0 ? 'rouge' : 'bleu'}`}>
             <small>
-              <span className="kpi-ico"><Icon name="table" /></span>
+              <Icon name="table" />
               Tables occupées
             </small>
             <strong>
@@ -138,17 +140,17 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             </strong>
           </div>
         ) : (
-          <div className="kpi nuage nuage-rouge">
+          <div className="kpi nuage nuage-bleu">
             <small>
-              <span className="kpi-ico"><Icon name="cash" /></span>
+              <Icon name="cash" />
               Panier moyen
             </small>
             <strong>{t ? money(t.averageTicket) : '—'}</strong>
           </div>
         )}
-        <div className="kpi nuage nuage-bleu">
+        <div className={`kpi nuage nuage-${lateCount > 0 ? 'rouge' : 'bleu'}`}>
           <small>
-            <span className="kpi-ico"><Icon name="clock" /></span>
+            <Icon name="clock" />
             Temps cuisine
           </small>
           <strong>{kitchenOk ? formatDuration(kitchen.totals.averageMs) : '—'}</strong>
@@ -159,12 +161,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
         <div className="dash-col">
           <section className="card dash-chart nuage nuage-bleu">
             <h3>
-              <span className="card-title">
-                <span className="card-ico">
-                  <Icon name="chart" />
-                </span>
-                Ventes par heure
-              </span>
+              Ventes par heure
               {can('reports.read') && (
                 <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
                   <Icon name="chart" />
@@ -176,12 +173,9 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
           </section>
 
           {feed && (
-            <section className="card dash-live nuage nuage-jaune">
+            <section className={`card dash-live nuage nuage-${liveTone}`}>
               <h3>
                 <span className="card-title">
-                  <span className="card-ico">
-                    <Icon name="ticket" />
-                  </span>
                   Commandes en direct
                   <span className={feed.online ? 'live-pill' : 'live-pill off'}>
                     <i aria-hidden="true" />
