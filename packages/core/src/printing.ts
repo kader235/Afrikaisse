@@ -24,9 +24,15 @@ const host = z
   .max(100)
   .regex(/^[A-Za-z0-9.:_-]+$/, 'Adresse de l’imprimante, sans http:// ni port (ex. 192.168.1.50 ou DC:0D:30:AA:BB:CC).');
 
-/** `network` : ESC/POS en TCP 9100. `bluetooth` : envoi Bluetooth depuis l'appareil. */
-export const PRINTER_CONNECTIONS = ['network', 'bluetooth'] as const;
+/** Comment la tablette (ou le serveur) atteint l'imprimante : réseau (TCP 9100), Bluetooth ou câble USB. */
+export const PRINTER_CONNECTIONS = ['network', 'bluetooth', 'usb'] as const;
 export type PrinterConnection = (typeof PRINTER_CONNECTIONS)[number];
+
+export const PRINTER_CONNECTION_LABELS: Record<PrinterConnection, string> = {
+  network: 'Réseau (Wi-Fi ou câble réseau)',
+  bluetooth: 'Bluetooth',
+  usb: 'Câble USB',
+};
 
 /** `server` : le serveur local vide la file. `device` : une tablette imprime elle-même (restaurant sans PC). */
 export const PRINTER_DRIVERS = ['server', 'device'] as const;

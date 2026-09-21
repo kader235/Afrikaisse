@@ -26,6 +26,7 @@ import { useActivityFeed } from './activity.ts';
 import { useNotifications } from './notifications.ts';
 import { disablePush, usePushRegistration } from './push.ts';
 import { useAlertSettings } from './alertSettings.ts';
+import { useDevicePrinting, usePrintStation } from './devicePrinting.ts';
 import { AlertStack, useStaffAlerts } from './alerts.tsx';
 import { SoundSettings } from './pages/SoundSettings.tsx';
 import { NotificationPanel } from './pages/Notifications.tsx';
@@ -252,6 +253,9 @@ function Shell({ me, onMe, onSession, onLogout }: { me: Me; onMe: (me: Me) => vo
   // Tablette : les mêmes alertes en notification push, application fermée (sauf si « notifications du système » est coupé).
   const [alertSettings] = useAlertSettings();
   usePushRegistration(me.locations[0]?.id ?? null, notifyEnabled && alertSettings.system);
+  // Tablette « station d'impression » : elle vide la file du serveur et imprime en Bluetooth / Wi-Fi / USB.
+  const [printStation] = usePrintStation();
+  useDevicePrinting(me.locations[0]?.id ?? null, printStation);
 
   const sections: NavItem[] = [
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard', visible: can('reports.read'), group: 'home' },

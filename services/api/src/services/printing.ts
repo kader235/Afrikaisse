@@ -36,6 +36,11 @@ const RETRY_DELAY_MS = 5000;
 
 type PrinterRow = Selectable<PrintersTable>;
 
+/** Valeur de liaison sûre (au cas où la base contiendrait autre chose) : par défaut réseau. */
+function asConnection(value: string): 'network' | 'bluetooth' | 'usb' {
+  return value === 'bluetooth' || value === 'usb' ? value : 'network';
+}
+
 async function toPrinters(db: Db, rows: PrinterRow[]): Promise<Printer[]> {
   const stationIds = [...new Set(rows.map((r) => r.station_id).filter((x): x is string => !!x))];
   const stations = stationIds.length ? await db.selectFrom('stations').select(['id', 'name']).where('id', 'in', stationIds).execute() : [];
@@ -45,7 +50,7 @@ async function toPrinters(db: Db, rows: PrinterRow[]): Promise<Printer[]> {
     name: r.name,
     host: r.host,
     port: r.port,
-    connection: r.connection === 'bluetooth' ? 'bluetooth' : 'network',
+    connection: asConnection(r.connection),
     driver: r.driver === 'device' ? 'device' : 'server',
     width: r.width,
     stationId: r.station_id,
@@ -367,7 +372,7 @@ export async function pullPrintQueue(ctx: AppContext, scope: TenantScope, locati
     id: r.id,
     printerId: r.printer_id,
     printerName: r.name,
-    connection: r.connection === 'bluetooth' ? 'bluetooth' : 'network',
+    connection: asConnection(r.connection),
     host: r.host,
     port: r.port,
     width: r.width,
