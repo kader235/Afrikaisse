@@ -10,7 +10,9 @@ import {
   type CreatePrinterInput,
   type Order,
   type Printer,
+  type PrintAckInput,
   type PrintJob,
+  type PrintQueueItem,
   type Receipt,
   type UpdatePrinterInput,
 } from '@afrikaisse/core';
@@ -34,6 +36,11 @@ const RETRY_DELAY_MS = 5000;
 
 type PrinterRow = Selectable<PrintersTable>;
 
+/** Valeur de liaison sûre (au cas où la base contiendrait autre chose) : par défaut réseau. */
+function asConnection(value: string): 'network' | 'bluetooth' | 'usb' {
+  return value === 'bluetooth' || value === 'usb' ? value : 'network';
+}
+
 async function toPrinters(db: Db, rows: PrinterRow[]): Promise<Printer[]> {
   const stationIds = [...new Set(rows.map((r) => r.station_id).filter((x): x is string => !!x))];
   const stations = stationIds.length ? await db.selectFrom('stations').select(['id', 'name']).where('id', 'in', stationIds).execute() : [];
@@ -43,6 +50,8 @@ async function toPrinters(db: Db, rows: PrinterRow[]): Promise<Printer[]> {
     name: r.name,
     host: r.host,
     port: r.port,
+    connection: asConnection(r.connection),
+    driver: r.driver === 'device' ? 'device' : 'server',
     width: r.width,
     stationId: r.station_id,
     stationName: stations.find((s) => s.id === r.station_id)?.name ?? null,
@@ -97,6 +106,8 @@ export async function createPrinter(ctx: AppContext, scope: TenantScope, locatio
         name: input.name,
         host: input.host,
         port: input.port,
+        connection: input.connection,
+        driver: input.driver,
         width: input.width,
         station_id: input.stationId,
         prints_kitchen: input.printsKitchen ? 1 : 0,
@@ -126,6 +137,8 @@ export async function updatePrinter(ctx: AppContext, scope: TenantScope, printer
         ...(input.name !== undefined && { name: input.name }),
         ...(input.host !== undefined && { host: input.host }),
         ...(input.port !== undefined && { port: input.port }),
+        ...(input.connection !== undefined && { connection: input.connection }),
+        ...(input.driver !== undefined && { driver: input.driver }),
         ...(input.width !== undefined && { width: input.width }),
         ...(input.stationId !== undefined && { station_id: input.stationId }),
         ...(input.printsKitchen !== undefined && { prints_kitchen: input.printsKitchen ? 1 : 0 }),
@@ -175,6 +188,12 @@ export async function testPrinter(ctx: AppContext, scope: TenantScope, printerId
     .rule()
     .feed(3)
     .cut();
+  // Imprimante pilotée par un appareil (tablette) : le serveur ne peut pas l'atteindre (Bluetooth,
+  // ou réseau sans PC). On met le ticket de test dans la file ; la tablette viendra le chercher.
+  if (printer.driver === 'device') {
+    await queue(ctx.db, ctx, printer, 'TEST', ticket.build().toString('base64'), null);
+    return onePrinter(ctx.db, printerId);
+  }
   try {
     await sendToPrinter(printer.host, printer.port, ticket.build());
     await ctx.db.updateTable('printers').set({ last_ok_at: ctx.now(), last_error: null }).where('id', '=', printerId).execute();
@@ -313,6 +332,80 @@ export async function retryPrintJob(ctx: AppContext, scope: TenantScope, jobId: 
   return (await listPrintJobs(ctx, scope, job.location_id)).find((j) => j.id === jobId)!;
 }
 
+// --- Impression depuis un appareil (tablette) ----------------------------------
+
+/** Fenêtre de réservation : un ticket remis à une tablette n'est pas re-remis à une autre avant ce délai. */
+const CLAIM_MS = 20_000;
+
+/**
+ * Une tablette réclame les tickets à imprimer de l'établissement : uniquement les imprimantes
+ * qu'elle pilote (`driver = device`), c.-à-d. celles qu'aucun PC ne sert. Les tickets remis sont
+ * « réservés » quelques secondes pour ne pas partir en double sur deux tablettes ; sans accusé de
+ * réception (tablette éteinte en plein envoi), ils redeviennent disponibles et seront réimprimés.
+ */
+export async function pullPrintQueue(ctx: AppContext, scope: TenantScope, locationId: string): Promise<PrintQueueItem[]> {
+  await assertLocation(ctx.db, scope, locationId);
+  const rows = await ctx.db
+    .selectFrom('print_jobs as j')
+    .innerJoin('printers as p', 'p.id', 'j.printer_id')
+    .select(['j.id', 'j.printer_id', 'p.name', 'p.connection', 'p.host', 'p.port', 'p.width', 'j.kind', 'j.payload'])
+    .where('j.location_id', '=', locationId)
+    .where('j.status', '=', 'PENDING')
+    .where('p.driver', '=', 'device')
+    .where('p.status', '=', 'ACTIVE')
+    .where('j.next_attempt_at', '<=', ctx.now())
+    .orderBy('j.created_at')
+    .limit(20)
+    .execute();
+  if (rows.length > 0) {
+    await ctx.db
+      .updateTable('print_jobs')
+      .set({ next_attempt_at: ctx.now() + CLAIM_MS })
+      .where(
+        'id',
+        'in',
+        rows.map((r) => r.id),
+      )
+      .execute();
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    printerId: r.printer_id,
+    printerName: r.name,
+    connection: asConnection(r.connection),
+    host: r.host,
+    port: r.port,
+    width: r.width,
+    kind: r.kind,
+    payload: r.payload,
+  }));
+}
+
+/** La tablette accuse réception d'un ticket : imprimé (`SENT`), ou en échec (nouvelle tentative, puis `FAILED`). */
+export async function ackPrintJob(ctx: AppContext, scope: TenantScope, jobId: string, ack: PrintAckInput): Promise<void> {
+  const job = await ctx.db
+    .selectFrom('print_jobs')
+    .select(['id', 'location_id', 'tenant_id', 'printer_id', 'attempts', 'status'])
+    .where('id', '=', jobId)
+    .where('tenant_id', '=', scope.tenantId)
+    .executeTakeFirst();
+  if (!job || (scope.locationId && job.location_id !== scope.locationId)) throw new AppError('NOT_FOUND', "Travail d'impression introuvable.");
+  if (job.status !== 'PENDING') return; // déjà résolu (double accusé, ou réimprimé entre-temps) : sans effet.
+  if (ack.ok) {
+    await ctx.db.updateTable('print_jobs').set({ status: 'SENT', sent_at: ctx.now(), last_error: null }).where('id', '=', jobId).execute();
+    await ctx.db.updateTable('printers').set({ last_ok_at: ctx.now(), last_error: null }).where('id', '=', job.printer_id).execute();
+    return;
+  }
+  const attempts = job.attempts + 1;
+  const message = ack.error || "Échec d'impression sur l'appareil.";
+  await ctx.db
+    .updateTable('print_jobs')
+    .set({ attempts, last_error: message, status: attempts >= MAX_ATTEMPTS ? 'FAILED' : 'PENDING', next_attempt_at: ctx.now() + RETRY_DELAY_MS * attempts })
+    .where('id', '=', jobId)
+    .execute();
+  await ctx.db.updateTable('printers').set({ last_error: message }).where('id', '=', job.printer_id).execute();
+}
+
 /** Un passage de la file : envoie ce qui est dû. Renvoie le nombre de tickets imprimés. */
 export async function processPrintJobs(ctx: AppContext): Promise<number> {
   const jobs = await ctx.db
@@ -320,6 +413,7 @@ export async function processPrintJobs(ctx: AppContext): Promise<number> {
     .innerJoin('printers as p', 'p.id', 'j.printer_id')
     .select(['j.id', 'j.payload', 'j.attempts', 'j.printer_id', 'p.host', 'p.port'])
     .where('j.status', '=', 'PENDING')
+    .where('p.driver', '=', 'server')
     .where('j.next_attempt_at', '<=', ctx.now())
     .orderBy('j.created_at')
     .limit(20)

@@ -53,4 +53,13 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Impression thermique. Bluetooth : appairage classique (SPP) des imprimantes de tickets.
+         Avant Android 12, BLUETOOTH/BLUETOOTH_ADMIN suffisent (normales) ; à partir d'Android 12,
+         BLUETOOTH_CONNECT est demandée à l'exécution. USB : imprimante branchée en OTG. Wi-Fi/TCP
+         passe par INTERNET (déjà là). Aucune n'est requise : une tablette sans imprimante fonctionne. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
 </manifest>

@@ -23,6 +23,7 @@ import { menuTheme } from './migrations/0019_menu_theme.ts';
 import { locationSlogan } from './migrations/0020_location_slogan.ts';
 import { pushTokens } from './migrations/0021_push_tokens.ts';
 import { dailyMenu } from './migrations/0022_daily_menu.ts';
+import { devicePrinting } from './migrations/0023_device_printing.ts';
 
 /**
  * Les migrations sont embarquées dans le code (pas lues sur disque) : l'API est
@@ -54,6 +55,7 @@ function migrations(app: AppDatabase): Record<string, Migration> {
     '0020_location_slogan': locationSlogan(c),
     '0021_push_tokens': pushTokens(c),
     '0022_daily_menu': dailyMenu(c),
+    '0023_device_printing': devicePrinting(c),
   };
 }
 
