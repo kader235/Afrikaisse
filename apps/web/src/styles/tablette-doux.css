@@ -1387,6 +1387,38 @@
   gap: 6px;
 }
 
+/* Panneau des catégories large de 260 px : sur une seule ligne, « Nouvelle catégorie » + les quatre
+   boutons d'action (éditer, monter, descendre, archiver) débordaient à droite, sur le tableau des
+   plats. On empile donc : le titre sur sa ligne, « Nouvelle catégorie » en pleine largeur, puis les
+   icônes en dessous, qui reviennent à la ligne au lieu de déborder. (Pas de `gap` flex : Chrome 83.) */
+.tablette .cat-panel-head {
+  align-items: flex-start;
+}
+
+.tablette .cat-panel-head > strong {
+  flex: 1 0 100%;
+  margin-bottom: 8px;
+}
+
+.tablette .cat-panel-head > span {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.tablette .cat-panel-head .btn.cat-add {
+  flex: 1 0 100%;
+  justify-content: center;
+  margin: 0 0 6px;
+}
+
+/* Le bouton juste après « Nouvelle catégorie » redevient une icône carrée (il était en largeur auto). */
+.tablette .cat-panel-head .btn.cat-add + .btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
 .tablette .cat-list {
   padding: 0 10px 10px;
 }
