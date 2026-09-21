@@ -56,8 +56,8 @@ async function sendOne(item: PrintQueueItem): Promise<void> {
   }
 }
 
-/** Un passage : réclame les tickets dus, les imprime, accuse réception (réussite ou échec). */
-async function drainQueue(locationId: string): Promise<void> {
+/** Un passage : réclame les tickets dus, les imprime, accuse réception (réussite ou échec). Exporté pour les tests. */
+export async function drainQueue(locationId: string): Promise<void> {
   const items = await api<PrintQueueItem[]>('GET', `/locations/${locationId}/print-queue`);
   for (const item of items) {
     try {
