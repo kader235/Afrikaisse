@@ -415,7 +415,14 @@ export function TakeOrderPage({ me, feed }: { me: Me; feed?: ActivityFeed }) {
           )}
         </header>
         <ul className="take-lines take-scroll">
-          {lines.length === 0 && <li className="take-none">{table ? 'Touchez un plat pour l’ajouter.' : 'Puis touchez les plats.'}</li>}
+          {lines.length === 0 && (
+            <li className="take-empty">
+              <span className="take-empty-icon" aria-hidden="true">
+                <Icon name={table ? 'kitchen' : 'table'} />
+              </span>
+              <span>{table ? 'Touchez les plats pour les ajouter à la commande.' : 'Choisissez d’abord une table, puis touchez les plats.'}</span>
+            </li>
+          )}
           {lines.map((l) => {
             const photo = linePhoto(l);
             return (

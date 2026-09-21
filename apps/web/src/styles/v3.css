@@ -600,11 +600,13 @@
 .dash .card h3 .btn-dashboard {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   flex: none;
+  width: 40px;
   height: 40px;
-  min-width: 44px;
+  min-width: 0;
   margin-inline-start: auto;
-  padding: 0 16px;
+  padding: 0;
   border: 0;
   border-radius: 12px;
   background: var(--primary);
@@ -1147,11 +1149,18 @@
 }
 
 .tablette .take-product-add {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   background: var(--or);
   color: var(--or-text);
+  box-shadow: 0 4px 10px rgba(15, 32, 68, 0.18);
+}
+
+/* Retour tactile : la tuile s'enfonce légèrement et se cercle de bleu quand on la touche. */
+.tablette .take-product:active:not(:disabled) {
+  border-color: #1d4ed8;
+  transform: scale(0.97);
 }
 
 .tablette .take-product-add .ico {
@@ -1247,6 +1256,38 @@
 
 .tablette .take-ticket .take-none {
   color: var(--text-soft);
+}
+
+/* Panier vide : au lieu d'une colonne blanche nue, une icône douce et une consigne claire, centrées. */
+.tablette .take-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  padding: 32px 28px;
+  color: var(--text-soft);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.tablette .take-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.tablette .take-empty-icon .ico {
+  width: 34px;
+  height: 34px;
 }
 
 .tablette .take-line {

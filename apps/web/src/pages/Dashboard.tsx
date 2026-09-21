@@ -131,9 +131,8 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
             <h3>
               Ventes par heure
               {can('reports.read') && (
-                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('reports')}>
+                <button type="button" className="btn btn-dashboard" title="Rapports" aria-label="Rapports" onClick={() => onNavigate('reports')}>
                   <Icon name="chart" />
-                  Rapports
                 </button>
               )}
             </h3>
@@ -150,8 +149,7 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
                     {feed.online ? 'En direct' : 'Hors ligne'}
                   </span>
                 </span>
-                <button type="button" className="btn btn-dashboard" onClick={() => onNavigate('orders')}>
-                  Toutes
+                <button type="button" className="btn btn-dashboard" title="Toutes les commandes" aria-label="Toutes les commandes" onClick={() => onNavigate('orders')}>
                   <Icon name="chevronRight" />
                 </button>
               </h3>
