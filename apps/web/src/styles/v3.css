@@ -479,9 +479,16 @@
 /* === Tableau de bord ==================================================== */
 .kpis {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   grid-gap: 14px;
   margin-bottom: 16px;
+}
+
+/* Colonne gauche du tableau de bord : chiffres clés, puis graphique et commandes en direct. */
+.dash-primary {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .tablette .kpi,
@@ -578,6 +585,11 @@
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   grid-gap: 14px;
   align-items: start;
+}
+
+/* Sans menu du jour (droit d'accès absent) : la colonne gauche prend toute la largeur. */
+.dash-cols-solo {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .dash-col > .card + .card {

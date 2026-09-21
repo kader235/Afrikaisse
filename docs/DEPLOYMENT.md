@@ -21,7 +21,7 @@ Variables (fichier `services/api/.env`, jamais commité) :
 | `AFK_CORS_ORIGINS` | vide (fermé) | Origines autorisées, séparées par des virgules |
 | `AFK_PUBLIC_URL` | origine de l'écran, sinon `https://app.afrikaisse.com` | Adresse écrite dans les QR des tables (`<adresse>/m/<jeton>`). **À régler en production** : un QR imprimé ne change plus |
 | `AFK_COOKIE_SECURE` | `true` en cloud | Cookie `Secure` |
-| `AFK_TRUST_PROXY` | `true` en cloud | IP réelle derrière LiteSpeed |
+| `AFK_TRUST_PROXY` | relais locaux en cloud (`loopback,linklocal,uniquelocal`) | IP réelle derrière le relais o2switch, sans se laisser usurper par un `X-Forwarded-For` écrit par le client. `true`, `false`, ou une liste d'adresses/plages de confiance |
 | `AFK_AUTO_MIGRATE` | `true` | Migrations au démarrage |
 | `AFK_LOG_LEVEL` | `info` | Niveau des journaux |
 | `AFK_LOG_DIR` | vide (sortie standard) | Serveur local : un fichier par catégorie (`application`, `security`, `sync`, `printer`, `database`, `system`), rotation 2 Mo ou changement de jour, 7 archives, 30 jours au plus. Le lanceur Windows le fixe à `C:\ProgramData\AfriKaisse\journaux`. Ignoré dans le Cloud |
@@ -203,8 +203,11 @@ diffusion.
 
 ## 6. Sécurité en production
 
-- Garder `AFK_TRUST_PROXY` à sa valeur Cloud (vrai) : derrière Passenger, c'est ce qui donne aux
-  limites par adresse IP la vraie adresse du client.
+- Garder `AFK_TRUST_PROXY` à sa valeur Cloud par défaut (`loopback,linklocal,uniquelocal`) : derrière
+  Passenger, on ne fait confiance qu'au relais local, si bien que les limites par adresse IP lisent la
+  vraie adresse du client — et non celle qu'un client glisserait en tête de `X-Forwarded-For` pour se
+  faire passer pour une autre adresse et contourner ces limites. `true` (faire confiance à tout
+  intermédiaire) est à éviter.
 - Poser la politique de sécurité du contenu sur les pages de l'application, dans le `.htaccess` du
   dossier web :
 

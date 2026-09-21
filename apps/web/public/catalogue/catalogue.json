@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "baseCurrency": "XAF",
   "groups": [
     {
@@ -2064,34 +2064,6 @@
         "SD"
       ],
       "priceXaf": 500,
-      "image": null,
-      "credit": null
-    },
-    {
-      "id": "biere-locale",
-      "name": "Bière locale",
-      "description": "Bouteille de bière blonde brassée localement, servie fraîche.",
-      "category": "Boissons",
-      "group": "boissons",
-      "countries": [
-        "*"
-      ],
-      "priceXaf": 1000,
-      "image": null,
-      "credit": null
-    },
-    {
-      "id": "bili-bili",
-      "name": "Bili-bili",
-      "description": "Bière traditionnelle de mil ou de sorgho, servie en calebasse.",
-      "category": "Boissons",
-      "group": "boissons",
-      "countries": [
-        "TD",
-        "CM",
-        "CF"
-      ],
-      "priceXaf": 300,
       "image": null,
       "credit": null
     },

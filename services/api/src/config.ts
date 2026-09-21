@@ -14,7 +14,8 @@ const envSchema = z.object({
   AFK_CORS_ORIGINS: z.string().default(''),
   AFK_PUBLIC_URL: z.url().optional(),
   AFK_COOKIE_SECURE: flag.optional(),
-  AFK_TRUST_PROXY: flag.optional(),
+  // « true », « false », ou une liste d'adresses/plages de relais de confiance séparées par des virgules.
+  AFK_TRUST_PROXY: z.string().min(1).optional(),
   AFK_AUTO_MIGRATE: flag.optional(),
   AFK_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   AFK_WEB_DIR: z.string().min(1).optional(),
@@ -43,7 +44,15 @@ export interface AppConfig {
   /** Adresse publique du menu client, écrite dans les QR (ex. https://app.afrikaisse.com). */
   publicUrl: string | undefined;
   cookieSecure: boolean;
-  trustProxy: boolean;
+  /**
+   * Quels relais devant l'API sont dignes de confiance pour lire l'adresse réelle du client dans
+   * X-Forwarded-For. Par défaut sur le Cloud : uniquement le relais local (o2switch place son
+   * Apache/Passenger sur une adresse privée), si bien que l'adresse retenue est celle que CE relais
+   * a écrite, et non celle qu'un client aurait glissée en tête de l'en-tête pour contourner les
+   * limites par IP. `true` fait confiance à tous les intermédiaires (à éviter) ; `false` ignore
+   * l'en-tête (serveur local, connexions directes du LAN).
+   */
+  trustProxy: boolean | string[];
   autoMigrate: boolean;
   logLevel: string;
   /** Dossier de l'application web construite, servie par l'API (serveur local). */
@@ -71,6 +80,22 @@ export interface AppConfig {
   loginWindowSec: number;
 }
 
+/**
+ * Cloud (o2switch) : le relais Apache/Passenger parle à l'API depuis une adresse locale/privée.
+ * On ne fait confiance qu'à ces plages, donc l'adresse retenue (request.ip) est la première adresse
+ * publique de X-Forwarded-For écrite par le relais — pas celle qu'un client aurait glissée en tête
+ * de l'en-tête pour se faire passer pour une autre adresse et contourner les limites par IP.
+ * Serveur local : connexions directes du LAN, aucun relais, on ignore l'en-tête.
+ */
+const LOCAL_PROXY_RANGES = ['loopback', 'linklocal', 'uniquelocal'];
+
+function parseTrustProxy(raw: string | undefined, cloud: boolean): boolean | string[] {
+  if (raw === undefined) return cloud ? LOCAL_PROXY_RANGES : false;
+  if (raw === 'true') return true;
+  if (raw === 'false') return false;
+  return raw.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 export function loadConfig(env: Record<string, string | undefined> = process.env): AppConfig {
   const e = envSchema.parse(env);
   const cloud = e.AFK_PROFILE === 'cloud';
@@ -84,7 +109,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     corsOrigins: e.AFK_CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean),
     publicUrl: e.AFK_PUBLIC_URL?.replace(/\/+$/, ''),
     cookieSecure: e.AFK_COOKIE_SECURE ?? cloud,
-    trustProxy: e.AFK_TRUST_PROXY ?? cloud,
+    trustProxy: parseTrustProxy(e.AFK_TRUST_PROXY, cloud),
     autoMigrate: e.AFK_AUTO_MIGRATE ?? true,
     logLevel: e.AFK_LOG_LEVEL,
     webDir: e.AFK_WEB_DIR,

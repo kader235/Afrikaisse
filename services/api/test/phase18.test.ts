@@ -50,6 +50,28 @@ describe.each(ENGINES)('Durcissement (phase 18) — %s', (engine) => {
     }
   });
 
+  // Sécurité : le Cloud ne fait confiance qu'au relais local (plages privées). Un client qui préfixe
+  // lui-même X-Forwarded-For avec une fausse adresse à chaque essai est quand même compté sur son
+  // adresse réelle (celle que le relais ajoute en dernier), donc ne peut pas contourner la limite.
+  it("ne se laisse pas berner par un X-Forwarded-For usurpé", { timeout: 60_000 }, async () => {
+    const t = await startApp(engine, { AFK_RATE_LIMIT: 'true' });
+    try {
+      // Adresse réelle constante (dernière entrée) ; fausse adresse en tête, changée à chaque requête.
+      const spoofed = (i: number) =>
+        t.app.inject({
+          method: 'POST',
+          url: '/api/auth/login',
+          headers: { 'x-forwarded-for': `203.0.113.${i}, 41.203.55.7` },
+          payload: { email: `usurpation.${i}@test.td`, password: 'mauvais-mot-de-passe' },
+        });
+      for (let i = 0; i < 30; i++) expect((await spoofed(i)).statusCode).toBe(401);
+      // Malgré une IP de tête différente, la 31e est bloquée : toutes ont compté sur 41.203.55.7.
+      expect((await spoofed(99)).statusCode).toBe(429);
+    } finally {
+      await t.close();
+    }
+  });
+
   it("sert l'application avec une politique de sécurité du contenu", async () => {
     const dir = mkdtempSync(join(tmpdir(), 'afk-web-'));
     mkdirSync(join(dir, 'assets'));

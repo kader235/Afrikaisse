@@ -54,6 +54,27 @@
   min-height: 0;
 }
 
+/* Colonne gauche : chiffres clés (hauteur fixe) puis graphique + commandes qui prennent le reste. */
+.dash-fit .dash-primary {
+  min-height: 0;
+}
+
+.dash-fit .dash-primary > .kpis {
+  flex: none;
+  margin-bottom: 12px;
+}
+
+.dash-fit .dash-primary > .dash-col {
+  flex: 1 1 0;
+}
+
+/* Colonne droite : le menu du jour se déroule sur toute la hauteur (liste des plats qui défile dedans). */
+.dash-fit .dash-col-side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .dash-fit .dash-col {
   display: flex;
   flex-direction: column;

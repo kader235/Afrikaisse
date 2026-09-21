@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ORDER_STATUS_LABELS, businessDate, formatDuration, formatMoney, moneyToInput, shiftDate, type KitchenReport, type LocationDetails, type Me, type Order, type SalesReport } from '@afrikaisse/core';
+import { ORDER_STATUS_LABELS, businessDate, formatMoney, moneyToInput, shiftDate, type LocationDetails, type Me, type Order, type SalesReport } from '@afrikaisse/core';
 import type { ActivityFeed } from '../activity.ts';
 import { api } from '../api.ts';
 import { orderPlace, sinceText } from '../labels.ts';
@@ -12,10 +12,10 @@ import '../styles/reports.css';
 
 /**
  * Tableau de bord (design v3) : ce qui se passe aujourd'hui dans l'établissement.
- * 1. les chiffres clés en cartes (libellé et chiffre, centrés, sans détail dessous) ;
- * 2. les ventes heure par heure et les commandes en direct (flux d'activité) ;
- * 3. le menu du jour (en hauteur : menu du client QR, plats épuisés) et le service en cours (compteurs qui ouvrent l'écran concerné).
- * L'analyse d'une période est dans Rapports. Même écran à la tablette et au PC ; il défile s'il le faut.
+ * Colonne gauche : les deux chiffres clés (chiffre d'affaires, commandes du jour), puis les ventes
+ * heure par heure et les commandes en direct. Colonne droite : le menu du jour, déroulé sur toute la
+ * hauteur (menu du client QR, plats à marquer épuisés). L'analyse d'une période est dans Rapports.
+ * Même écran à la tablette et au PC ; il défile s'il le faut.
  */
 
 export type DashboardTarget = 'orders' | 'kitchen' | 'floor' | 'stock' | 'pos' | 'reports' | 'take' | 'menu' | 'account';
@@ -30,14 +30,11 @@ const STATUS_CLASS: Partial<Record<Order['status'], string>> = {
 
 export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: ActivityFeed; onNavigate: (target: DashboardTarget) => void }) {
   const can = (p: Me['permissions'][number]) => me.permissions.includes(p);
-  const canTables = can('tables.read');
   const canStock = can('inventory.read');
   const [locations, setLocations] = useState<LocationDetails[] | null>(null);
   const [locationId, setLocationId] = useState<string | null>(null);
   const [today, setToday] = useState<SalesReport | null>(null);
   const [yesterday, setYesterday] = useState<SalesReport | null>(null);
-  const [kitchen, setKitchen] = useState<KitchenReport | null>(null);
-  const [tablesTotal, setTablesTotal] = useState<number | null>(null);
   const [lowStock, setLowStock] = useState<string[] | null>(null);
   const [error, setError] = useState<unknown>(null);
   const photo = useProductPhotos(locationId, can('menu.read'));
@@ -56,14 +53,12 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
     if (!locationId || !day) return;
     const url = (d: string) => `/locations/${locationId}/reports/sales?from=${d}&to=${d}`;
     try {
-      const [current, before, prep] = await Promise.all([
+      const [current, before] = await Promise.all([
         api<SalesReport>('GET', url(day)),
         api<SalesReport>('GET', url(shiftDate(day, -1))).catch(() => null),
-        api<KitchenReport>('GET', `/locations/${locationId}/reports/kitchen?from=${day}&to=${day}`).catch(() => null),
       ]);
       setToday(current);
       setYesterday(before);
-      setKitchen(prep);
       setError(null);
     } catch (err) {
       setError(err);
@@ -79,23 +74,21 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
 
   useEffect(() => {
     if (!locationId) return;
-    if (canTables) api<{ tables: unknown[] }>('GET', `/locations/${locationId}/floor`).then((f) => setTablesTotal(f.tables.length), () => setTablesTotal(null));
     if (canStock) api<{ name: string; state: string }[]>('GET', `/locations/${locationId}/inventory`).then((list) => setLowStock(list.filter((i) => i.state !== 'OK').map((i) => i.name)), () => setLowStock(null));
-  }, [locationId, canTables, canStock]);
+  }, [locationId, canStock]);
 
   const orders = feed?.orders ?? [];
   const count = (...statuses: Order['status'][]) => orders.filter((o) => statuses.includes(o.status)).length;
-  const occupied = new Set(orders.map((o) => o.tableId).filter(Boolean)).size;
   const money = (v: number) => (today ? formatMoney(v, today.currency) : '—');
   const t = today?.totals;
   const cutoffHour = location ? Math.floor(location.businessDayCutoffMin / 60) : 0;
   const latest = [...orders].sort((a, b) => b.createdAt - a.createdAt).slice(0, 6);
   const heroPhoto = today?.topProducts.map((p) => photo(null, p.name)).find((x) => x) ?? null;
   const logo = location?.logoUrl ? mediaSrc(location.logoUrl) : heroPhoto;
-  const kitchenOk = !!kitchen && kitchen.totals.measured > 0;
   const inKitchen = count('CONFIRMED', 'PREPARING');
   const pending = count('PENDING');
-  const lateCount = kitchenOk ? kitchen.totals.lateCount : 0;
+  // Menu du jour : panneau pleine hauteur à droite (menu du client QR, plats épuisés).
+  const showMenu = !!locationId && can('menu.read');
   // Teinte du nuage de chaque widget : bleu = information, jaune = à traiter, rouge = urgent.
   const liveTone = feed && feed.requests.length > 0 ? 'rouge' : pending > 0 ? 'jaune' : 'bleu';
   return (
@@ -114,51 +107,26 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
 
       <ErrorMessage error={error} />
 
-      <div className="kpis" aria-label="Aujourd'hui">
-        <div className="kpi kpi-hero nuage">
-          <small>
-            <Icon name="cash" />
-            Chiffre d'affaires du jour
-          </small>
-          <strong>{t ? money(t.revenue) : '—'}</strong>
-        </div>
-        <div className={`kpi nuage nuage-${pending > 0 ? 'jaune' : 'bleu'}`}>
-          <small>
-            <Icon name="ticket" />
-            Commandes
-          </small>
-          <strong>{t ? String(t.orders) : '—'}</strong>
-        </div>
-        {tablesTotal !== null ? (
-          <div className={`kpi nuage nuage-${feed && feed.requests.length > 0 ? 'rouge' : 'bleu'}`}>
-            <small>
-              <Icon name="table" />
-              Tables occupées
-            </small>
-            <strong>
-              {occupied} / {tablesTotal}
-            </strong>
+      <div className={`dash-cols${showMenu ? '' : ' dash-cols-solo'}`}>
+        <div className="dash-primary">
+          <div className="kpis" aria-label="Aujourd'hui">
+            <div className="kpi kpi-hero nuage">
+              <small>
+                <Icon name="cash" />
+                Chiffre d'affaires du jour
+              </small>
+              <strong>{t ? money(t.revenue) : '—'}</strong>
+            </div>
+            <div className={`kpi nuage nuage-${pending > 0 ? 'jaune' : 'bleu'}`}>
+              <small>
+                <Icon name="ticket" />
+                Commandes
+              </small>
+              <strong>{t ? String(t.orders) : '—'}</strong>
+            </div>
           </div>
-        ) : (
-          <div className="kpi nuage nuage-bleu">
-            <small>
-              <Icon name="cash" />
-              Panier moyen
-            </small>
-            <strong>{t ? money(t.averageTicket) : '—'}</strong>
-          </div>
-        )}
-        <div className={`kpi nuage nuage-${lateCount > 0 ? 'rouge' : 'bleu'}`}>
-          <small>
-            <Icon name="clock" />
-            Temps cuisine
-          </small>
-          <strong>{kitchenOk ? formatDuration(kitchen.totals.averageMs) : '—'}</strong>
-        </div>
-      </div>
 
-      <div className="dash-cols">
-        <div className="dash-col">
+          <div className="dash-col">
           <section className="card dash-chart nuage nuage-bleu">
             <h3>
               Ventes par heure
@@ -253,11 +221,14 @@ export function DashboardPage({ me, feed, onNavigate }: { me: Me; feed?: Activit
               )}
             </section>
           )}
+          </div>
         </div>
 
-        <div className="dash-col dash-col-side">
-          {locationId && can('menu.read') && <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} photo={photo} />}
-        </div>
+        {showMenu && locationId && (
+          <div className="dash-col dash-col-side">
+            <DailyMenuWidget locationId={locationId} canManage={can('menu.manage')} canAvailability={can('menu.availability')} photo={photo} />
+          </div>
+        )}
       </div>
     </section>
   );

@@ -3,11 +3,15 @@ import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from 'node:c
 /**
  * scrypt de node:crypto : pas d'argon2/bcrypt natifs, qui exigent un compilateur
  * absent sur o2switch. Paramètres stockés avec le hash pour pouvoir les durcir
- * plus tard sans invalider les mots de passe existants.
+ * sans invalider les mots de passe existants (voir `needsRehash`).
+ *
+ * N=16384, r=8, p=5 : l'option « faible mémoire » recommandée par l'OWASP. La mémoire
+ * (≈ 16 Mio, sous le plafond de 64 Mio) reste tenable sur un hébergement mutualisé,
+ * et le facteur de travail p=5 relève le coût processeur d'une tentative.
  */
 const N = 16384;
 const R = 8;
-const P = 1;
+const P = 5;
 const KEYLEN = 32;
 const DUMMY_SALT = randomBytes(16);
 
@@ -36,4 +40,15 @@ export async function verifyPassword(password: string, stored: string | null): P
   const expected = Buffer.from(hash, 'base64');
   const actual = await derive(password, Buffer.from(salt, 'base64'), { N: Number(n), r: Number(r), p: Number(p) });
   return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+/**
+ * Un hash a-t-il été produit avec des paramètres plus faibles que ceux d'aujourd'hui ? On le
+ * ré-encode alors à la prochaine connexion réussie, sans que la personne ait à changer de mot de
+ * passe. Un format inattendu vaut « à refaire ».
+ */
+export function needsRehash(stored: string): boolean {
+  const [algo, n, r, p] = stored.split('$');
+  if (algo !== 'scrypt') return true;
+  return Number(n) < N || Number(r) < R || Number(p) < P;
 }

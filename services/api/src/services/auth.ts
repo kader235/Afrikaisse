@@ -3,7 +3,7 @@ import { AppError, ROLE_PERMISSIONS, uuidv7, type LoginInput, type Me, type Regi
 import type { AppContext, Db, RequestMeta } from '../context.ts';
 import { resolveSession, type AuthState } from '../lib/access.ts';
 import { isUniqueViolation, recordChange, writeAudit } from '../lib/journal.ts';
-import { hashPassword, verifyPassword } from '../lib/passwords.ts';
+import { hashPassword, needsRehash, verifyPassword } from '../lib/passwords.ts';
 import { generateRefreshToken, hashToken, signAccessToken } from '../lib/tokens.ts';
 import { createDefaultStations } from './kitchen.ts';
 import { hashAnswer } from './recovery.ts';
@@ -179,7 +179,39 @@ export async function login(ctx: AppContext, input: LoginInput, meta: RequestMet
   }
 
   await writeAudit(ctx.db, ctx, { tenantId, actorUserId: user.id, action: 'auth.login', subject: input.email, meta });
+  await upgradePasswordHash(ctx, user.id, input.password, user.password_hash);
   return createSession(ctx, user.id, tenantId, meta);
+}
+
+/**
+ * Mot de passe stocké avec des paramètres scrypt dépassés : on le ré-encode sans bruit après une
+ * connexion réussie (le mot de passe en clair est en main à ce moment précis). Best-effort — un
+ * échec ne doit jamais empêcher la connexion, il sera retenté au prochain succès.
+ */
+async function upgradePasswordHash(ctx: AppContext, userId: string, password: string, storedHash: string | null): Promise<void> {
+  if (!storedHash || !needsRehash(storedHash)) return;
+  try {
+    const hash = await hashPassword(password);
+    const now = ctx.now();
+    await ctx.db.transaction().execute(async (trx) => {
+      const hlc = ctx.clock.now();
+      // Garde sur l'ancien hash : ne rien écraser si le mot de passe a changé entre-temps.
+      const done = await trx
+        .updateTable('users')
+        .set({ password_hash: hash, updated_at: now, updated_hlc: hlc })
+        .where('id', '=', userId)
+        .where('password_hash', '=', storedHash)
+        .executeTakeFirst();
+      if (Number(done.numUpdatedRows) !== 1) return;
+      const row = await trx.selectFrom('users').selectAll().where('id', '=', userId).executeTakeFirstOrThrow();
+      const tenants = await trx.selectFrom('memberships').select('tenant_id').where('user_id', '=', userId).execute();
+      for (const { tenant_id } of tenants) {
+        await recordChange(trx, ctx, { tenantId: tenant_id, entityType: 'user', entityId: userId, operation: 'UPSERT', payload: row, hlc });
+      }
+    });
+  } catch (err) {
+    ctx.log.security.warn({ err }, 'Ré-encodage du mot de passe impossible ; nouvel essai à la prochaine connexion.');
+  }
 }
 
 async function createSession(ctx: AppContext, userId: string, tenantId: string | null, meta: RequestMeta): Promise<IssuedSession> {
