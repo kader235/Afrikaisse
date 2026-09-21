@@ -1,9 +1,9 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { createPrinterSchema, printerSchema, printJobSchema, updatePrinterSchema } from '@afrikaisse/core';
+import { createPrinterSchema, printAckSchema, printerSchema, printJobSchema, printQueueItemSchema, updatePrinterSchema } from '@afrikaisse/core';
 import type { AppContext } from '../context.ts';
 import { requestMeta, requireAuth, requireTenant } from '../lib/access.ts';
-import { archivePrinter, createPrinter, listPrinters, listPrintJobs, printReceipt, retryPrintJob, testPrinter, updatePrinter } from '../services/printing.ts';
+import { ackPrintJob, archivePrinter, createPrinter, listPrinters, listPrintJobs, printReceipt, pullPrintQueue, retryPrintJob, testPrinter, updatePrinter } from '../services/printing.ts';
 
 /** Imprimantes réseau, file d'impression, impression des reçus. */
 export function printerRoutes(ctx: AppContext): FastifyPluginAsyncZod {
@@ -57,6 +57,26 @@ export function printerRoutes(ctx: AppContext): FastifyPluginAsyncZod {
       async (request, reply) => {
         reply.header('cache-control', 'no-store');
         return listPrintJobs(ctx, requireTenant(request.auth, 'devices.manage'), request.params.locationId);
+      },
+    );
+
+    // Impression depuis la tablette (restaurant sans PC) : elle vient chercher les tickets déjà
+    // fabriqués, les envoie elle-même (Bluetooth ou Wi-Fi), puis accuse réception de chacun.
+    app.get(
+      '/locations/:locationId/print-queue',
+      { schema: { tags, summary: 'Tickets à imprimer par cet appareil (imprimantes « appareil »)', security, params: location, response: { 200: z.array(printQueueItemSchema) } } },
+      async (request, reply) => {
+        reply.header('cache-control', 'no-store');
+        return pullPrintQueue(ctx, requireTenant(request.auth, 'orders.read'), request.params.locationId);
+      },
+    );
+
+    app.post(
+      '/print-jobs/:jobId/ack',
+      { schema: { tags, summary: "Accuser réception d'un ticket imprimé par l'appareil (réussi ou en échec)", security, params: z.object({ jobId: z.uuid() }), body: printAckSchema } },
+      async (request, reply) => {
+        await ackPrintJob(ctx, requireTenant(request.auth, 'orders.read'), request.params.jobId, request.body);
+        return reply.code(204).send();
       },
     );
 

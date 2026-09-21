@@ -664,6 +664,10 @@ export interface PrintersTable {
   host: string;
   port: number;
   width: number;
+  /** `network` : ESC/POS en TCP 9100. `bluetooth` : `host` porte l'adresse de l'imprimante appairée. */
+  connection: 'network' | 'bluetooth';
+  /** `server` : le serveur local vide la file. `device` : une tablette vient chercher et envoyer les tickets. */
+  driver: 'server' | 'device';
   station_id: string | null;
   prints_kitchen: Bool;
   prints_receipts: Bool;

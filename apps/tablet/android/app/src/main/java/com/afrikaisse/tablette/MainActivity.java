@@ -1,5 +1,6 @@
 package com.afrikaisse.tablette;
 
+import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
 /**
@@ -7,6 +8,13 @@ import com.getcapacitor.BridgeActivity;
  * de police d'Android (130 % sur la tablette de référence) les ferait déborder. La WebView reste donc à 100 %.
  */
 public class MainActivity extends BridgeActivity {
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    // Impression thermique universelle (Bluetooth / Wi-Fi / USB) : disponible avant le chargement des écrans.
+    registerPlugin(ThermalPrinter.class);
+    super.onCreate(savedInstanceState);
+  }
+
   @Override
   public void onStart() {
     super.onStart();

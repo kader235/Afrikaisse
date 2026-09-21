@@ -152,4 +152,65 @@ describe.each(ENGINES)('Phase 9 — impression — %s', (engine) => {
     expect((await other.post(`/api/printers/${pCuisine.id}/test`)).statusCode).toBe(404);
     expect((await other.post(`/api/print-jobs/${failed.id}/retry`)).statusCode).toBe(404);
   });
+
+  it('imprimante « appareil » : la tablette vient chercher les tickets, les imprime, accuse réception ; le serveur ne les touche pas', async () => {
+    const org = await registerOrg(t, 'ImpressionTablette');
+    const owner = as(t, org.token);
+    const locationId = org.me.locations[0].id as string;
+    const zone = (await owner.post(`/api/locations/${locationId}/zones`, { name: 'Salle' })).json();
+    const table = (await owner.post(`/api/zones/${zone.id}/tables`, { label: 'T1' })).json();
+    let menu = (await owner.post(`/api/locations/${locationId}/categories`, { name: 'Carte' })).json();
+    const cat = menu.categories[0].id;
+    menu = (await owner.post(`/api/categories/${cat}/products`, { name: 'Thiéboudienne', price: 4000 })).json();
+    const productId = menu.products[0].id;
+
+    // Imprimante Bluetooth pilotée par la tablette : adresse MAC acceptée, aucun port réseau requis.
+    const p = (await owner.post(`/api/locations/${locationId}/printers`, { name: 'Caisse tablette', host: 'DC:0D:30:AA:BB:CC', connection: 'bluetooth', driver: 'device', printsKitchen: true, printsReceipts: true })).json();
+    expect(p).toMatchObject({ connection: 'bluetooth', driver: 'device' });
+
+    // Test d'impression : le serveur ne peut pas l'atteindre, il met le ticket de test en file.
+    await owner.post(`/api/printers/${p.id}/test`);
+
+    // Une commande confirmée fabrique un ticket cuisine, comme pour une imprimante réseau.
+    const order = (await owner.post(`/api/locations/${locationId}/orders`, { tableId: table.id, lines: [{ productId, quantity: 2 }] })).json();
+    // Le serveur ne traite PAS les imprimantes « appareil » : rien n'est envoyé en TCP.
+    expect(await processPrintJobs(t.ctx)).toBe(0);
+
+    // La tablette réclame la file : elle reçoit le test + le ticket cuisine, avec les octets prêts.
+    const queue = (await owner.get(`/api/locations/${locationId}/print-queue`)).json();
+    expect(queue.length).toBe(2);
+    expect(queue.map((q: { kind: string }) => q.kind).sort()).toEqual(['KITCHEN', 'TEST']);
+    for (const item of queue) {
+      expect(item).toMatchObject({ connection: 'bluetooth', host: 'DC:0D:30:AA:BB:CC', printerName: 'Caisse tablette' });
+      const bytes = Buffer.from(item.payload, 'base64');
+      expect(bytes.subarray(0, 2)).toEqual(Buffer.from([0x1b, 0x40])); // initialisation ESC/POS
+    }
+
+    // Réservés : un second appel immédiat ne les rend pas une deuxième fois (pas de double impression).
+    expect((await owner.get(`/api/locations/${locationId}/print-queue`)).json().length).toBe(0);
+
+    // La tablette accuse réception : un ticket imprimé, l'autre en échec.
+    const kitchen = queue.find((q: { kind: string }) => q.kind === 'KITCHEN');
+    const test = queue.find((q: { kind: string }) => q.kind === 'TEST');
+    expect((await owner.post(`/api/print-jobs/${kitchen.id}/ack`, { ok: true })).statusCode).toBe(204);
+    expect((await owner.post(`/api/print-jobs/${test.id}/ack`, { ok: false, error: 'Imprimante hors tension' })).statusCode).toBe(204);
+
+    const jobs = (await owner.get(`/api/locations/${locationId}/print-jobs`)).json();
+    expect(jobs.find((j: { id: string }) => j.id === kitchen.id)).toMatchObject({ status: 'SENT' });
+    expect(jobs.find((j: { id: string }) => j.id === test.id)).toMatchObject({ status: 'PENDING', attempts: 1, lastError: 'Imprimante hors tension' });
+
+    // Le ticket en échec revient dans la file après la fenêtre de réservation et le délai de reprise.
+    try {
+      t.clock.offsetMs = 60_000;
+      const again = (await owner.get(`/api/locations/${locationId}/print-queue`)).json();
+      expect(again.map((q: { id: string }) => q.id)).toEqual([test.id]);
+    } finally {
+      t.clock.offsetMs = 0;
+    }
+
+    // Isolation : une autre organisation ne voit ni la file ni les accusés de réception.
+    const other = as(t, (await registerOrg(t, 'ImpressionTabletteVoisin')).token);
+    expect((await other.get(`/api/locations/${locationId}/print-queue`)).statusCode).toBe(404);
+    expect((await other.post(`/api/print-jobs/${kitchen.id}/ack`, { ok: true })).statusCode).toBe(404);
+  });
 });

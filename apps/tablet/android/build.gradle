@@ -21,6 +21,8 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // JitPack : héberge la librairie d'impression thermique DantSu (Bluetooth, TCP/Wi-Fi, USB).
+        maven { url 'https://jitpack.io' }
     }
 }
 
